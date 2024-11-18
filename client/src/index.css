@@ -1,0 +1,22 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer components {
+    .scrollable-form::-webkit-scrollbar {
+        width: 5px; /* Width of the scrollbar */
+      }
+      
+      .scrollable-form::-webkit-scrollbar-track {
+        background: rgba(255, 255, 255, 0.1); /* Track color */
+      }
+      
+      .scrollable-form::-webkit-scrollbar-thumb {
+        background: #00A272; /* Scrollbar thumb color */
+        border-radius: 10px; /* Rounded corners */
+      }
+      
+      .scrollable-form::-webkit-scrollbar-thumb:hover {
+        background: #007a5e; /* Scrollbar thumb hover color */
+      }
+}
