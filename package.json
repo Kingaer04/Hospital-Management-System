@@ -5,6 +5,7 @@
     "express": "^4.21.0",
     "express-session": "^1.18.0",
     "jsonwebtoken": "^9.0.2",
+    "module-alias": "^2.2.3",
     "mongoose": "^8.6.2",
     "passport": "^0.7.0",
     "passport-local-mongoose": "^8.0.0"
@@ -13,7 +14,9 @@
   "version": "1.0.0",
   "main": "index.js",
   "type": "module",
-  "devDependencies": {},
+  "devDependencies": {
+    "@types/node": "^22.9.0"
+  },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },

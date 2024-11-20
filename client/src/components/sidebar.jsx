@@ -8,6 +8,7 @@ import Toolbar from '@mui/material/Toolbar';
 import List from '@mui/material/List';
 import Divider from '@mui/material/Divider';
 import MenuIcon from '@mui/icons-material/Menu';
+import {SettingsOutlined} from '@mui/icons-material'
 import IconButton from '@mui/material/IconButton';
 import DoubleArrowIcon from '@mui/icons-material/DoubleArrow';
 import ListItem from '@mui/material/ListItem';
@@ -19,8 +20,9 @@ import CalendarMonthOutlinedIcon from '@mui/icons-material/CalendarMonthOutlined
 import MainNavbar from './navbar';
 import Diversity1OutlinedIcon from '@mui/icons-material/Diversity1Outlined';
 import Diversity2OutlinedIcon from '@mui/icons-material/Diversity2Outlined';
-import { Outlet, useLocation } from 'react-router-dom';
+import { Link, Outlet, useLocation } from 'react-router-dom';
 import { useOpen } from '../components/openContext'
+import LogoutOutlinedIcon from '@mui/icons-material/LogoutOutlined';
 
 const drawerWidth = 240;
 
@@ -147,30 +149,51 @@ export default function SideBar() {
         </DrawerHeader>
         <Divider />
         <List>
-          {['Dasbboard', 'Appointment'].map((text, index) => (
-            <ListItem key={text} disablePadding>
-              <ListItemButton>
-                <ListItemIcon>
-                  {index % 2 === 0 ? <OtherHousesOutlinedIcon /> : <CalendarMonthOutlinedIcon />}
-                </ListItemIcon>
-                <ListItemText primary={text} />
-              </ListItemButton>
-            </ListItem>
-          ))}
-        </List>
+      {['Home', 'Appointment'].map((text, index) => (
+        <ListItem key={text} disablePadding>
+          <ListItemButton component={Link} to={index % 2 === 0 ? '/home' : '/appointment'}>
+            <ListItemIcon>
+              {index % 2 === 0 ? <OtherHousesOutlinedIcon /> : <CalendarMonthOutlinedIcon />}
+            </ListItemIcon>
+            <ListItemText primary={text} />
+          </ListItemButton>
+        </ListItem>
+      ))}
+    </List>
         <Divider />
         <List>
           {['Patient', 'Staff'].map((text, index) => (
             <ListItem key={text} disablePadding>
-              <ListItemButton>
+              <ListItemButton component={Link} to={index % 2 === 0 ? '/patient': '/staff'}>
                 <ListItemIcon>
-                  {index % 2 === 0 ? <Diversity1OutlinedIcon /> : <Diversity2OutlinedIcon />}
+                  {index % 2 === 0 ? <Diversity1OutlinedIcon /> : <img src="/Icons/StaffIcon.png"/>}
                 </ListItemIcon>
                 <ListItemText primary={text} />
               </ListItemButton>
             </ListItem>
           ))}
         </List>
+        <Box mt="100%">
+          <Divider/>
+          <Box p="20px">
+            <Box display="flex" alignItems="center" gap="30px">
+              <SettingsOutlined sx={{ color: '#A9A9A9' }}/>
+              <Link to="/settings" style={{ textDecoration: 'none', color: 'inherit' }}>
+                <p>
+                  Settings
+                </p>
+              </Link>
+            </Box>
+            <Box display="flex" alignItems="center" gap="30px" mt="10px">
+              <LogoutOutlinedIcon sx={{ color: '#A9A9A9' }}/>
+              <Link to="/signout" style={{ textDecoration: 'none', color: 'inherit' }}>
+                <p>
+                  LogOut
+                </p>
+              </Link>
+            </Box>
+          </Box>
+        </Box>
       </Drawer>
       <Main open={open} sx={{ width: mainContentWidth }}>
         <DrawerHeader />

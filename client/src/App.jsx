@@ -5,9 +5,14 @@ import PrivateRoute from './components/privateRoute.jsx'
 import SignUp from './pages/sign-up.jsx'
 import SignIn from './pages/sign-in.jsx'
 import Layout from './components/layout.jsx'
-import Home from './pages/home.jsx'
+import ReceptionistHome from './pages/receptionistPage.jsx'
 import Profile from './pages/profile.jsx'
 import { OpenProvider } from './components/openContext.jsx'
+import Patient from './pages/patient.jsx'
+import Appointment from './pages/appointment.jsx'
+import Home from './pages/home.jsx'
+import Settings from './pages/settings.jsx'
+import SignOut from './pages/signOut.jsx'
 
 
 export default function App() {
@@ -25,6 +30,11 @@ export default function App() {
                   <Route path="/" element={<Navigate to="/home" replace/>}/>
                   <Route path='/home' element={<Home/>}/>
                   <Route path='/profile' element={<Profile/>}/>
+                  <Route path='/Appointment' element={<Appointment/>}/>
+                  <Route path='/receptionistHome' element={<ReceptionistHome/>}/>
+                  <Route path='/patient' element={<Patient/>}/>
+                  <Route path='/settings' element={<Settings/>}/>
+                  <Route path='/signOut' element={<SignOut/>}/>
                 </Route>
               {/* </Route> */}
             </Routes>
