@@ -70,8 +70,8 @@ export default function SignIn() {
         `}
       </style>
       <div className='flex gap-3 mb-5'>
-        <img src="../../public/Logo_Images/logoIcon.png" alt="" />
-        <img src="../../public/Logo_Images/logoName.png" alt="" className='h-5' />
+        <img src="/Logo_Images/logoIcon.png" alt="" />
+        <img src="/Logo_Images/logoName.png" alt="" className='h-5' />
       </div>
       <div className='flex mt-14'>
         <div className="pt-10 flex flex-col mt-4 ml-10 gap-5"> 
@@ -98,7 +98,7 @@ export default function SignIn() {
         </div>
       </div>
       <div className="image-container">
-        <img src="../../public/Authentication_Images/doctor&nurseImage.png" alt="Doctor & Nurse" className='w-[710px] absolute -top-28 right-0' />
+        <img src="/Authentication_Images/doctor&nurseImage.png" alt="Doctor & Nurse" className='w-[710px] absolute -top-28 right-0' />
       </div>
     </div>
   )

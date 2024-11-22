@@ -103,7 +103,7 @@ export default function SideBar() {
   const isHomePage = location.pathname === "/Home"
 
   return (
-    <Box sx={{ display: 'flex' }}>
+    <Box sx={{ display: 'flex', maxWidth: '1440px', width:'100%', margin: '0 auto' }}>
       <CssBaseline />
       <AppBar position="fixed" open={open}>
         <Toolbar>

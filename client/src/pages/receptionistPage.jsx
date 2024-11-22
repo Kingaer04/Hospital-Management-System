@@ -1,98 +1,92 @@
-import { Box, Button } from '@mui/material';
-import Typography from '@mui/material/Typography';
 import CalendarMonthOutlinedIcon from '@mui/icons-material/CalendarMonthOutlined';
 import Diversity1OutlinedIcon from '@mui/icons-material/Diversity1Outlined';
 import BadgeOutlinedIcon from '@mui/icons-material/BadgeOutlined';
 import SearchBar from '../components/searchBar';
 import PatientTable from '../components/tableComponet';
-import DateCalendarValue from '../components/calendarComponent';
-
+import { Calendar } from '@/components/ui/calendar';
 
 export default function ReceptionistHome() {
   return (
-    <Box sx={{ padding: "20px" }}>
-      <Box marginBottom="20px">
-        <Typography variant='h5' sx={{ fontWeight: '500' }}>
+    <div className="p-5 w-[100%]">
+      <div className="mb-8">
+        <h5 className='font-bold text-[18px]'>
           Welcome, Anny
-        </Typography>
-        <Typography sx={{ color: '#A9A9A9', fontSize: '11px', lineHeight: 'normal', fontWeight: '400' }}>
+        </h5>
+        <p className="text-[#A9A9A9] text-[11px] font-[400]">
           Here's an insight of your activity
-        </Typography>
-      </Box>
-      <Box sx={{ display: "flex", width: "100%", gap: "5%" }}>
-        <Box sx={{ flex: "0 0 70%", padding: "10px" }}>
+        </p>
+      </div>
+      <div className="flex flex-wrap w-[100%] gap-[5%]">
+        <div className="Width">
           {/* Card Rendering */}
-          <Box display="flex" gap="20px">
-            {/* Card One  */}
-            <Box sx={{ border: "1px solid #A9A9A9", padding: "10px", width: "100%", borderRadius: "10px"
-              }}>
-              <Typography sx={{ fontSize: "15px" }}>
-                Total Patient
-              </Typography>
-              <Box marginTop="15px" display="flex" justifyContent="space-between">
-                <Typography>18</Typography>
-                <Diversity1OutlinedIcon sx={{ fill:"#00A272" }}/>
-              </Box>
-            </Box>
-            {/* Card Two  */}
-            <Box sx={{ border: "1px solid #A9A9A9", padding: "10px", width: "100%", borderRadius: "10px"
-              }}>
-              <Typography sx={{ fontSize: "15px" }}>
-                Total Staff
-              </Typography>
-              <Box marginTop="15px" display="flex" justifyContent="space-between">
-                <Typography>18</Typography>
-                <BadgeOutlinedIcon sx={{ fill:"#00A272" }}/>
-              </Box>
-            </Box>
-            {/* Card Three  */}
-            <Box sx={{ border: "1px solid #A9A9A9", padding: "10px", width: "100%", borderRadius: "10px"
-              }}>
-              <Typography sx={{ fontSize: "15px" }}>
-                Appointment
-              </Typography>
-              <Box marginTop="15px" display="flex" justifyContent="space-between">
-                <Typography>18</Typography>
-                <CalendarMonthOutlinedIcon sx={{ fill:"#00A272" }}/>
-              </Box>
-            </Box>
-          </Box>
-          <Box marginTop="40px" sx={{ border: "1px solid #A9A9A9", padding: "4%", borderRadius: "10px" }}>
-            <p className='font-bold text-[100%]'>
-              Search For Patient By Name or ID
-            </p>
-            <SearchBar/>
-            <Box sx={{ display: "flex", alignItems: "center", marginTop: "5px", justifyContent: "space-between" }}>
-              <Typography sx={{ fontSize: "65%" }}>
-                Status: Available
-              </Typography>
-              <Typography sx={{ fontSize: "65%" }}>
-                Patient's Name: Samuel Sophia
-              </Typography>
-              <Typography sx={{ fontSize: "65%" }}>
-                Patient's ID: 001
-              </Typography>
-              <Button sx={{ bgcolor: "#00A272", color: "#fff", fontSize: "65%" }}>
-                Book new Appointment
-              </Button>
-            </Box>
-          </Box>
-          <Box>
-            <Typography marginTop="15px" fontWeight="bold">Patient's Data</Typography>
-            <PatientTable/>
-          </Box>
-        </Box>
-        <Box sx={{ flex: "0 0 25%", display: "flex", flexDirection: "column" }}>
-          <Box sx={{ border: "1px solid #A9A9A9", borderRadius: "10px" }}>
-            <DateCalendarValue/>
-          </Box>
-          <Box mt="30px">
-            <Typography>
+                <div className="flex flex-wrap gap-4 mb-4">
+                {/* Card One  */}
+                <div className='p-5 w-full sm:w-[calc(33%-1rem)] rounded-[10px] Shadow min-w-[250px]'>
+                  <p className="text-[15px] text-[#A9A9A9]">
+                  Total Patient
+                  </p>
+                  <div className='mt-8 flex justify-between items-center font-bold'>
+                  <p>18</p>
+                  <Diversity1OutlinedIcon sx={{ fill:"#00A272" }}/>
+                  </div>
+                </div>
+                {/* Card Two  */}
+                <div className='p-5 w-full sm:w-[calc(33%-1rem)] rounded-[10px] Shadow min-w-[250px]'>
+                  <p className="text-[15px] text-[#A9A9A9]">
+                  Total Staff
+                  </p>
+                  <div className='mt-8 flex justify-between items-center font-bold'>
+                  <p>18</p>
+                  <BadgeOutlinedIcon sx={{ fill:"#00A272" }}/>
+                  </div>
+                </div>
+                {/* Card Three  */}
+                <div className='p-5 w-full sm:w-[calc(33%-1rem)] rounded-[10px] Shadow min-w-[250px]'>
+                  <p className="text-[15px] text-[#A9A9A9]">
+                  Appointment
+                  </p>
+                  <div className='mt-8 flex justify-between items-center font-bold'>
+                  <p>18</p>
+                  <CalendarMonthOutlinedIcon sx={{ fill:"#00A272" }}/>
+                  </div>
+                </div>
+                </div>
+                <div className='mt-[40px] border border-[#A9A9A9] p-[4%] rounded-[10px]'>
+                <p className='font-bold text-[100%]'>
+                  Search For Patient By Name or ID
+                </p>
+                <SearchBar/>
+                <div className="flex flex-wrap items-center mt-2 gap-3">
+                  <p className='text-[65%]'>
+                  Status: Available
+                  </p>
+                  <p className='text-[65%]'>
+                  Patient's Name: Samuel Sophia
+                  </p>
+                  <p className='text-[65%]'>
+                  Patient's ID: 001
+                  </p>
+                  <button className='bg-[#00A272] text-white text-[65%] rounded-sm p-3'>
+                  Book new Appointment
+                  </button>
+                </div>
+                </div>
+                <div>
+                <p className='mt-10 font-bold'>Patient's Data</p>
+                {/* <PatientTable/> */}
+          </div>
+        </div>
+        <div className='w-[30%] Flex flex-col border border-[#A9A99A9] rounded-[10px] p-3 Image-container'>
+          <div className="">
+            <Calendar className=""/>
+          </div>
+          <div className='mt-[30px] ml-5'>
+            <p>
               Doctor
-            </Typography>
-          </Box>
-        </Box>
-      </Box>
-    </Box>
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
   )
 }

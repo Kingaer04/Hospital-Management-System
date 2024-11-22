@@ -96,7 +96,7 @@ export default function Settings() {
                         </li>
                     </ul>
                 </nav>
-                <main className='p-4 overflow-auto flex-1 max-h-[400px]'>
+                <main className='p-4 overflow-auto flex-auto max-h-[400px]'>
                     {renderContent()}
                 </main>
             </div>

@@ -89,8 +89,8 @@ export default function SignUp() {
         `}
       </style>
       <div className='flex gap-3 mb-5'>
-        <img src="../../public/Logo_Images/logoIcon.png" alt="" />
-        <img src="../../public/Logo_Images/logoName.png" alt="" className='h-5' />
+        <img src="/Logo_Images/logoIcon.png" alt="" />
+        <img src="/Logo_Images/logoName.png" alt="" className='h-5' />
       </div>
       <div className='flex flex-col text-white mb-5'>
         
@@ -158,11 +158,11 @@ export default function SignUp() {
               <span className="text-[#00A272]">Log In</span>
             </Link>
           </div>
-              {error && <p className="text-red-700">{error}</p>}
+              {/* {error && <p className="text-red-700">{error}</p>} */}
           </div>
         </div>
         <div className="image-container">
-          <img src="../../public/Authentication_Images/doctor&nurseImage.png" alt="Doctor & Nurse" className='w-[710px] absolute -top-28 right-0' />
+          <img src="/Authentication_Images/doctor&nurseImage.png" alt="Doctor & Nurse" className='w-[710px] absolute -top-28 right-0' />
         </div>
       </div>
   )

@@ -13,6 +13,7 @@ import Appointment from './pages/appointment.jsx'
 import Home from './pages/home.jsx'
 import Settings from './pages/settings.jsx'
 import SignOut from './pages/signOut.jsx'
+import StaffDetails from './pages/staffDetails.jsx'
 
 
 export default function App() {
@@ -33,6 +34,7 @@ export default function App() {
                   <Route path='/Appointment' element={<Appointment/>}/>
                   <Route path='/receptionistHome' element={<ReceptionistHome/>}/>
                   <Route path='/patient' element={<Patient/>}/>
+                  <Route path='/staff' element={<StaffDetails/>}/>
                   <Route path='/settings' element={<Settings/>}/>
                   <Route path='/signOut' element={<SignOut/>}/>
                 </Route>
