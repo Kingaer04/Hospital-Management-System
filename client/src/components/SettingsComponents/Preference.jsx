@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import statesAndLGAs from './stateLGA';
 
-export default function General() {
+export default function Preference() {
     const [image, setImage] = useState(null);
     const hospitalName = "NHMIS Hospital"; // Replace with actual hospital name
     const initials = hospitalName.split(' ').map(word => word[0]).join('');
@@ -41,7 +41,7 @@ export default function General() {
         <div className='max-w-[800px]'>
             <div>
                 <h1 className='font-semibold text-[18px]'>
-                    General
+                    Preference
                 </h1>
                 <p className='text-[#A9A9A9] text-[12px]'>
                     Update your Hospital Persona

@@ -1,19 +1,9 @@
+import { useState } from 'react';
 import { Link, Route, BrowserRouter as Router, Routes } from 'react-router-dom';
 import General from '../components/SettingsComponents/general';
-
-function Account() {
-    return <div>Account Settings</div>;
-}
-
-function Preference() {
-    return <div>Preference Settings</div>;
-}
-
-function Notification() {
-    return <div>Notification Settings</div>;
-}
-
-import { useState } from 'react';
+import NotificationSettings from '@/components/SettingsComponents/notification';
+import Preference from '@/components/SettingsComponents/Preference';
+import Account from '@/components/SettingsComponents/Account';
 
 export default function Settings() {
     const [activeTab, setActiveTab] = useState('general');
@@ -25,7 +15,7 @@ export default function Settings() {
             case 'preference':
                 return <Preference />;
             case 'notification':
-                return <Notification />;
+                return <NotificationSettings />;
             case 'account':
                 return <Account />;
             default:
