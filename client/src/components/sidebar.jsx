@@ -19,10 +19,10 @@ import OtherHousesOutlinedIcon from '@mui/icons-material/OtherHousesOutlined';
 import CalendarMonthOutlinedIcon from '@mui/icons-material/CalendarMonthOutlined';
 import MainNavbar from './navbar';
 import Diversity1OutlinedIcon from '@mui/icons-material/Diversity1Outlined';
-import Diversity2OutlinedIcon from '@mui/icons-material/Diversity2Outlined';
 import { Link, Outlet, useLocation } from 'react-router-dom';
 import { useOpen } from '../components/openContext'
 import LogoutOutlinedIcon from '@mui/icons-material/LogoutOutlined';
+import SignOutModal from './SignOutModal.jsx';
 
 const drawerWidth = 240;
 
@@ -102,6 +102,13 @@ export default function SideBar() {
 
   const isHomePage = location.pathname === "/Home"
 
+
+  const [signOutModalOpen, setSignOutModalOpen] = React.useState(false);
+
+  const handleSignOutClick = () => {
+    setSignOutModalOpen(true);
+  };
+
   return (
     <Box sx={{ display: 'flex', maxWidth: '1440px', width:'100%', margin: '0 auto' }}>
       <CssBaseline />
@@ -149,17 +156,17 @@ export default function SideBar() {
         </DrawerHeader>
         <Divider />
         <List>
-      {['Home', 'Appointment'].map((text, index) => (
-        <ListItem key={text} disablePadding>
-          <ListItemButton component={Link} to={index % 2 === 0 ? '/home' : '/appointment'}>
-            <ListItemIcon>
-              {index % 2 === 0 ? <OtherHousesOutlinedIcon /> : <CalendarMonthOutlinedIcon />}
-            </ListItemIcon>
-            <ListItemText primary={text} />
-          </ListItemButton>
-        </ListItem>
-      ))}
-    </List>
+          {['Home', 'Appointment'].map((text, index) => (
+            <ListItem key={text} disablePadding>
+              <ListItemButton component={Link} to={index % 2 === 0 ? '/home' : '/appointment'}>
+                <ListItemIcon>
+                  {index % 2 === 0 ? <OtherHousesOutlinedIcon /> : <CalendarMonthOutlinedIcon />}
+                </ListItemIcon>
+                <ListItemText primary={text} />
+              </ListItemButton>
+            </ListItem>
+          ))}
+        </List>
         <Divider />
         <List>
           {['Patient', 'Staff'].map((text, index) => (
@@ -186,11 +193,9 @@ export default function SideBar() {
             </Box>
             <Box display="flex" alignItems="center" gap="30px" mt="10px">
               <LogoutOutlinedIcon sx={{ color: '#A9A9A9' }}/>
-              <Link to="/signout" style={{ textDecoration: 'none', color: 'inherit' }}>
-                <p>
-                  LogOut
-                </p>
-              </Link>
+              <p onClick={() => handleSignOutClick()} style={{ cursor: 'pointer' }}>
+                Logout
+              </p>
             </Box>
           </Box>
         </Box>
@@ -199,6 +204,7 @@ export default function SideBar() {
         <DrawerHeader />
         <Outlet/>
       </Main>
+      <SignOutModal open={signOutModalOpen} onClose={() => setSignOutModalOpen(false)} />
     </Box>
   );
 }
