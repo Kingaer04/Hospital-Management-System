@@ -1,8 +1,14 @@
-import { Box, Button } from '@mui/material';
+import { Box } from '@mui/material';
 import Typography from '@mui/material/Typography';
 import PatientTable from '../components/tableComponet';
+import AddPatient from '@/components/addPatient';
+import { useState } from 'react';
 
 export default function Patient() {
+  const[isAddPatientOpen, setIsAddPatientOpen] = useState(false);
+  const handleAddPatientClick = () => {
+    setIsAddPatientOpen(true);
+  }
   return (
     <Box sx={{ padding: "20px" }}>
       <Box display="flex" alignItems="center" justifyContent="space-between">
@@ -17,7 +23,7 @@ export default function Patient() {
               </button>
             </Box>
             <Box display="flex" alignItems="center" p="10px" bgcolor="#000A272" sx={{ borderRadius: "5px" }}>
-              <button className='bg-[#00A272] rounded-[5px] text-white flex items-center gap-2 p-3 font-semibold text-[12px]'>
+              <button className='bg-[#00A272] rounded-[5px] text-white flex items-center gap-2 p-3 font-semibold text-[12px]' onClick={handleAddPatientClick}>
                 <img src='../../public/Icons/AddIcon.png' className='bg-white p-1 rounded-full outline-none'/>
                 Add Patient
               </button>
@@ -31,6 +37,7 @@ export default function Patient() {
           </Box>
         </Box>
       </Box>
+      <AddPatient isOpen={isAddPatientOpen} onClose={() => setIsAddPatientOpen(false)} onSave={() => setIsAddPatientOpen(false)}/>
     </Box>
   )
 }
