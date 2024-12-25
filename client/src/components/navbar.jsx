@@ -16,6 +16,8 @@ import NotificationsIcon from '@mui/icons-material/Notifications';
 import MoreIcon from '@mui/icons-material/MoreVert';
 import ExpandMore from '@mui/icons-material/ExpandMore';
 import ExpandLess from '@mui/icons-material/ExpandLess';
+import { useNavigate } from 'react-router-dom';
+import SignOutModal from './SignOutModal';
 
 const Search = styled('div')(({ theme }) => ({
   position: 'relative',
@@ -57,11 +59,16 @@ const StyledInputBase = styled(InputBase)(({ theme }) => ({
   },
 }));
 
-
 export default function MainNavBar() {
+  const navigate = useNavigate();
   const [anchorEl, setAnchorEl] = React.useState(null);
   const [mobileMoreAnchorEl, setMobileMoreAnchorEl] = React.useState(null);
   const [menuOpen, setMenuOpen] = React.useState(false);
+  const [signOutModalOpen, setSignOutModalOpen] = React.useState(false);
+  
+  const handleSignOutClick = () => {
+    setSignOutModalOpen(true);
+  };
 
   const toggleMenu = (event) => {
     setAnchorEl(event.currentTarget); // Set the anchor element to the button
@@ -105,8 +112,14 @@ export default function MainNavBar() {
       open={isMenuOpen}
       onClose={handleMenuClose}
     >
-      <MenuItem onClick={handleMenuClose}>Profile</MenuItem>
-      <MenuItem onClick={handleMenuClose}>My account</MenuItem>
+      <MenuItem onClick={() => {
+        handleMenuClose();
+        navigate('/settings'); // Use React Router navigation
+      }}>Profile</MenuItem>
+      <MenuItem onClick={() => {
+        handleMenuClose();
+        handleSignOutClick(); // Call the sign out modal
+      }}>LogOut</MenuItem>
     </Menu>
   );
 
@@ -230,6 +243,7 @@ export default function MainNavBar() {
         </Toolbar>
         {renderMobileMenu}
         {renderMenu}
+        <SignOutModal open={signOutModalOpen} onClose={() => setSignOutModalOpen(false)} />
       </AppBar>
   );
 }
