@@ -13,7 +13,7 @@ import Home from './pages/home.jsx'
 import Settings from './pages/settings.jsx'
 import SignOut from './pages/signOut.jsx'
 import StaffDetails from './pages/staffDetails.jsx'
-import DeactivateModal from './components/SettingsComponents/deactivateModal.jsx'
+import RequestPage from './pages/requestPage.jsx'
 
 
 export default function App() {
@@ -35,8 +35,8 @@ export default function App() {
                   <Route path='/patient' element={<Patient/>}/>
                   <Route path='/staff' element={<StaffDetails/>}/>
                   <Route path='/settings' element={<Settings/>}/>
+                  <Route path='/request' element={<RequestPage/>}/>
                   <Route path='/signOut' element={<SignOut/>}/>
-                  <Route path='deactivate' element={<DeactivateModal/>}/>
                 </Route>
               {/* </Route> */}
             </Routes>
