@@ -76,9 +76,9 @@ export default function ReceptionistHome() {
                 {/* <PatientTable/> */}
           </div>
         </div>
-        <div className='w-[30%] Flex flex-col border border-[#A9A99A9] rounded-[10px] p-3 Image-container'>
-          <div className="">
-            <Calendar className=""/>
+        <div className='w-[23%] Flex flex-col Image-container'>
+          <div className="border border-[#A9A99A9] rounded-[10px] p-3">
+            <Calendar/>
           </div>
           <div className='mt-[30px] ml-5'>
             <p>
