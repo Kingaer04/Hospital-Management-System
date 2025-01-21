@@ -176,7 +176,7 @@ export default function MainNavBar() {
   );
 
   return (
-      <AppBar position="static" sx={{ backgroundColor: 'transparent', boxShadow: "none", paddingRight: "15px" }}>
+      <AppBar position="static" sx={{ backgroundColor: 'transparent', boxShadow: "none", paddingRight: "15px", zIndex: 1 }}>
         <Toolbar>
           <Search>
             <SearchIconWrapper>

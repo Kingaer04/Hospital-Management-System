@@ -63,6 +63,7 @@ const AppBar = styled(MuiAppBar, {
     duration: theme.transitions.duration.leavingScreen,
   }),
   backgroundColor: '#00A272',
+  zIndex: 1,
   variants: [
     {
       props: ({ open }) => open,

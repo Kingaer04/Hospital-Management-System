@@ -9,6 +9,14 @@ export default defineConfig({
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "src"),
+    },
   },
-},
+  server: {
+    proxy: {
+      '/admin': {
+        target: 'http://localhost:5500',
+        secure: false,
+      }
+    }
+  }
 })

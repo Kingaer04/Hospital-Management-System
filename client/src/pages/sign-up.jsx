@@ -1,24 +1,26 @@
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useDispatch, useSelector } from 'react-redux';
-import { signInStart, signInSuccess, signInFailure } from '../redux/user/userSlice';
+import { useDispatch } from 'react-redux';
+import { useEffect } from 'react';
 
 export default function SignUp() {
   const [formData, setFormData] = React.useState({
-    hospitalName: '',
-    hospitalRep: '',
-    facilityID: '',
+    hospital_Name: '',
+    hospital_Representative: '',
+    hospital_UID: '',
     ownership: 'private',
-    hospitalEmail: '',
-    state: '',
-    address: '',
-    phone: '',
+    hospital_Email: '',
+    hospital_State: '',
+    hospital_Address: '',
+    hospital_Phone: '',
     password: '',
     confirmPassword: ''
   });
-  
+
   const [step, setStep] = React.useState(1);
-  const { loading, error } = useSelector((state) => state.user);
+  const [error, setError] = React.useState(null);
+  const [loading, setLoading] = React.useState(false);
+  const [visible, setVisible] = React.useState(false);
   const navigate = useNavigate();
   const dispatch = useDispatch();
 
@@ -28,14 +30,45 @@ export default function SignUp() {
       ...prevData,
       [name]: value
     }));
+
+    // If the field is password, evaluate its strength
+    if (name === 'password') {
+      setPasswordStrength(evaluatePasswordStrength(value));
+    }
   }
+
+  useEffect(() => {
+    if (error) {
+      setVisible(true);
+      const timer = setTimeout(() => {
+        setVisible(false);
+        setTimeout(() => setError(null), 300); // Wait for slide-out transition
+      }, 5000); // 5000 milliseconds = 5 seconds
+
+      return () => clearTimeout(timer); // Cleanup on unmount
+    }
+  }, [error]);
 
   async function handleSubmit(event) {
     event.preventDefault();
     if (step === 3) {
+      const { password, confirmPassword } = formData;
+
+      // Check if password length is at least 8 characters
+      if (password.length < 8) {
+        setError('Password must be at least 8 characters long.');
+        return;
+      }
+
+      // Check if passwords match
+      if (password !== confirmPassword) {
+        setError('Passwords do not match.');
+        return;
+      }
+
       try {
-        dispatch(signInStart());
-        const res = await fetch('/user/signIn', {
+        setLoading(true);
+        const res = await fetch('/admin/SignUp', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'
@@ -45,13 +78,15 @@ export default function SignUp() {
         });
         const data = await res.json();
         if (data.error) {
-          dispatch(signInFailure(data.error));
+          setLoading(false);
+          setError(data.message);
           return;
         }
-        dispatch(signInSuccess(data));
+        setLoading(false);
+        setError(null);
         navigate('/');
       } catch (error) {
-        dispatch(signInFailure(error.message));
+        setLoading(false);
       }
     } else {
       setStep(prevStep => prevStep + 1);
@@ -64,8 +99,32 @@ export default function SignUp() {
     }
   }
 
+  const [passwordStrength, setPasswordStrength] = React.useState('');
+
+  // Function to evaluate password strength
+  const evaluatePasswordStrength = (password) => {
+    let strength = 'weak';
+    if (password.length >= 8) {
+      if (/[A-Z]/.test(password) && /[0-9]/.test(password) && /[^A-Za-z0-9]/.test(password)) {
+        strength = 'strong';
+      } else if (/[A-Z]/.test(password) || /[0-9]/.test(password)) {
+        strength = 'good';
+      }
+    }
+    return strength;
+  };
+
   return (
     <div className='p-5'>
+      {loading && (
+        <div className="fixed top-0 left-0 right-0 bottom-0 bg-gray-800 bg-opacity-75 flex flex-col items-center justify-center z-50">
+          <img src="Logo_Images/logoIcon.png" alt="Logo" className="animate-logo mb-4" />
+          <div className="text-white p-4 mb-2">
+            Please wait while we process your details to create your account.
+          </div>
+          <div className="loader"></div>
+        </div>
+      )}
       <style>
         {`
           @media (max-width: 1200px) {
@@ -86,15 +145,38 @@ export default function SignUp() {
               display: block; /* Show the image when above 1200px */
             }
           }
+          .transition-transform {
+            transition: transform 0.3s ease-in-out;
+          }
+          /* Animation for the logo */
+          @keyframes logoAnim {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+          }
+          .animate-logo {
+            animation: logoAnim 1.5s infinite;
+          }
+          /* Loader styles */
+          .loader {
+            border: 8px solid rgba(255, 255, 255, 0.2);
+            border-top: 8px solid #00A272;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+          }
+          @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+          }
         `}
       </style>
       <div className='flex gap-3 mb-5'>
         <img src="/Logo_Images/logoIcon.png" alt="" />
         <img src="/Logo_Images/logoName.png" alt="" className='h-5' />
       </div>
-      <div className='flex flex-col text-white mb-5'>
-        
-      </div>
+      <div className='flex flex-col text-white mb-5'></div>
       <div className='flex'>
         <div className="pt-10 flex flex-col mt-4 ml-10 gap-5"> 
           <div className='flex flex-col'>
@@ -108,38 +190,60 @@ export default function SignUp() {
               {step === 1 && (
                 <>
                   <label htmlFor="hospitalName">Hospital Name</label>
-                  <input type="text" placeholder="Hospital Name" name="hospitalName" className="border p-3 rounded-lg" onChange={handleChange} />
+                  <input type="text" placeholder="Hospital Name" name="hospital_Name" className="border p-3 rounded-lg" onChange={handleChange} required />
                   <label htmlFor="hospitalRep">Hospital Representative</label>
-                  <input type="text" placeholder="Hospital Representative" name="hospitalRep" className="border p-3 rounded-lg" onChange={handleChange} />
-                  <label htmlFor="facilityID">Facility ID</label>
-                  <input type="text" placeholder="Facility ID" name="facilityID" className="border p-3 rounded-lg" onChange={handleChange} />
+                  <input type="text" placeholder="Hospital Representative" name="hospital_Representative" className="border p-3 rounded-lg" onChange={handleChange} required />
+                  <label htmlFor="hospital_UID">Facility ID</label>
+                  <input type="text" placeholder="Facility ID" name="hospital_UID" className="border p-3 rounded-lg" onChange={handleChange} required />
                   <label htmlFor="ownership">Ownership</label>
-                  <select name="ownership" className="border p-3 rounded-lg" onChange={handleChange}>
+                  <select name="ownership" className="border p-3 rounded-lg" onChange={handleChange} required>
                     <option value="private">Private</option>
                     <option value="public">Public</option>
                   </select>
-                  <label htmlFor="hospitalEmail">Hospital Email</label>
-                  <input type="email" placeholder="Hospital Email" name="hospitalEmail" className="border p-3 rounded-lg" onChange={handleChange} />
+                  <label htmlFor="hospital_Email">Hospital Email</label>
+                  <input type="email" placeholder="Hospital Email" name="hospital_Email" className="border p-3 rounded-lg" onChange={handleChange} required />
                 </>
               )}
               {step === 2 && (
                 <>
                   <label htmlFor="state">State</label>
-                  <input type="text" placeholder="State" name="state" className="border p-3 rounded-lg" onChange={handleChange} />
+                  <input type="text" placeholder="State" name="hospital_State" className="border p-3 rounded-lg" onChange={handleChange} required />
                   <label htmlFor="address">Address</label>
-                  <input type="text" placeholder="Address" name="address" className="border p-3 rounded-lg" onChange={handleChange} />
+                  <input type="text" placeholder="Address" name="hospital_Address" className="border p-3 rounded-lg" onChange={handleChange} required />
                   <label htmlFor="phone">Phone</label>
-                  <input type="tel" placeholder="Phone" name="phone" className="border p-3 rounded-lg" onChange={handleChange} />
+                  <input type="tel" placeholder="Phone" name="hospital_Phone" className="border p-3 rounded-lg" onChange={handleChange} required />
                 </>
               )}
               {step === 3 && (
-                <>
-                  <label htmlFor="password">Password</label>
-                  <input type="password" placeholder="Password" name="password" className="border p-3 rounded-lg" onChange={handleChange} />
-                  <label htmlFor="confirmPassword">Confirm Password</label>
-                  <input type="password" placeholder="Confirm Password" name="confirmPassword" className="border p-3 rounded-lg" onChange={handleChange} />
-                </>
-              )}
+              <>
+                <label htmlFor="password">Password</label>
+                <input
+                  type="password"
+                  placeholder="Password"
+                  name="password"
+                  className={`border p-3 rounded-lg transition-colors duration-300 
+                              ${passwordStrength === 'strong' ? 'border-green-500' : 
+                                passwordStrength === 'good' ? 'border-yellow-600' : 
+                                passwordStrength === 'weak' ? 'border-red-600' : 'border-gray-300'}`}
+                  onChange={handleChange}
+                  required
+                />
+                {passwordStrength && (
+                  <div className={`mt-1 text-${passwordStrength === 'strong' ? 'green-500' : passwordStrength === 'good' ? 'yellow-600' : 'red-600'}`}>
+                    {`Password strength: ${passwordStrength.charAt(0).toUpperCase() + passwordStrength.slice(1)}`}
+                  </div>
+                )}
+                <label htmlFor="confirmPassword">Confirm Password</label>
+                <input
+                  type="password"
+                  placeholder="Confirm Password"
+                  name="confirmPassword"
+                  className="border p-3 rounded-lg border-gray-300"
+                  onChange={handleChange}
+                  required
+                />
+              </>
+            )}
               <div className="flex justify-between mt-7">
                 {step > 1 && (
                   <button type="button" onClick={handlePrevious} className="bg-gray-300 text-black uppercase rounded-lg p-3 hover:opacity-95">
@@ -158,12 +262,26 @@ export default function SignUp() {
               <span className="text-[#00A272]">Log In</span>
             </Link>
           </div>
-              {/* {error && <p className="text-red-700">{error}</p>} */}
-          </div>
+          {error && (
+            <div className={`fixed top-0 right-0 bg-red-600 text-white p-4 flex w-[27%] z-50 rounded-bl-lg shadow-lg transition-transform transform ${visible ? 'translate-x-0' : 'translate-x-full'}`}>
+              <p className="flex-1">{error}</p>
+              <button
+                type="button"
+                onClick={() => {
+                  setVisible(false);
+                  setTimeout(() => setError(null), 300); // Wait for slide-out transition
+                }}
+                className="text-white font-bold ml-5 p-1 rounded hover:bg-red-700 hover:rounded-full transition"
+              >
+                &times; {/* Close icon */}
+              </button>
+            </div>
+          )}
         </div>
         <div className="image-container">
           <img src="/Authentication_Images/doctor&nurseImage.png" alt="Doctor & Nurse" className='w-[710px] absolute -top-28 right-0' />
         </div>
       </div>
-  )
+    </div>
+  );
 }

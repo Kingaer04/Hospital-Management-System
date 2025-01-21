@@ -1,4 +1,4 @@
-import mongoose, { Mongoose } from "mongoose";
+import mongoose from "mongoose";
 import passportLocalMongoose from 'passport-local-mongoose';
 
 const AdminSchema = new mongoose.Schema({
@@ -6,7 +6,7 @@ const AdminSchema = new mongoose.Schema({
         type: String,
         required: true
     },
-    hospital_Representative_Name: {
+    hospital_Representative: {
         type: String,
         required: true
     },
@@ -47,6 +47,6 @@ AdminSchema.plugin(passportLocalMongoose, {
     usernameField: "hospital_Email"
 })
 
-const AdminModel = mongoose.model('AdminModel', AdminSchema);
+const HospitalAdminAccount = mongoose.model('HospitalAdminAccount', AdminSchema);
 
-export default AdminModel;
+export default HospitalAdminAccount;

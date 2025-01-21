@@ -5,7 +5,7 @@ import passport from 'passport'
 import session from "express-session" // for cookie session
 import cookieParser from "cookie-parser"
 import router from './Routes/indexRoute.js'
-import AdminModel from './Models/AdminModel.js'
+import HospitalAdminAccount from './Models/AdminModel.js'
 
 
 dotenv.config()
@@ -25,9 +25,9 @@ app.use(session({
 }));
 app.use(passport.initialize())
 app.use(passport.session()) // Passport to use session that has been setup
-passport.use(AdminModel.createStrategy()) // configure the user's login strategy
-passport.serializeUser(AdminModel.serializeUser()) // for encrypting
-passport.deserializeUser(AdminModel.deserializeUser()) //for decrypting
+passport.use(HospitalAdminAccount.createStrategy()) // configure the user's login strategy
+passport.serializeUser(HospitalAdminAccount.serializeUser()) // for encrypting
+passport.deserializeUser(HospitalAdminAccount.deserializeUser()) //for decrypting
 
 app.use(express.json())
 app.use(express.urlencoded({extended: false}))

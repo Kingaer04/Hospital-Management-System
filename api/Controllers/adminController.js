@@ -1,4 +1,4 @@
-import AdminModel from "../Models/AdminModel.js";
+import HospitalAdminAccount from "../Models/AdminModel.js";
 import passport from "passport";
 import xlsx from "xlsx";
 import jwt from "jsonwebtoken";
@@ -18,7 +18,8 @@ function getAdminParams(body) {
 
 // Function to verify hospital registration and licensing status
 const verifyHospitalStatus = (uid) => {
-    const workbook = xlsx.readFile('nigeria-hospitals-and-clinics_hxl.xlsx');
+
+    const workbook = xlsx.readFile('c:/Users/DanAnny/Documents/Final Year Project/Hospital Management System/api/nigeria-hospitals-and-clinics_hxl.xlsx');
     const sheetName = workbook.SheetNames[0]; // Selecting the first sheet
     const worksheet = workbook.Sheets[sheetName];
 
@@ -45,13 +46,13 @@ const verifyHospitalStatus = (uid) => {
 export const adminController = {
     SignUp: (req, res, next) => {
         const { hospital_UID } = req.body;
-
         const hospitalStatus = verifyHospitalStatus(hospital_UID);
 
         if (hospitalStatus) {
             if (hospitalStatus.registered && hospitalStatus.licensed) {
-                let newHospital = new AdminModel(getAdminParams(req.body));
-                AdminModel.register(newHospital, req.body.password, (error, hospital) => {
+                let newHospital = new HospitalAdminAccount(getAdminParams(req.body));
+                console.log('hospital', newHospital);
+                HospitalAdminAccount.register(newHospital, req.body.password, (error, hospital) => {
                     if (hospital) {
                         res.status(200).json({
                             message: 'Hospital Account Created Successfully'
