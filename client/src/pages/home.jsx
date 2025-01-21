@@ -6,6 +6,7 @@ import BadgeOutlinedIcon from '@mui/icons-material/BadgeOutlined';
 import SearchBar from '../components/searchBar';
 import PatientTable from '../components/tableComponet';
 import DateCalendarValue from '../components/calendarComponent';
+// import { LineChartComponent } from '@/components/ui/lineChart';
 
 
 export default function ReceptionistHome() {
@@ -69,6 +70,9 @@ return (
                             <CalendarMonthOutlinedIcon sx={{ fill:"#00A272" }}/>
                         </Box>
                     </Box>
+                </Box>
+                <Box>
+                    {/* <LineChartComponent /> */}
                 </Box>
             </Box>
         </Box>

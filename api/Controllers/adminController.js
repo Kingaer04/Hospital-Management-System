@@ -1,71 +1,126 @@
-import Admin from '../models/admin.js'
+import AdminModel from "../Models/AdminModel.js";
+import passport from "passport";
+import xlsx from "xlsx";
+import jwt from "jsonwebtoken";
 
-
-function getUserParams(body) {
+function getAdminParams(body) {
     return {
-        userName:  body.userName,
-        email: body.email,
-        role: body.role,
-        avatar: body.avatar,
-        phone: body.phone,
-        department: body.department,
-        address: body.address
+        hospital_Name: body.hospital_Name,
+        hospital_Representative: body.hospital_Representative,
+        hospital_UID: body.hospital_UID,
+        ownership: body.ownership,
+        hospital_Email: body.hospital_Email,
+        hospital_State: body.hospital_State,
+        hospital_Address: body.hospital_Address,
+        hospital_Phone: body.hospital_Phone
     }
 }
 
+// Function to verify hospital registration and licensing status
+const verifyHospitalStatus = (uid) => {
+    const workbook = xlsx.readFile('nigeria-hospitals-and-clinics_hxl.xlsx');
+    const sheetName = workbook.SheetNames[0]; // Selecting the first sheet
+    const worksheet = workbook.Sheets[sheetName];
+
+    // Convert the sheet to JSON format
+    const data = xlsx.utils.sheet_to_json(worksheet);
+
+    // Search for the UID in the data
+    const hospital = data.find(row => row.uid == uid);
+
+    if (hospital) {
+        // Explicitly check both registration and licensing status
+        const isRegistered = hospital.registration_status === 'Registered';
+        const isLicensed = hospital.license_status === 'Licensed';
+
+        return {
+            registered: isRegistered,
+            licensed: isLicensed
+        };
+    } else {
+        return null; // UID not found
+    }
+};
+
 export const adminController = {
-    update: async (req, res, next) => {
-    try {
-        if (req.user.id !== req.params.id) return res.status(401).json({ error: 'Unauthorized! you can only update your account' });
+    SignUp: (req, res, next) => {
+        const { hospital_UID } = req.body;
 
-        const updatedUser = await Admin.findByIdAndUpdate(req.user.id, {
-            $set: getUserParams(req.body)
-        }, { new: true })
+        const hospitalStatus = verifyHospitalStatus(hospital_UID);
 
-        // Check if both old and new passwords are provided
-        if (req.body.oldPassword && req.body.newPassword) {
-            try {
-                await updatedUser.changePassword(req.body.oldPassword, req.body.newPassword);
-            } catch (error) {
-                return res.status(400).json({ error: error.message });
+        if (hospitalStatus) {
+            if (hospitalStatus.registered && hospitalStatus.licensed) {
+                let newHospital = new AdminModel(getAdminParams(req.body));
+                AdminModel.register(newHospital, req.body.password, (error, hospital) => {
+                    if (hospital) {
+                        res.status(200).json({
+                            message: 'Hospital Account Created Successfully'
+                        });
+                    } else {
+                        res.status(400).json({
+                            error: 'Failed to create Hospital Account',
+                            message: error.message
+                        });
+                        next(error);
+                    }
+                });
+            } else {
+                return res.status(400).json({
+                    error: 'Hospital not registered or licensed.'
+                });
             }
-        } else if (req.body.oldPassword || req.body.newPassword) {
-            return res.status(400).json({ error: 'Both old and new passwords must be provided.' });
+        } else {
+            return res.status(404).json({
+                error: 'No hospital found with the provided UID.'
+            });
         }
-        updatedUser.changePassword = async function(oldPassword, newPassword) {
-            // Check if the old password matches the one in the database
-            const isMatch = await this.comparePassword(oldPassword);
-            if (!isMatch) {
-                throw new Error('Old password is incorrect');
-            }
-        
-            // Update the password
-            this.password = newPassword;
-            await this.save();
+    },
+
+    authenticate_admin: (req, res, next) => {
+        const { hospital_UID } = req.body; // Assuming UID is sent in the request body
+
+        const hospitalStatus = verifyHospitalStatus(hospital_UID);
+
+        if (!hospitalStatus) {
+            return res.status(404).json({
+                error: 'No hospital found with the provided UID.'
+            });
         }
 
-        res.status(200).json(updatedUser);
-        } catch (error) {
-        next(error);
+        if (!hospitalStatus.registered || !hospitalStatus.licensed) {
+            return res.status(400).json({
+                error: 'Hospital not registered or licensed.'
+            });
         }
+
+        passport.authenticate('local', (err, user, info) => {
+            if (err) {
+                return res.status(500).json({ message: 'Internal Server Error', error: err.message });
+            }
+            if (!user) {
+                return res.status(401).json({ message: 'Authentication failed', error: info.message });
+            }
+            req.logIn(user, (err) => {
+                if (err) {
+                    return res.status(500).json({ message: 'Internal Server Error', error: err.message });
+                }
+                const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET);
+                const { hash: has, salt: sal, ...rest } = user._doc;
+                res.cookie('token', token, { httpOnly: true }).status(200).json(rest);
+            });
+        })(req, res, next);
     },
-    delete: async (req, res, next) => {
-        if(req.user.id !== req.params.id) return (res.status(401).json({message: 'Unauthorized! You can only delete your account'}))
-        try{
-            await Admin.findByIdAndDelete(req.params.id)
-            res.clearCookie('token')
-            res.status(200).json("User Account deleted successfully!")
-        }catch(error){
-            next(error)
-        }
+
+    verifyToken: (req, res, next) => {
+        const token = req.cookies.token;
+
+        if (!token) return next(res.status(401).json({ message: 'Unauthorized' }));
+
+        jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
+            if (err) return next(res.status(403).json({ message: 'Forbidden' }));
+
+            req.user = user;
+            next();
+        });
     },
-    getUser: async(req, res) => {
-        try {
-            const {id} = req.params
-            const user = await Admin.findById(id)
-            res.status(200).json(user)
-        } catch (error) {
-            res.status(404).json({ message: error.message })
-        }
-    },
-}
+};
