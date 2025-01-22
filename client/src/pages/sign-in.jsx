@@ -1,15 +1,35 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { useDispatch, useSelector } from 'react-redux'
+import { signInStart, signInSuccess, signInFailure } from '../redux/admin/adminSlice.js';
 
 export default function SignIn() {
   const [formData, setFormData] = React.useState({
-    userName: '',
-    email: '',
+    hospital_UID: '',
+    hospital_Email: '',
     password: ''
   });
-  const [error, setError] = React.useState(null);
-  const [loading, setLoading] = React.useState(false);
+  const [isShowPassword, setIsShowPassword] = React.useState(false);
+  const {loading, error} = useSelector((state) => state.admin);
+  const [visible, setVisible] = React.useState(false);
   const navigate = useNavigate();
+  const dispatch = useDispatch();
+
+  function toggleShowPassword() {
+    setIsShowPassword(!isShowPassword);
+  }
+
+  useEffect(() => {
+      if (error) {
+        setVisible(true);
+        const timer = setTimeout(() => {
+          setVisible(false);
+          setTimeout(() => setError(null), 300); // Wait for slide-out transition
+        }, 5000); // 5000 milliseconds = 5 seconds
+  
+        return () => clearTimeout(timer); // Cleanup on unmount
+      }
+    }, [error]);
 
   function handleChange(event) {
     const { value, name } = event.target;
@@ -22,26 +42,25 @@ export default function SignIn() {
   async function handleSubmit(event) {
     event.preventDefault();
     try {
-      setLoading(true);
-      const res = await fetch('/user/signUp', {
+      dispatch(signInStart());
+      const res = await fetch('/admin/SignIn', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify(formData)
+        body: JSON.stringify(formData),
+        credentials: 'include'
       });
       const data = await res.json();
       console.log(data);
       if (data.error) {
-        setLoading(false);
-        setError(data.message);
+        dispatch(signInFailure(data.error));
         return;
       }
-      setLoading(false);
-      setError(null);
-      navigate('/sign-In');
+      dispatch(signInSuccess(data));
+      navigate('/');
     } catch (error) {
-      setLoading(false);
+      dispatch(signInFailure(error.message));
     }
   }
 
@@ -80,10 +99,12 @@ export default function SignIn() {
             <h6 className='text-[110%]'>Welcome Admin! Please enter your details</h6>
           </div>
           <form onSubmit={handleSubmit} className="flex justify-center gap-2 flex-col">
+            <label htmlFor="">Hospital UID</label>
+            <input type="text" placeholder="Hospital UID" className="border p-3 rounded-lg" id="hospital_UID" name="hospital_UID" onChange={handleChange} required/>
             <label htmlFor="">Email</label>
-            <input type="email" placeholder="Email" className="border p-3 rounded-lg" id="email" name="email" onChange={handleChange} />
+            <input type="email" placeholder="Email" className="border p-3 rounded-lg" id="email" name="hospital_Email" onChange={handleChange} required/>
             <label htmlFor="">Password</label> 
-            <input type="password" placeholder="Password" className="border p-3 rounded-lg" id="password" name="password" onChange={handleChange} />
+            <input type="password" placeholder="Password" className="border p-3 rounded-lg" id="password" name="password" onChange={handleChange} required/>
             <button disabled={loading} className="bg-[#00A272] text-white uppercase rounded-lg hover:opacity-95 disabled:opacity-85 p-3 mt-7">
               {loading ? 'Loading...' : 'Sign In'}
             </button>
@@ -94,7 +115,21 @@ export default function SignIn() {
               <span className="text-[#00A272]">Sign Up</span>
             </Link>
           </div>
-          {error && <p className="text-red-700">{error}</p>}
+          {error && (
+            <div className={`fixed top-0 right-0 bg-red-600 text-white p-4 flex w-[27%] z-50 rounded-bl-lg shadow-lg transition-transform transform ${visible ? 'translate-x-0' : 'translate-x-full'}`}>
+              <p className="flex-1">{error}</p>
+              <button
+                type="button"
+                onClick={() => {
+                  setVisible(false);
+                  setTimeout(() => setError(null), 300); // Wait for slide-out transition
+                }}
+                className="text-white font-bold ml-5 p-1 rounded hover:bg-red-700 hover:rounded-full transition"
+              >
+                &times; {/* Close icon */}
+              </button>
+            </div>
+          )}
         </div>
       </div>
       <div className="image-container">
