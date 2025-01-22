@@ -8,9 +8,11 @@ import PatientTable from '../components/tableComponet';
 import DateCalendarValue from '../components/calendarComponent';
 // import { LineChartComponent } from '@/components/ui/lineChart';
 import React, { useEffect, useState } from 'react';
+import { useSelector } from 'react-redux'
 
 export default function Home() {
   const [visible, setVisible] = useState(true); // To control visibility of the success message
+  const {currentAdmin} = useSelector((state) => state.admin)
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -19,6 +21,10 @@ export default function Home() {
 
     return () => clearTimeout(timer); // Cleanup on unmount
   }, []);
+
+  useEffect(() => {
+    console.log(currentAdmin)
+  }, [currentAdmin])
 
   return (
     <Box sx={{ padding: "20px" }}>
@@ -37,7 +43,7 @@ export default function Home() {
       )}
       <Box marginBottom="20px">
         <Typography variant='h5' sx={{ fontWeight: '500' }}>
-          Welcome, Anny
+          Welcome, {currentAdmin?.hospital_Representative}
         </Typography>
         <Typography sx={{ color: '#A9A9A9', fontSize: '11px', lineHeight: 'normal', fontWeight: '400' }}>
           Here's an insight of your activity

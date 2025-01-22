@@ -1,39 +1,35 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useDispatch, useSelector } from 'react-redux'
+import { useDispatch, useSelector } from 'react-redux';
 import { signInStart, signInSuccess, signInFailure } from '../redux/admin/adminSlice.js';
 
 export default function SignIn() {
-  const [formData, setFormData] = React.useState({
+  const [formData, setFormData] = useState({
     hospital_UID: '',
     hospital_Email: '',
     password: ''
   });
-  const [isShowPassword, setIsShowPassword] = React.useState(false);
-  const {loading, error} = useSelector((state) => state.admin);
-  const [visible, setVisible] = React.useState(false);
+  const [isShowPassword, setIsShowPassword] = useState(false);
+  const { loading, error } = useSelector((state) => state.admin);
+  const [visible, setVisible] = useState(false);
   const navigate = useNavigate();
   const dispatch = useDispatch();
 
-  function toggleShowPassword() {
-    setIsShowPassword(!isShowPassword);
-  }
-
   useEffect(() => {
-      if (error) {
-        setVisible(true);
-        const timer = setTimeout(() => {
-          setVisible(false);
-          setTimeout(() => setError(null), 300); // Wait for slide-out transition
-        }, 5000); // 5000 milliseconds = 5 seconds
-  
-        return () => clearTimeout(timer); // Cleanup on unmount
-      }
-    }, [error]);
+    if (error) {
+      setVisible(true);
+      const timer = setTimeout(() => {
+        setVisible(false);
+        setTimeout(() => dispatch(signInFailure(null)), 300); // Wait for slide-out transition
+      }, 5000); // 5000 milliseconds = 5 seconds
+
+      return () => clearTimeout(timer); // Cleanup on unmount
+    }
+  }, [error]);
 
   function handleChange(event) {
     const { value, name } = event.target;
-    setFormData(prevData => ({
+    setFormData((prevData) => ({
       ...prevData,
       [name]: value
     }));
@@ -72,7 +68,6 @@ export default function SignIn() {
             .flex {
               display: flex;
               justify-content: center;
-              align-item: center;
             }
             .mt-14 {
               margin-top: 2rem; /* Adjust as needed */
@@ -100,11 +95,11 @@ export default function SignIn() {
           </div>
           <form onSubmit={handleSubmit} className="flex justify-center gap-2 flex-col">
             <label htmlFor="">Hospital UID</label>
-            <input type="text" placeholder="Hospital UID" className="border p-3 rounded-lg" id="hospital_UID" name="hospital_UID" onChange={handleChange} required/>
+            <input type="text" placeholder="Hospital UID" className="border p-3 rounded-lg" id="hospital_UID" name="hospital_UID" onChange={handleChange} required />
             <label htmlFor="">Email</label>
-            <input type="email" placeholder="Email" className="border p-3 rounded-lg" id="email" name="hospital_Email" onChange={handleChange} required/>
+            <input type="email" placeholder="Email" className="border p-3 rounded-lg" id="email" name="hospital_Email" onChange={handleChange} required />
             <label htmlFor="">Password</label> 
-            <input type="password" placeholder="Password" className="border p-3 rounded-lg" id="password" name="password" onChange={handleChange} required/>
+            <input type="password" placeholder="Password" className="border p-3 rounded-lg" id="password" name="password" onChange={handleChange} required />
             <button disabled={loading} className="bg-[#00A272] text-white uppercase rounded-lg hover:opacity-95 disabled:opacity-85 p-3 mt-7">
               {loading ? 'Loading...' : 'Sign In'}
             </button>
@@ -122,7 +117,7 @@ export default function SignIn() {
                 type="button"
                 onClick={() => {
                   setVisible(false);
-                  setTimeout(() => setError(null), 300); // Wait for slide-out transition
+                  setTimeout(() => dispatch(signInFailure(null)), 300); // Clear the error after slide-out
                 }}
                 className="text-white font-bold ml-5 p-1 rounded hover:bg-red-700 hover:rounded-full transition"
               >
@@ -136,5 +131,5 @@ export default function SignIn() {
         <img src="/Authentication_Images/doctor&nurseImage.png" alt="Doctor & Nurse" className='w-[710px] absolute -top-28 right-0' />
       </div>
     </div>
-  )
+  );
 }

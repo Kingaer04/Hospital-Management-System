@@ -18,6 +18,7 @@ import ExpandMore from '@mui/icons-material/ExpandMore';
 import ExpandLess from '@mui/icons-material/ExpandLess';
 import { useNavigate } from 'react-router-dom';
 import SignOutModal from './SignOutModal';
+import { useSelector } from 'react-redux';
 
 const Search = styled('div')(({ theme }) => ({
   position: 'relative',
@@ -65,6 +66,7 @@ export default function MainNavBar() {
   const [mobileMoreAnchorEl, setMobileMoreAnchorEl] = React.useState(null);
   const [menuOpen, setMenuOpen] = React.useState(false);
   const [signOutModalOpen, setSignOutModalOpen] = React.useState(false);
+  const {currentAdmin} = useSelector((state) => state.admin);
   
   const handleSignOutClick = () => {
     setSignOutModalOpen(true);
@@ -188,7 +190,7 @@ export default function MainNavBar() {
             />
           </Search>
           <Box sx={{ flexGrow: 1 }} />
-          <Box sx={{ display: { xs: 'none', md: 'flex' } }}>
+          <Box sx={{ display: { xs: 'none', md: 'flex' }, justifyContent: 'flex-start' }}>
             <IconButton size="large" aria-label="show 4 new mails" color="inherit">
               <Badge badgeContent={4} color="error">
                 <MailIcon />
@@ -221,9 +223,9 @@ export default function MainNavBar() {
               }}
             >
               <AccountCircle sx={{ height: '30px', width: 'auto' }} />
-              <Box sx={{ marginLeft: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', height: 50 }}>
-                <Typography variant="body2"sx={{  fontSize: "10px", fontWeight: "Bold" }} >Name</Typography>
-                <Typography variant="body2" color="text.secondary" sx={{ marginLeft: "-8px", fontSize: "10px" }}>Role</Typography>
+              <Box sx={{ marginLeft: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', alignContent: '', height: 50 }}>
+                <Typography variant="body2" sx={{  fontSize: "10px", fontWeight: "Bold", marginRight: '18px', textTransform: 'uppercase'  }} >{currentAdmin.hospital_Representative}</Typography>
+                <Typography variant="body2" color="text.secondary" sx={{ marginLeft: "-8px", fontSize: "10px" }}>Admin</Typography>
               </Box>
               {menuOpen ? <ExpandLess sx={{ marginLeft: 1 }} /> : <ExpandMore sx={{ marginLeft: 1 }} />}
             </IconButton>
