@@ -1,6 +1,6 @@
 import { Box } from '@mui/material';
 import Typography from '@mui/material/Typography';
-import PatientTable from '../components/tableComponet';
+import StaffTable from '../components/staffTable';
 import AddStaffModal from '../components/addStaff';
 import { useState } from 'react';
 
@@ -33,7 +33,7 @@ export default function StaffDetails() {
       <Box sx={{ display: "flex", width: "100%", gap: "5%" }}>
         <Box sx={{ flex: "0 0 100%", padding: "" }}>
           <Box>
-            <PatientTable/>
+            <StaffTable/>
           </Box>
         </Box>
       </Box>

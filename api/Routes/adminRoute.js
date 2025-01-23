@@ -3,8 +3,12 @@ import { adminController } from '../Controllers/adminController.js'
 
 const router = express.Router();
 
-router.post('/SignUp', adminController.SignUp)
-router.post('/SignIn', adminController.authenticate_admin)
-router.get('/SignOut', adminController.signOut)
+router.post('/SignUp', adminController.SignUp);
+router.post('/SignIn', adminController.authenticate_admin);
+router.get('/SignOut', adminController.signOut);
+router.post('/addStaff', adminController.addStaff);
+router.put('/updateStaff', adminController.updateStaff);
+router.delete('/deleteStaff', adminController.deleteStaff);
+router.get('/staffDetails/:hospital_ID', adminController.getAllStaff);
 
 export default router;

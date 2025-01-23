@@ -1,8 +1,11 @@
 import React, { useState } from 'react';
+import { useSelector } from 'react-redux';
 
-const AddStaffModal = ({ show, handleClose, handleSubmit }) => {
+const AddStaffModal = ({ show, handleClose }) => {
+    const {currentAdmin} = useSelector((state) => state.admin);
     const [currentStep, setCurrentStep] = useState(1);
     const [staffData, setStaffData] = useState({
+        hospital_ID: currentAdmin._id,
         name: '',
         gender: '',
         address: '',
@@ -42,6 +45,29 @@ const AddStaffModal = ({ show, handleClose, handleSubmit }) => {
 
     const nextStep = () => setCurrentStep(2);
     const prevStep = () => setCurrentStep(1);
+
+    const handleSubmit = async (data) => {
+        try {
+            const response = await fetch('/admin/addStaff', { 
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(data),
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to add staff');
+            }
+
+            const result = await response.json();
+            console.log('Staff added successfully:', result);
+            handleClose(); // Close the modal upon successful submission
+        } catch (error) {
+            console.error('Error:', error.message);
+            // Optionally, you can show an error message to the user
+        }
+    };
 
     const onSubmit = (e) => {
         e.preventDefault();
@@ -87,8 +113,8 @@ const AddStaffModal = ({ show, handleClose, handleSubmit }) => {
                                         required
                                     >
                                         <option value="">Select Gender</option>
-                                        <option value="male">Male</option>
-                                        <option value="female">Female</option>
+                                        <option value="Male">Male</option>
+                                        <option value="Female">Female</option>
                                     </select>
                                 </div>
                                 <div className="mb-4">
@@ -135,9 +161,10 @@ const AddStaffModal = ({ show, handleClose, handleSubmit }) => {
                                         required
                                     >
                                         <option value="">Select Status</option>
-                                        <option value="married">Married</option>
-                                        <option value="single">Single</option>
-                                        <option value="widow">Widow/Widower</option>
+                                        <option value="Married">Married</option>
+                                        <option value="Single">Single</option>
+                                        <option value="Widow">Widow</option>
+                                        <option value="Widower">Widower</option>
                                     </select>
                                 </div>
                                 <div className="mb-4">
@@ -150,8 +177,8 @@ const AddStaffModal = ({ show, handleClose, handleSubmit }) => {
                                         required
                                     >
                                         <option value="">Select Role</option>
-                                        <option value="doctor">Doctor</option>
-                                        <option value="receptionist">Receptionist</option>
+                                        <option value="Doctor">Doctor</option>
+                                        <option value="Receptionist">Receptionist</option>
                                     </select>
                                 </div>
                                 {staffData.role === 'doctor' && (
@@ -193,8 +220,8 @@ const AddStaffModal = ({ show, handleClose, handleSubmit }) => {
                                         required
                                     >
                                         <option value="">Select Gender</option>
-                                        <option value="male">Male</option>
-                                        <option value="female">Female</option>
+                                        <option value="Male">Male</option>
+                                        <option value="Female">Female</option>
                                     </select>
                                 </div>
                                 <div className="mb-4">
@@ -241,9 +268,11 @@ const AddStaffModal = ({ show, handleClose, handleSubmit }) => {
                                         required
                                     >
                                         <option value="">Select Status</option>
-                                        <option value="married">Married</option>
-                                        <option value="single">Single</option>
-                                        <option value="widow">Widow/Widower</option>
+                                        <option value="Father">Father</option>
+                                        <option value="Mother">Mother</option>
+                                        <option value="Sibling">Sibling</option>
+                                        <option value="Friend">Friend</option>
+                                        <option value="Other Relatives">Other Relatives</option>
                                     </select>
                                 </div>
                             </div>
