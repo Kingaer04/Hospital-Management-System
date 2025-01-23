@@ -223,9 +223,13 @@ export default function MainNavBar() {
               }}
             >
               <AccountCircle sx={{ height: '30px', width: 'auto' }} />
-              <Box sx={{ marginLeft: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', alignContent: '', height: 50 }}>
-                <Typography variant="body2" sx={{  fontSize: "10px", fontWeight: "Bold", marginRight: '18px', textTransform: 'uppercase'  }} >{currentAdmin.hospital_Representative}</Typography>
-                <Typography variant="body2" color="text.secondary" sx={{ marginLeft: "-8px", fontSize: "10px" }}>Admin</Typography>
+              <Box sx={{ marginLeft: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'flex-start', height: 50 }}>
+              <Typography variant="body2" sx={{ fontSize: "10px", fontWeight: "bold", textTransform: 'uppercase', marginLeft: 0 }}>
+                {currentAdmin?.hospital_Representative?.split(' ')[0]} {/* Picks the first word */}
+              </Typography>
+                <Typography variant="body2" color="text.secondary" sx={{ marginLeft: 0, fontSize: "10px" }}>
+                  {currentAdmin?.role}
+                </Typography>
               </Box>
               {menuOpen ? <ExpandLess sx={{ marginLeft: 1 }} /> : <ExpandMore sx={{ marginLeft: 1 }} />}
             </IconButton>

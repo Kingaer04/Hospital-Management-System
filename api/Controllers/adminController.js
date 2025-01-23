@@ -124,4 +124,12 @@ export const adminController = {
             next();
         });
     },
+    signOut: async (req, res, next) => {
+        try {
+            res.clearCookie('token')
+            res.status(200).json("Admin has logged out!")
+        } catch (error) {
+            next(error)
+        }
+    }
 };

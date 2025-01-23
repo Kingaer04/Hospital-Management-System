@@ -42,7 +42,8 @@ export default function SignUp() {
       setVisible(true);
       const timer = setTimeout(() => {
         setVisible(false);
-        setTimeout(() => setError(null), 300); // Wait for slide-out transition
+        const clearErrorTimer = setTimeout(() => dispatch(signInFailure(null)), 300); // Wait for slide-out transition
+        return () => clearTimeout(clearErrorTimer);
       }, 5000); // 5000 milliseconds = 5 seconds
 
       return () => clearTimeout(timer); // Cleanup on unmount
@@ -79,14 +80,15 @@ export default function SignUp() {
         const data = await res.json();
         if (data.error) {
           setLoading(false);
-          setError(data.message);
+          setError(data.error);
           return;
         }
         setLoading(false);
         setError(null);
-        navigate('/');
+        navigate('/Sign-In');
       } catch (error) {
         setLoading(false);
+        setError('An unexpected error occurred. Please try again.');
       }
     } else {
       setStep(prevStep => prevStep + 1);
@@ -215,35 +217,35 @@ export default function SignUp() {
                 </>
               )}
               {step === 3 && (
-              <>
-                <label htmlFor="password">Password</label>
-                <input
-                  type="password"
-                  placeholder="Password"
-                  name="password"
-                  className={`border p-3 rounded-lg transition-colors duration-300 
-                              ${passwordStrength === 'strong' ? 'border-green-500' : 
-                                passwordStrength === 'good' ? 'border-yellow-600' : 
-                                passwordStrength === 'weak' ? 'border-red-600' : 'border-gray-300'}`}
-                  onChange={handleChange}
-                  required
-                />
-                {passwordStrength && (
-                  <div className={`mt-1 text-${passwordStrength === 'strong' ? 'green-500' : passwordStrength === 'good' ? 'yellow-600' : 'red-600'}`}>
-                    {`Password strength: ${passwordStrength.charAt(0).toUpperCase() + passwordStrength.slice(1)}`}
-                  </div>
-                )}
-                <label htmlFor="confirmPassword">Confirm Password</label>
-                <input
-                  type="password"
-                  placeholder="Confirm Password"
-                  name="confirmPassword"
-                  className="border p-3 rounded-lg border-gray-300"
-                  onChange={handleChange}
-                  required
-                />
-              </>
-            )}
+                <>
+                  <label htmlFor="password">Password</label>
+                  <input
+                    type="password"
+                    placeholder="Password"
+                    name="password"
+                    className={`border p-3 rounded-lg transition-colors duration-300 
+                                ${passwordStrength === 'strong' ? 'border-green-500' : 
+                                  passwordStrength === 'good' ? 'border-yellow-600' : 
+                                  passwordStrength === 'weak' ? 'border-red-600' : 'border-gray-300'}`}
+                    onChange={handleChange}
+                    required
+                  />
+                  {passwordStrength && (
+                    <div className={`mt-1 text-${passwordStrength === 'strong' ? 'green-500' : passwordStrength === 'good' ? 'yellow-600' : 'red-600'}`}>
+                      {`Password strength: ${passwordStrength.charAt(0).toUpperCase() + passwordStrength.slice(1)}`}
+                    </div>
+                  )}
+                  <label htmlFor="confirmPassword">Confirm Password</label>
+                  <input
+                    type="password"
+                    placeholder="Confirm Password"
+                    name="confirmPassword"
+                    className="border p-3 rounded-lg border-gray-300"
+                    onChange={handleChange}
+                    required
+                  />
+                </>
+              )}
               <div className="flex justify-between mt-7">
                 {step > 1 && (
                   <button type="button" onClick={handlePrevious} className="bg-gray-300 text-black uppercase rounded-lg p-3 hover:opacity-95">

@@ -11,7 +11,6 @@ import Patient from './pages/patient.jsx'
 import Appointment from './pages/appointment.jsx'
 import Home from './pages/home.jsx'
 import Settings from './pages/settings.jsx'
-import SignOut from './pages/signOut.jsx'
 import StaffDetails from './pages/staffDetails.jsx'
 import RequestPage from './pages/requestPage.jsx'
 
@@ -26,7 +25,7 @@ export default function App() {
             <Routes>
               <Route path='/Sign-In' element={<SignIn/>}/>
               <Route path='/Sign-Up' element={<SignUp/>}/>
-              {/* <Route element={<PrivateRoute/>}> */}
+              <Route element={<PrivateRoute/>}>
                 <Route element={<Layout/>}>
                   <Route path="/" element={<Navigate to="/home" replace/>}/>
                   <Route path='/home' element={<Home/>}/>
@@ -36,9 +35,8 @@ export default function App() {
                   <Route path='/staff' element={<StaffDetails/>}/>
                   <Route path='/settings' element={<Settings/>}/>
                   <Route path='/request' element={<RequestPage/>}/>
-                  <Route path='/signOut' element={<SignOut/>}/>
                 </Route>
-              {/* </Route> */}
+              </Route>
             </Routes>
           </OpenProvider>
         </BrowserRouter>

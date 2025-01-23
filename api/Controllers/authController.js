@@ -68,7 +68,7 @@ export const adminController = {
     signOut: async (req, res, next) => {
         try {
             res.clearCookie('token')
-            res.status(200).json("User has logged out!")
+            res.status(200).json("Admin has logged out!")
         } catch (error) {
             next(error)
         }

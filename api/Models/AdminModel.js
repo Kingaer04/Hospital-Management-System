@@ -40,7 +40,11 @@ const AdminSchema = new mongoose.Schema({
     },
     hospital_Avatar: {
         type: String
-    }, 
+    },
+    role: {
+        type: String,
+        default: "Admin"
+    }
 }, {timestamps: true})
 
 AdminSchema.plugin(passportLocalMongoose, {

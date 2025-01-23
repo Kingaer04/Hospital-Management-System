@@ -148,8 +148,8 @@ export default function SideBar() {
       >
         <DrawerHeader>
           <div className='flex gap-3 blur-sm'>
-            <img src="../../public/Logo_Images/logoIcon.png" alt="" className='w-6'/>
-            <img src="../../public/Logo_Images/logoName.png" alt="" className='h-5' />
+            <img src="/Logo_Images/logoIcon.png" alt="" className='w-6'/>
+            <img src="/Logo_Images/logoName.png" alt="" className='h-5' />
           </div>
           <IconButton onClick={handleDrawerClose}>
             <RotatedDoubleArrowIcon/>

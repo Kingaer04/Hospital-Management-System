@@ -1,14 +1,31 @@
-import React from 'react';
+import React, {useState} from 'react';
 import { Modal, Box, Typography, Button } from '@mui/material';
+import { signOutAdminStart, signOutAdminSuccess, signOutAdminFailure } from '@/redux/admin/adminSlice';
+import { useDispatch } from 'react-redux';
 
 const SignOutModal = ({ open, onClose }) => {
-    const handleSignOut = () => {
-        // Add sign out logic here
-        onClose();
-    };
+    const dispatch = useDispatch();
+    const [error, setError] = React.useState(null);
+
+    async function handleSignOut() {
+        dispatch(signOutAdminStart())
+        try {
+          const res = await fetch('/admin/SignOut')
+          const data = await res.json()
+          if (data.error) {
+            dispatch(signOutAdminFailure(data.error))
+            setError(data.error)
+            return
+          }
+          dispatch(signOutAdminSuccess(data))
+        //   navigate('/SignIn')
+        } catch (error) {
+          dispatch(signOutAdminFailure(error))
+            setError(error)
+        }
+      };
 
     const handleCancel = () => {
-        // Add any additional cancel logic here if needed
         onClose();
     };
 
