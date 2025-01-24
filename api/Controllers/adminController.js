@@ -113,12 +113,25 @@ export const adminController = {
     // Staff management functions
     addStaff: async (req, res, next) => {
         try {
-            const { hospital_ID } = req.body; // Assuming hospitalId is included in the JWT payload
+            const { hospital_ID, email, phone } = req.body; // Extract email and phone from the request body
+
+            // Check if a staff member with the same email or phone already exists
+            const existingStaff = await Staff.findOne({
+                $or: [{ email }, { phone }],
+            });
+
+            if (existingStaff) {
+                return res.status(400).json({
+                    error: 'Staff member already exists',
+                    message: 'A staff member with this email or phone number already exists.',
+                });
+            }
 
             const newStaff = new Staff({
                 hospital: hospital_ID,
-                ...req.body
+                ...req.body,
             });
+
             await newStaff.save();
             res.status(201).json({ message: 'Staff added successfully', staff: newStaff });
         } catch (error) {

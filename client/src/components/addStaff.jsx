@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { useSelector } from 'react-redux';
 
-const AddStaffModal = ({ show, handleClose }) => {
-    const {currentAdmin} = useSelector((state) => state.admin);
+const AddStaffModal = ({ show, handleClose, setNotification, setNotificationType }) => {
+    const { currentAdmin } = useSelector((state) => state.admin);
     const [currentStep, setCurrentStep] = useState(1);
     const [staffData, setStaffData] = useState({
         hospital_ID: currentAdmin._id,
@@ -46,6 +46,14 @@ const AddStaffModal = ({ show, handleClose }) => {
     const nextStep = () => setCurrentStep(2);
     const prevStep = () => setCurrentStep(1);
 
+    const showNotification = (message, type) => {
+        setNotificationType(type); // Set notification type
+        setNotification(message);
+        setTimeout(() => {
+            setNotification(null);
+        }, 5000);
+    };
+
     const handleSubmit = async (data) => {
         try {
             const response = await fetch('/admin/addStaff', { 
@@ -55,17 +63,20 @@ const AddStaffModal = ({ show, handleClose }) => {
                 },
                 body: JSON.stringify(data),
             });
-
+    
             if (!response.ok) {
-                throw new Error('Failed to add staff');
+                const errorData = await response.json();
+                showNotification(errorData.message || 'Failed to add staff', 'error'); // Show error notification
+                throw new Error(errorData.message || 'Failed to add staff');
             }
-
+    
             const result = await response.json();
             console.log('Staff added successfully:', result);
+            showNotification(result.message, 'success'); // Show success notification
             handleClose(); // Close the modal upon successful submission
         } catch (error) {
             console.error('Error:', error.message);
-            // Optionally, you can show an error message to the user
+            showNotification(error.message, 'error'); // Show error notification with server message
         }
     };
 
@@ -181,7 +192,7 @@ const AddStaffModal = ({ show, handleClose }) => {
                                         <option value="Receptionist">Receptionist</option>
                                     </select>
                                 </div>
-                                {staffData.role === 'doctor' && (
+                                {staffData.role === 'Doctor' && (
                                     <div className="mb-4">
                                         <label className="block text-sm font-medium mb-1">License Number</label>
                                         <input
