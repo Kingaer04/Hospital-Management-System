@@ -6,9 +6,13 @@ import BadgeOutlinedIcon from '@mui/icons-material/BadgeOutlined';
 import SearchBar from '../components/searchBar';
 import PatientTable from '../components/tableComponet';
 import DateCalendarValue from '../components/calendarComponent';
-// import { LineChartComponent } from '@/components/ui/lineChart';
 import React, { useEffect, useState } from 'react';
 import { useSelector } from 'react-redux'
+import LineChart from '../components/lineChart.jsx'
+import BarChart from '@/components/barChart';
+import GaugeCard from '@/components/patientGauge';
+import SalesRecordGauge from '@/components/salesRecordGauge';
+import AppointmentSignals from '@/components/pieChart';
 
 export default function Home() {
   const [visible, setVisible] = useState(true); // To control visibility of the success message
@@ -86,9 +90,15 @@ export default function Home() {
               </Box>
             </Box>
           </Box>
-          <Box>
-            {/* <LineChartComponent /> */}
+          <Box sx={{ marginTop: "20px", display: "flex", flexDirection: "column", gap: "20px" }}>
+            <LineChart />
+            <BarChart />
           </Box>
+        </Box>
+        <Box sx={{ display: "flex", flexDirection: "column", gap: "30px" }}>
+          <GaugeCard />
+          <SalesRecordGauge />
+          <AppointmentSignals />
         </Box>
       </Box>
     </Box>
