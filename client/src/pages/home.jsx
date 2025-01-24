@@ -13,6 +13,7 @@ import BarChart from '@/components/barChart';
 import GaugeCard from '@/components/patientGauge';
 import SalesRecordGauge from '@/components/salesRecordGauge';
 import AppointmentSignals from '@/components/pieChart';
+import PerformanceGauge from '@/components/performanceGauge';
 
 export default function Home() {
   const [visible, setVisible] = useState(true); // To control visibility of the success message
@@ -90,14 +91,15 @@ export default function Home() {
               </Box>
             </Box>
           </Box>
-          <Box sx={{ marginTop: "20px", display: "flex", flexDirection: "column", gap: "20px" }}>
+          <Box sx={{ marginTop: "55px", display: "flex", flexDirection: "column", gap: "20px" }}>
             <LineChart />
             <BarChart />
           </Box>
         </Box>
-        <Box sx={{ display: "flex", flexDirection: "column", gap: "30px" }}>
+        <Box sx={{ display: "flex", flexDirection: "column", gap: "50px" }}>
           <GaugeCard />
           <SalesRecordGauge />
+          <PerformanceGauge />
           <AppointmentSignals />
         </Box>
       </Box>

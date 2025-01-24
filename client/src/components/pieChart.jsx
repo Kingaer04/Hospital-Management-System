@@ -26,7 +26,7 @@ const AppointmentSignals = () => {
             {
                 data: [concluded, canceled],
                 backgroundColor: ['#00a272', 'lightcoral'],
-                hoverOffset: 4,
+                hoverOffset: 2,
             },
         ],
     };
@@ -38,8 +38,8 @@ const AppointmentSignals = () => {
     const options = {
         plugins: {
             legend: {
-                display: true,
-                position: 'bottom',
+                display: false,
+                position: 'bottom'
             },
             tooltip: {
                 callbacks: {
@@ -63,13 +63,28 @@ const AppointmentSignals = () => {
     };
 
     return (
-        <div style={{ textAlign: 'center', padding: '20px', backgroundColor: '#f9f9f9', borderRadius: '8px', boxShadow: '0 2px 10px rgba(0, 0, 0, 0.1)', width: '300px' }}>
-            <h2>Appointment Signals</h2>
-            <div style={{ marginBottom: '20px', fontSize: '24px', fontWeight: 'bold' }}>
+        <div style={{ borderColor: '#f9f9f9', borderRadius: '8px', boxShadow: '0 2px 10px rgba(0, 0, 0, 0.1)', width: '300px' }}>
+            <div className='text-[20px] font-semibold p-4'>
+                <h2 className='font-semibold'>
+                    Appointment Signals
+                </h2>
                 {totalAppointments}
             </div>
-            <div style={{ width: '100%', height: '250px' }}>
+            <div className='h-[4px] bg-[#f9f9f9]'>
+
+            </div>
+            <div style={{ width: '100%', height: '250px', padding: '20px' }}>
                 <Pie data={data} options={options} />
+            </div>
+            <div className='flex p-[20px]'>
+                <div className='flex items-center'>
+                    <span className='mr-1' style={{ color: '#00a272', fontSize: '14px' }}>●</span>
+                    <span style={{ fontSize: '12px' }}>Concluded</span>
+                </div>
+                <div className='flex items-center ml-2'>
+                    <span className='mr-1' style={{ color: 'lightcoral', fontSize: '14px' }}>●</span>
+                    <span style={{ fontSize: '12px' }}>Canceled</span>
+                </div>
             </div>
         </div>
     );

@@ -40,14 +40,16 @@ const BarChart = () => {
                         {
                             label: 'Discharged',
                             data: data.discharged,
-                            backgroundColor: 'rgba(75, 192, 192, 0.6)',
+                            backgroundColor: '#00a272',
+                            borderRadius: 10, // Set border radius
                             barPercentage: 0.4,
                             categoryPercentage: 0.5,
                         },
                         {
-                            label: 'In Treatment',
+                            label: 'In Treatment', // Uncommented label for clarity
                             data: data.inTreatment,
-                            backgroundColor: 'rgba(255, 99, 132, 0.6)',
+                            backgroundColor: '#6abce2',
+                            borderRadius: 10, // Set border radius
                             barPercentage: 0.4,
                             categoryPercentage: 0.5,
                         }
@@ -56,7 +58,7 @@ const BarChart = () => {
                 options: {
                     responsive: true,
                     plugins: {
-                        legend: { display: true },
+                        legend: { display: false },
                         tooltip: { mode: 'index' }
                     },
                     scales: {
@@ -85,14 +87,27 @@ const BarChart = () => {
     }, [data]); // Recreate chart whenever data changes
 
     return (
-        <div style={{ textAlign: 'center', padding: '20px', backgroundColor: '#fff', borderRadius: '8px', boxShadow: '0 2px 10px rgba(0, 0, 0, 0.1)' }}>
-            <h2>Hospital Survey Data Overview</h2>
-            <label htmlFor="year">Select Year:</label>
-            <select id="year" onChange={handleYearChange}>
-                <option value="2023">2023</option>
-                <option value="2024">2024</option>
-                <option value="2025">2025</option>
-            </select>
+        <div className='p-4 bg-[#fff] rounded-lg shadow-lg'>
+            <div className='flex items-center justify-between mb-2'>
+                <div className='flex items-center'>
+                    <h2 className='mr-1 text-sm'>Hospital Survey</h2>
+                    <div className='flex items-center'>
+                        <span className='mr-1' style={{ color: '#00a272', fontSize: '14px' }}>●</span>
+                        <span style={{ fontSize: '12px' }}>Discharged</span>
+                    </div>
+                    <div className='flex items-center ml-2'>
+                        <span className='mr-1' style={{ color: '#6abce2', fontSize: '14px' }}>●</span>
+                        <span style={{ fontSize: '12px' }}>In Treatment</span>
+                    </div>
+                </div>
+                <div className='border border-gray-300 p-1 rounded-lg'>
+                    <select id="year" onChange={handleYearChange} className='text-sm'>
+                        <option value="2023">2023</option>
+                        <option value="2024">2024</option>
+                        <option value="2025">2025</option>
+                    </select>
+                </div>
+            </div>
             <canvas ref={chartRef} />
         </div>
     );

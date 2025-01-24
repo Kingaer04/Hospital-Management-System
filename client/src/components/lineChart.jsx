@@ -32,19 +32,19 @@ const LineChart = () => {
             data: {
                 labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
                 datasets: [{
-                    label: 'Monthly Data',
+                    label: 'Patient Frequency',
                     data: initialData,
                     borderColor: '#00a272',
-                    backgroundColor: 'rgba(0, 162, 114, 0.2)',
+                    backgroundColor: 'rgba(0, 162, 114, 0.3)',
                     fill: true,
-                    tension: 0.4,
-                    pointRadius: 5,
+                    tension: 0.5,
+                    pointRadius: 4,
                 }]
             },
             options: {
                 responsive: true,
                 plugins: {
-                    legend: { display: true },
+                    legend: { display: false }, // Disable default legend
                     tooltip: { mode: 'index' }
                 },
                 scales: {
@@ -72,14 +72,23 @@ const LineChart = () => {
     }, [data, chartInstance]);
 
     return (
-        <div style={{ textAlign: 'center', padding: '20px', backgroundColor: '#fff', borderRadius: '8px', boxShadow: '0 2px 10px rgba(0, 0, 0, 0.1)' }}>
-            <h2>Monthly Data Overview</h2>
-            <label htmlFor="year">Select Year:</label>
-            <select id="year" onChange={handleYearChange}>
-                <option value="2023">2023</option>
-                <option value="2024">2024</option>
-                <option value="2025">2025</option>
-            </select>
+        <div className='p-4 bg-[#fff] rounded-lg shadow-lg'>
+            <div className='flex items-center justify-between mb-2'>
+                <div className='flex items-center'>
+                    <h2 className='mr-1 text-sm'>Hospital Survey</h2>
+                    <div className='flex items-center'>
+                        <span className='mr-1' style={{ color: '#00a272', fontSize: '14px' }}>●</span> {/* Smaller dot */}
+                        <span style={{ fontSize: '12px' }}>Patient Frequency</span> {/* Slightly larger font */}
+                    </div>
+                </div>
+                <div className='border border-gray-300 p-1 rounded-lg'>
+                    <select id="year" onChange={handleYearChange} className='text-sm'>
+                        <option value="2023">2023</option>
+                        <option value="2024">2024</option>
+                        <option value="2025">2025</option>
+                    </select>
+                </div>
+            </div>
             <canvas ref={chartRef} />
         </div>
     );
