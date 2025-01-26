@@ -182,19 +182,19 @@ export const adminController = {
 
     deleteStaff: async (req, res, next) => {
         try {
-            const { staffId } = req.params;
-            const { role, hospital_ID } = req.user; // Assuming role and hospitalId are included in the JWT payload
+            const { id } = req.params;
+            const { role, hospital_ID } = req.body; 
 
             if (role !== 'Admin') {
                 return res.status(403).json({ error: 'Only admins can delete staff' });
             }
 
-            const staff = await Staff.findById(staffId);
-            if (!staff || staff.hospital.toString() !== hospital_ID) {
+            const staff = await Staff.findById(id);
+            if (!staff || staff.hospital_ID.toString() !== hospital_ID) {
                 return res.status(404).json({ error: 'Staff not found or you do not have permission to delete this staff' });
             }
 
-            await Staff.findByIdAndDelete(staffId);
+            await Staff.findByIdAndDelete(id);
             res.status(200).json({ message: 'Staff deleted successfully' });
         } catch (error) {
             res.status(400).json({ error: 'Failed to delete staff', message: error.message });

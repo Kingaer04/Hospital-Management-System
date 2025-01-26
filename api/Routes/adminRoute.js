@@ -8,7 +8,7 @@ router.post('/SignIn', adminController.authenticate_admin);
 router.get('/SignOut', adminController.signOut);
 router.post('/addStaff', adminController.addStaff);
 router.put('/updateStaff', adminController.updateStaff);
-router.delete('/deleteStaff', adminController.deleteStaff);
+router.delete('/deleteStaff/:id', adminController.deleteStaff);
 router.get('/staffDetails/:hospital_ID', adminController.getAllStaff);
 
 export default router;

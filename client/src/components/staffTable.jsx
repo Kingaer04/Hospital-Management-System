@@ -48,12 +48,16 @@ const StaffTable = () => {
   const handleDelete = async (id) => {
     if (window.confirm("Are you sure you want to delete this staff member?")) {
       try {
-        const response = await fetch(`/admin/staffDetails/${id}`, {
+        const response = await fetch(`/admin/deleteStaff/${id}`, {
           method: 'DELETE',
           headers: {
             'Content-Type': 'application/json',
           },
           credentials: 'include',
+          body: JSON.stringify({
+            hospital_ID: currentAdmin._id, // Assuming this is part of the currentAdmin state
+            role: currentAdmin.role, // The role of the admin
+        }),
         });
 
         if (!response.ok) {
