@@ -13,6 +13,7 @@ import Home from './pages/home.jsx'
 import Settings from './pages/settings.jsx'
 import StaffDetails from './pages/staffDetails.jsx'
 import RequestPage from './pages/requestPage.jsx'
+import StaffProfile from './pages/staffProfile.jsx'
 
 
 export default function App() {
@@ -35,6 +36,7 @@ export default function App() {
                   <Route path='/staff' element={<StaffDetails/>}/>
                   <Route path='/settings' element={<Settings/>}/>
                   <Route path='/request' element={<RequestPage/>}/>
+                  <Route path='/staffProfile' element={<StaffProfile/>}/>
                 </Route>
               </Route>
             </Routes>

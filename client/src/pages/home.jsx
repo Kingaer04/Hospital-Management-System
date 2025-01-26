@@ -3,33 +3,38 @@ import Typography from '@mui/material/Typography';
 import CalendarMonthOutlinedIcon from '@mui/icons-material/CalendarMonthOutlined';
 import Diversity1OutlinedIcon from '@mui/icons-material/Diversity1Outlined';
 import BadgeOutlinedIcon from '@mui/icons-material/BadgeOutlined';
-import SearchBar from '../components/searchBar';
-import PatientTable from '../components/tableComponet';
-import DateCalendarValue from '../components/calendarComponent';
 import React, { useEffect, useState } from 'react';
-import { useSelector } from 'react-redux'
-import LineChart from '../components/lineChart.jsx'
+import { useSelector, useDispatch } from 'react-redux';
+import LineChart from '../components/lineChart.jsx';
 import BarChart from '@/components/barChart';
 import GaugeCard from '@/components/patientGauge';
 import SalesRecordGauge from '@/components/salesRecordGauge';
 import AppointmentSignals from '@/components/pieChart';
 import PerformanceGauge from '@/components/performanceGauge';
+import { resetWelcomeMessage } from '../redux/admin/adminSlice.js'; // Import your action to reset the flag
 
 export default function Home() {
-  const [visible, setVisible] = useState(true); // To control visibility of the success message
-  const {currentAdmin} = useSelector((state) => state.admin)
+  const [visible, setVisible] = useState(false); // To control visibility of the success message
+  const { currentAdmin, showWelcomeMessage } = useSelector((state) => state.admin);
+  const dispatch = useDispatch();
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setVisible(false);
-    }, 5000); // Keep it visible for 5 seconds
+    if (showWelcomeMessage) {
+      setVisible(true);
+      dispatch(resetWelcomeMessage()); // Reset the flag after showing the message
 
-    return () => clearTimeout(timer); // Cleanup on unmount
-  }, []);
+      // Set a timer to hide the message after 5 seconds
+      const timer = setTimeout(() => {
+        setVisible(false);
+      }, 5000); // Keep it visible for 5 seconds
+
+      return () => clearTimeout(timer); // Cleanup on unmount
+    }
+  }, [showWelcomeMessage, dispatch]);
 
   useEffect(() => {
-    console.log(currentAdmin)
-  }, [currentAdmin])
+    console.log(currentAdmin);
+  }, [currentAdmin]);
 
   return (
     <Box sx={{ padding: "20px" }}>
@@ -48,7 +53,7 @@ export default function Home() {
       )}
       <Box marginBottom="20px">
         <Typography variant='h5' sx={{ fontWeight: '500' }}>
-          Welcome, {currentAdmin?.hospital_Representative}
+          Admin Dashboard
         </Typography>
         <Typography sx={{ color: '#A9A9A9', fontSize: '11px', lineHeight: 'normal', fontWeight: '400' }}>
           Here's an insight of your activity

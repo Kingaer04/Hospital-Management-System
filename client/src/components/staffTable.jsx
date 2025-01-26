@@ -1,15 +1,17 @@
 import React, { useEffect, useState } from 'react';
 import { useSelector } from 'react-redux';
 import { FaEdit, FaTrash } from 'react-icons/fa';
+import { useSnackbar } from 'notistack';
 
 const StaffTable = () => {
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
-  const [roleFilter, setRoleFilter] = useState(''); // State for role filter
+  const [roleFilter, setRoleFilter] = useState('');
   const { currentAdmin } = useSelector((state) => state.admin);
   const hospital_ID = currentAdmin._id;
+  const { enqueueSnackbar } = useSnackbar();
 
   useEffect(() => {
     async function fetchData() {
@@ -43,20 +45,34 @@ const StaffTable = () => {
     fetchData();
   }, [hospital_ID]);
 
-  const handleDelete = (id) => {
-    // Implement delete logic here
-    console.log(`Delete staff with ID: ${id}`);
-  };
+  const handleDelete = async (id) => {
+    if (window.confirm("Are you sure you want to delete this staff member?")) {
+      try {
+        const response = await fetch(`/admin/staffDetails/${id}`, {
+          method: 'DELETE',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          credentials: 'include',
+        });
 
-  const handleEdit = (id) => {
-    // Implement edit logic here
-    console.log(`Edit staff with ID: ${id}`);
+        if (!response.ok) {
+          throw new Error('Failed to delete staff member');
+        }
+
+        // Filter out the deleted user from the data
+        setData(data.filter(user => user._id !== id)); // Make sure to use the correct property name for the ID
+        enqueueSnackbar("Staff member deleted successfully!", { variant: 'success' });
+      } catch (error) {
+        enqueueSnackbar("Error deleting staff member: " + error.message, { variant: 'error' });
+      }
+    }
   };
 
   // Filtering logic
   const filteredData = data.filter(user =>
     user.name.toLowerCase().includes(searchTerm.toLowerCase()) &&
-    (roleFilter ? user.role === roleFilter : true) // Apply role filter
+    (roleFilter ? user.role === roleFilter : true)
   );
 
   if (loading) return <div className="text-center">Loading...</div>;
@@ -75,7 +91,7 @@ const StaffTable = () => {
           />
         </div>
         <div className='flex border h-[42px] rounded-lg items-center p-2 bg-[#EEFFFC]'>
-        <img src='/Icons/FilterIcon.png' className='w-4 h-4 mb-3 mt-4'/>
+          <img src='/Icons/FilterIcon.png' className='w-4 h-4 mb-3 mt-4'/>
           <select
             className="mb-4 p-2 rounded mt-4 bg-transparent text-[#00A272] font-semibold"
             value={roleFilter}
@@ -92,7 +108,7 @@ const StaffTable = () => {
       <table className="min-w-full bg-white border border-gray-300 rounded-lg shadow-md">
         <thead>
           <tr className="bg-[#00a272] text-white">
-          <th className="py-3 px-4 text-left"></th>
+            <th className="py-3 px-4 text-left"></th>
             <th className="py-3 px-4 text-left">Name</th>
             <th className="py-3 px-4 text-left">Phone Number</th>
             <th className="py-3 px-4 text-left">Email</th>
@@ -102,18 +118,15 @@ const StaffTable = () => {
         </thead>
         <tbody>
           {filteredData.map((user, index) => (
-            <tr key={user.id} className={`border-b transition duration-300 ease-in-out ${index % 2 === 0 ? 'bg-gray-100' : 'bg-white'} hover:bg-green-100`}>
+            <tr key={user._id} className={`border-b transition duration-300 ease-in-out ${index % 2 === 0 ? 'bg-gray-100' : 'bg-white'} hover:bg-green-100`}>
               <td className="py-3 px-4"><input type="checkbox" /></td>
               <td className="py-3 px-4">{user.name}</td>
               <td className="py-3 px-4">{user.phone}</td>
               <td className="py-3 px-4">{user.email}</td>
               <td className="py-3 px-4">{user.role}</td>
               <td className="py-3 px-4 flex space-x-2">
-                <button onClick={() => handleEdit(user.id)}>
-                  <FaEdit className="text-blue-600 hover:text-blue-800" />
-                </button>
                 {currentAdmin.role === 'Admin' && (
-                  <button onClick={() => handleDelete(user.id)}>
+                  <button onClick={() => handleDelete(user._id)}> {/* Pass user ID here */}
                     <FaTrash className="text-red-600 hover:text-red-800" />
                   </button>
                 )}

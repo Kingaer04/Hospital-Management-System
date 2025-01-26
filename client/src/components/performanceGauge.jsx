@@ -73,18 +73,14 @@ const PerformanceGauge = () => {
             borderRadius: '12px',
             boxShadow: '0 4px 10px rgba(0, 0, 0, 0.1)',
             width: '300px', // Maintain width
-            textAlign: 'center',
             fontFamily: 'Arial, sans-serif',
         }}>
-            <h2 style={{ fontSize: '18px', marginBottom: '5px', color: '#333' }}>Monthly Performance</h2>
+            <h2 style={{ fontSize: '18px', marginBottom: '20px', color: '#333' }}>Monthly Performance</h2>
             <div style={{ position: 'relative', width: '100%', height: '160px' }}>
                 <canvas ref={chartRef} style={{ position: 'absolute' }} />
             </div>
-            <div style={{ marginTop: '10px', fontSize: '24px', fontWeight: 'bold', color: color }}>
+            <div style={{ marginTop: '20px', fontSize: '24px', fontWeight: 'bold', color: color }}>
                 {percentage.toFixed(2)}%
-            </div>
-            <div style={{ marginTop: '5px', fontSize: '14px', color: '#666' }}>
-                {performance} out of {maxPerformance}
             </div>
         </div>
     );
