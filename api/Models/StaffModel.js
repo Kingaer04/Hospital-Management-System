@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import passportLocalMongoose from "passport-local-mongoose";
 
 const staffSchema = new mongoose.Schema({
     hospital_ID: {
@@ -44,6 +45,9 @@ const staffSchema = new mongoose.Schema({
             return this.role === 'Doctor';
         }
     },
+    avatar: {
+        type: String,
+    },
     nextOfKin: {
         name: {
             type: String,
@@ -75,6 +79,8 @@ const staffSchema = new mongoose.Schema({
 }, {
     timestamps: true
 });
+
+staffSchema.plugin(passportLocalMongoose, { usernameField: 'email' })
 
 const StaffData = mongoose.model('StaffData', staffSchema);
 

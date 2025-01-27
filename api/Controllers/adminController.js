@@ -1,8 +1,8 @@
 import HospitalAdminAccount from "../Models/AdminModel.js";
-import Staff from '../Models/StaffModel.js'; // Adjust the import path as needed
 import passport from "passport";
 import xlsx from "xlsx";
 import jwt from "jsonwebtoken";
+import StaffData from "../Models/StaffModel.js";
 
 function getAdminParams(body) {
     return {
@@ -114,9 +114,10 @@ export const adminController = {
     addStaff: async (req, res, next) => {
         try {
             const { hospital_ID, email, phone } = req.body; // Extract email and phone from the request body
+            const password = phone;
 
             // Check if a staff member with the same email or phone already exists
-            const existingStaff = await Staff.findOne({
+            const existingStaff = await StaffData.findOne({
                 $or: [{ email }, { phone }],
             });
 
@@ -127,13 +128,19 @@ export const adminController = {
                 });
             }
 
-            const newStaff = new Staff({
+            const newStaff = new StaffData({
                 hospital: hospital_ID,
                 ...req.body,
             });
 
-            await newStaff.save();
-            res.status(201).json({ message: 'Staff added successfully', staff: newStaff });
+            StaffData.register(newStaff, password, (error, staffData) => {
+                if (staffData) {
+                    res.status(200).json({ message: 'Staff added successfully' });
+                } else {
+                    res.status(400).json({ error: 'Failed to add staff', message: error.message });
+                    next(error);
+                }
+            });
         } catch (error) {
             res.status(400).json({ error: 'Failed to add staff', message: error.message });
             next(error);
@@ -144,7 +151,7 @@ export const adminController = {
         try {
             const { hospital_ID } = req.params
             console.log(hospital_ID);
-            const staffMembers = await Staff.find({ hospital_ID: hospital_ID });
+            const staffMembers = await StaffData.find({ hospital_ID: hospital_ID });
             console.log(staffMembers);
             res.status(200).json({ staff: staffMembers });
             // res.json(staffMembers)
@@ -165,12 +172,12 @@ export const adminController = {
                 return res.status(403).json({ error: 'Only admins can update staff roles' });
             }
 
-            const staff = await Staff.findById(staffId);
+            const staff = await StaffData.findById(staffId);
             if (!staff || staff.hospital.toString() !== hospitalId) {
                 return res.status(404).json({ error: 'Staff not found or you do not have permission to update this staff' });
             }
 
-            staff.role = role; // Update the staff role
+            staffData.role = role; // Update the staff role
             await staff.save();
 
             res.status(200).json({ message: 'Staff role updated successfully', staff });
@@ -189,12 +196,12 @@ export const adminController = {
                 return res.status(403).json({ error: 'Only admins can delete staff' });
             }
 
-            const staff = await Staff.findById(id);
+            const staff = await StaffData.findById(id);
             if (!staff || staff.hospital_ID.toString() !== hospital_ID) {
                 return res.status(404).json({ error: 'Staff not found or you do not have permission to delete this staff' });
             }
 
-            await Staff.findByIdAndDelete(id);
+            await StaffData.findByIdAndDelete(id);
             res.status(200).json({ message: 'Staff deleted successfully' });
         } catch (error) {
             res.status(400).json({ error: 'Failed to delete staff', message: error.message });

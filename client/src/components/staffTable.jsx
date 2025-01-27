@@ -55,9 +55,9 @@ const StaffTable = () => {
           },
           credentials: 'include',
           body: JSON.stringify({
-            hospital_ID: currentAdmin._id, // Assuming this is part of the currentAdmin state
-            role: currentAdmin.role, // The role of the admin
-        }),
+            hospital_ID: currentAdmin._id,
+            role: currentAdmin.role,
+          }),
         });
 
         if (!response.ok) {
@@ -65,7 +65,7 @@ const StaffTable = () => {
         }
 
         // Filter out the deleted user from the data
-        setData(data.filter(user => user._id !== id)); // Make sure to use the correct property name for the ID
+        setData(data.filter(user => user._id !== id));
         enqueueSnackbar("Staff member deleted successfully!", { variant: 'success' });
       } catch (error) {
         enqueueSnackbar("Error deleting staff member: " + error.message, { variant: 'error' });
@@ -79,25 +79,30 @@ const StaffTable = () => {
     (roleFilter ? user.role === roleFilter : true)
   );
 
-  if (loading) return <div className="text-center">Loading...</div>;
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-screen">
+        <img src="/Logo_Images/logoIcon.png" alt="Loading..." className="animate-spin w-20 h-20" />
+      </div>
+    );
+  }
+
   if (error) return <div className="text-red-500 text-center">{error}</div>;
 
   return (
     <div className="p-6">
-      <div className='flex gap-3'>
-        <div>
-          <input
-            type="text"
-            placeholder="Search by name..."
-            className="mb-4 p-2 border border-gray-300 rounded"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
-        </div>
+      <div className='flex gap-3 mb-4'>
+        <input
+          type="text"
+          placeholder="Search by name..."
+          className="p-2 border border-gray-300 rounded"
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+        />
         <div className='flex border h-[42px] rounded-lg items-center p-2 bg-[#EEFFFC]'>
           <img src='/Icons/FilterIcon.png' className='w-4 h-4 mb-3 mt-4'/>
           <select
-            className="mb-4 p-2 rounded mt-4 bg-transparent text-[#00A272] font-semibold"
+            className="p-2 rounded bg-transparent text-[#00A272] font-semibold"
             value={roleFilter}
             onChange={(e) => setRoleFilter(e.target.value)}
           >
@@ -109,36 +114,44 @@ const StaffTable = () => {
           </select>
         </div>
       </div>
-      <table className="min-w-full bg-white border border-gray-300 rounded-lg shadow-md">
-        <thead>
-          <tr className="bg-[#00a272] text-white">
-            <th className="py-3 px-4 text-left"></th>
-            <th className="py-3 px-4 text-left">Name</th>
-            <th className="py-3 px-4 text-left">Phone Number</th>
-            <th className="py-3 px-4 text-left">Email</th>
-            <th className="py-3 px-4 text-left">Role</th>
-            <th className="py-3 px-4 text-left">Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          {filteredData.map((user, index) => (
-            <tr key={user._id} className={`border-b transition duration-300 ease-in-out ${index % 2 === 0 ? 'bg-gray-100' : 'bg-white'} hover:bg-green-100`}>
-              <td className="py-3 px-4"><input type="checkbox" /></td>
-              <td className="py-3 px-4">{user.name}</td>
-              <td className="py-3 px-4">{user.phone}</td>
-              <td className="py-3 px-4">{user.email}</td>
-              <td className="py-3 px-4">{user.role}</td>
-              <td className="py-3 px-4 flex space-x-2">
-                {currentAdmin.role === 'Admin' && (
-                  <button onClick={() => handleDelete(user._id)}> {/* Pass user ID here */}
-                    <FaTrash className="text-red-600 hover:text-red-800" />
-                  </button>
-                )}
-              </td>
+
+      {/* Show a message if there are no staff records */}
+      {filteredData.length === 0 ? (
+        <div className="text-center text-gray-500">
+          No staff record found. Click the add button to add staff.
+        </div>
+      ) : (
+        <table className="min-w-full bg-white border border-gray-300 rounded-lg shadow-md">
+          <thead>
+            <tr className="bg-[#00a272] text-white">
+              <th className="py-3 px-4 text-left"></th>
+              <th className="py-3 px-4 text-left">Name</th>
+              <th className="py-3 px-4 text-left">Phone Number</th>
+              <th className="py-3 px-4 text-left">Email</th>
+              <th className="py-3 px-4 text-left">Role</th>
+              <th className="py-3 px-4 text-left">Actions</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {filteredData.map((user, index) => (
+              <tr key={user._id} className={`border-b transition duration-300 ease-in-out ${index % 2 === 0 ? 'bg-gray-100' : 'bg-white'} hover:bg-green-100`}>
+                <td className="py-3 px-4"><input type="checkbox" /></td>
+                <td className="py-3 px-4">{user.name}</td>
+                <td className="py-3 px-4">{user.phone}</td>
+                <td className="py-3 px-4">{user.email}</td>
+                <td className="py-3 px-4">{user.role}</td>
+                <td className="py-3 px-4 flex space-x-2">
+                  {currentAdmin.role === 'Admin' && (
+                    <button onClick={() => handleDelete(user._id)}>
+                      <FaTrash className="text-red-600 hover:text-red-800" />
+                    </button>
+                  )}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
     </div>
   );
 };

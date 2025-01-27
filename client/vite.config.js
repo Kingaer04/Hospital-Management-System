@@ -16,7 +16,11 @@ export default defineConfig({
       '/admin': {
         target: 'http://localhost:5500',
         secure: false,
-      }
+      },
+      '/staff/auth': {
+        target: 'http://localhost:5500',
+        secure: false,
+      },
     }
   }
 })
