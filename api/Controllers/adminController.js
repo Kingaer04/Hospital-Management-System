@@ -70,7 +70,7 @@ export const adminController = {
             return res.status(400).json({ error: 'Hospital not registered or licensed.' });
         }
 
-        passport.authenticate('local', (err, user, info) => {
+        passport.authenticate('admin-local', (err, user, info) => {
             if (err) {
                 return res.status(500).json({ message: 'Internal Server Error', error: err.message });
             }
@@ -114,7 +114,7 @@ export const adminController = {
     addStaff: async (req, res, next) => {
         try {
             const { hospital_ID, email, phone } = req.body; // Extract email and phone from the request body
-            const password = phone;
+            // const password = "staff@123";
 
             // Check if a staff member with the same email or phone already exists
             const existingStaff = await StaffData.findOne({
@@ -133,7 +133,7 @@ export const adminController = {
                 ...req.body,
             });
 
-            StaffData.register(newStaff, password, (error, staffData) => {
+            StaffData.register(newStaff, req.body.phone, (error, staffData) => {
                 if (staffData) {
                     res.status(200).json({ message: 'Staff added successfully' });
                 } else {

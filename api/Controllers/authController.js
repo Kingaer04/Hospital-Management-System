@@ -3,7 +3,7 @@ import jwt from 'jsonwebtoken'
 
 export const authController = {
     authenticate: (req, res, next) => {
-        passport.authenticate('local', (err, user, info) => {
+        passport.authenticate('staff-local', (err, user, info) => {
             if (err) {
                 return res.status(500).json({ message: 'Internal Server Error', error: err.message });
             }

@@ -67,6 +67,7 @@ export default function MainNavBar() {
   const [menuOpen, setMenuOpen] = React.useState(false);
   const [signOutModalOpen, setSignOutModalOpen] = React.useState(false);
   const {currentAdmin} = useSelector((state) => state.admin);
+  const {currentUser} = useSelector((state) => state.user);
   
   const handleSignOutClick = () => {
     setSignOutModalOpen(true);
@@ -225,10 +226,10 @@ export default function MainNavBar() {
               <AccountCircle sx={{ height: '30px', width: 'auto' }} />
               <Box sx={{ marginLeft: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'flex-start', height: 50 }}>
               <Typography variant="body2" sx={{ fontSize: "10px", fontWeight: "bold", textTransform: 'uppercase', marginLeft: 0 }}>
-                {currentAdmin?.hospital_Representative?.split(' ')[0]} {/* Picks the first word */}
+                {currentAdmin?.hospital_Representative?.split(' ')[0] || currentUser?.name?.split(' ')[0]} {/* Picks the first word */}
               </Typography>
                 <Typography variant="body2" color="text.secondary" sx={{ marginLeft: 0, fontSize: "10px" }}>
-                  {currentAdmin?.role}
+                  {currentAdmin?.role || currentUser?.role}
                 </Typography>
               </Box>
               {menuOpen ? <ExpandLess sx={{ marginLeft: 1 }} /> : <ExpandMore sx={{ marginLeft: 1 }} />}

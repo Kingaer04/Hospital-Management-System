@@ -17,7 +17,7 @@ export default defineConfig({
         target: 'http://localhost:5500',
         secure: false,
       },
-      '/staff/auth': {
+      '/staff': {
         target: 'http://localhost:5500',
         secure: false,
       },

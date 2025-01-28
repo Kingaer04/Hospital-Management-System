@@ -5,6 +5,6 @@ import staffRoute from './staffRoute.js';
 const router = express.Router();
 
 router.use('/admin', adminRoute);
-router.use('/staff/auth', staffRoute);
+router.use('/staff', staffRoute);
 
 export default router;

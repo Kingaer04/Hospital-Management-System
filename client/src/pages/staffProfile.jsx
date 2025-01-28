@@ -1,22 +1,25 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Box, Button, TextField, Typography, Grid, Avatar, Paper, Divider, FormControl, InputLabel, Select, MenuItem, LinearProgress } from '@mui/material';
 import { useDispatch, useSelector } from 'react-redux';
-import { updateStart, updateSuccess, updateFailure } from '../redux/admin/adminSlice'; // Import your update actions
-import { useSnackbar } from 'notistack'; // For notifications
+import { useSnackbar } from 'notistack';
+import { updateStart, updateSuccess, updateFailure } from '../redux/user/userSlice'; // Import your update actions
+import { useNavigate } from 'react-router-dom'; // Import useNavigate
 
 export default function StaffProfile() {
     const dispatch = useDispatch();
-    const { currentAdmin } = useSelector((state) => state.admin);
+    const navigate = useNavigate(); // Initialize useNavigate
+    const { currentUser } = useSelector((state) => state.user);
+    const { currentAdmin } = useSelector((state) => state.admin); 
     const { enqueueSnackbar } = useSnackbar();
     const [loading, setLoading] = useState(false);
     const [uploadProgress, setUploadProgress] = useState(0);
     const [profileData, setProfileData] = useState({
-        name: currentAdmin?.name || '',
-        email: currentAdmin?.email || '',
-        phone: currentAdmin?.phone || '',
+        name: currentUser?.name || '',
+        email: currentUser?.email || '',
+        phone: currentUser?.phone || '',
         password: '',
         confirmPassword: '',
-        role: currentAdmin?.role || 'User',
+        role: currentUser?.role || 'User',
         nextOfKin: {
             name: '',
             phone: '',
@@ -26,7 +29,21 @@ export default function StaffProfile() {
             gender: '',
         },
     });
-    const [profileImage, setProfileImage] = useState(currentAdmin?.profileImage || '/default-avatar.png');
+    const [profileImage, setProfileImage] = useState(currentUser?.profileImage || '/default-avatar.png');
+
+    useEffect(() => {
+        // Redirect logic based on role
+        if (!currentUser && !currentAdmin) {
+            navigate('/Staff-SignIn'); // Redirect to Staff Sign-In if no user is logged in
+        } else if (currentAdmin && currentAdmin.role === 'Admin') {
+            navigate('/settings'); // Redirect to settings if currentAdmin is not Admin
+        } else if (currentUser) {
+            // Redirect based on user role
+            if (currentUser.role === 'Receptionist' || currentUser.role === 'Doctor') {
+                navigate('/settings'); // Redirect to settings for Receptionist and Doctor
+            }
+        }
+    }, [currentUser, currentAdmin, navigate]);
 
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -185,7 +202,7 @@ export default function StaffProfile() {
                                         value={profileData.role}
                                         onChange={handleChange}
                                         variant="outlined"
-                                        disabled={!currentAdmin?.isAdmin} // Disable if not admin
+                                        disabled={!currentUser?.isAdmin} // Disable if not admin
                                     />
                                 </Grid>
                                 <Grid item xs={12}>

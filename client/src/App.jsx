@@ -14,6 +14,7 @@ import Settings from './pages/settings.jsx'
 import StaffDetails from './pages/staffDetails.jsx'
 import RequestPage from './pages/requestPage.jsx'
 import StaffProfile from './pages/staffProfile.jsx'
+import StaffSignIn from './pages/staffSignIn.jsx'
 
 
 export default function App() {
@@ -26,6 +27,7 @@ export default function App() {
             <Routes>
               <Route path='/Sign-In' element={<SignIn/>}/>
               <Route path='/Sign-Up' element={<SignUp/>}/>
+              <Route path='/Staff-SignIn' element={<StaffSignIn/>}/>
               <Route element={<PrivateRoute/>}>
                 <Route element={<Layout/>}>
                   <Route path="/" element={<Navigate to="/home" replace/>}/>
@@ -36,7 +38,7 @@ export default function App() {
                   <Route path='/staff' element={<StaffDetails/>}/>
                   <Route path='/settings' element={<Settings/>}/>
                   <Route path='/request' element={<RequestPage/>}/>
-                  <Route path='/staffProfile' element={<StaffProfile/>}/>
+                  <Route path='/profile' element={<StaffProfile/>}/>
                 </Route>
               </Route>
             </Routes>
