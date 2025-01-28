@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { Box, Button, TextField, Typography, Grid, Avatar, Paper, Divider, FormControl, InputLabel, Select, MenuItem, LinearProgress } from '@mui/material';
+import { Box, Button, TextField, Typography, Grid, Avatar, Paper, Divider, FormControl, InputLabel, Select, MenuItem, LinearProgress, IconButton } from '@mui/material';
+import CloseIcon from '@mui/icons-material/Close'; // Import Close icon
 import { useDispatch, useSelector } from 'react-redux';
-import { useSnackbar } from 'notistack';
 import { updateStart, updateSuccess, updateFailure } from '../redux/user/userSlice'; // Import your update actions
 import { useNavigate } from 'react-router-dom'; // Import useNavigate
 
@@ -10,37 +10,43 @@ export default function StaffProfile() {
     const navigate = useNavigate(); // Initialize useNavigate
     const { currentUser } = useSelector((state) => state.user);
     const { currentAdmin } = useSelector((state) => state.admin); 
-    const { enqueueSnackbar } = useSnackbar();
     const [loading, setLoading] = useState(false);
     const [uploadProgress, setUploadProgress] = useState(0);
+    const [profileImage, setProfileImage] = useState(currentUser?.avatar || '/default-avatar.png');
     const [profileData, setProfileData] = useState({
-        name: currentUser?.name || '',
-        email: currentUser?.email || '',
-        phone: currentUser?.phone || '',
-        password: '',
+        name: currentUser.name,
+        email: currentUser.email,
+        phone: currentUser.phone,
+        address: currentUser.address,
+        relationshipStatus: currentUser.relationshipStatus,
+        avatar: profileImage,
+        role: currentUser.role,
+        newPassword: '',
         confirmPassword: '',
-        role: currentUser?.role || 'User',
         nextOfKin: {
-            name: '',
-            phone: '',
-            email: '',
-            address: '',
-            relationship: '',
-            gender: '',
+            name: currentUser.nextOfKin.name,
+            phone: currentUser.nextOfKin.phone,
+            email: currentUser.nextOfKin.email,
+            address: currentUser.nextOfKin.address,
+            relationshipStatus: currentUser.nextOfKin.relationshipStatus,
+            gender: currentUser.nextOfKin.gender
         },
     });
-    const [profileImage, setProfileImage] = useState(currentUser?.profileImage || '/default-avatar.png');
+
+    // State for messages
+    const [message, setMessage] = useState('');
+    const [messageType, setMessageType] = useState(''); // 'success' or 'error'
+    const [showMessage, setShowMessage] = useState(false);
 
     useEffect(() => {
         // Redirect logic based on role
         if (!currentUser && !currentAdmin) {
             navigate('/Staff-SignIn'); // Redirect to Staff Sign-In if no user is logged in
         } else if (currentAdmin && currentAdmin.role === 'Admin') {
-            navigate('/settings'); // Redirect to settings if currentAdmin is not Admin
+            navigate('/settings'); // Redirect if currentAdmin is not Admin
         } else if (currentUser) {
-            // Redirect based on user role
             if (currentUser.role === 'Receptionist' || currentUser.role === 'Doctor') {
-                navigate('/settings'); // Redirect to settings for Receptionist and Doctor
+                navigate('/profile'); // Redirect for Receptionist and Doctor
             }
         }
     }, [currentUser, currentAdmin, navigate]);
@@ -48,7 +54,7 @@ export default function StaffProfile() {
     const handleChange = (e) => {
         const { name, value } = e.target;
         if (name.startsWith('nextOfKin')) {
-            const kinField = name.split('.')[1]; // Get the specific kin field
+            const kinField = name.split('.')[1];
             setProfileData((prevData) => ({
                 ...prevData,
                 nextOfKin: {
@@ -66,33 +72,34 @@ export default function StaffProfile() {
 
     const handleProfileUpdate = async (e) => {
         e.preventDefault();
-        if (profileData.password !== profileData.confirmPassword) {
-            enqueueSnackbar("Passwords do not match", { variant: 'error' });
+        if (profileData.newPassword !== profileData.confirmPassword) {
+            showMessageWithTimeout('Passwords do not match', 'error');
             return;
         }
 
         dispatch(updateStart()); // Start the update process
+        setMessage(''); // Clear previous messages
 
         try {
-            const updatedProfile = { ...profileData, profileImage }; // Include the new profileImage URL
-            const response = await fetch('/api/profile/update', { // Replace with your update endpoint
+            const updatedProfile = { ...profileData, avatar: profileImage };
+            const response = await fetch(`/staff/Update/${currentUser._id}`, { 
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify(updatedProfile),
             });
-
-            if (!response.ok) {
-                throw new Error('Failed to update profile');
+            const data = await response.json();
+            if (data.error) {
+                dispatch(updateFailure(data.error)); // Dispatch failure action
+                showMessageWithTimeout(data.error, 'error');
+            } else {
+                dispatch(updateSuccess(data)); // Dispatch the update action
+                showMessageWithTimeout("Profile updated successfully!", 'success');
             }
-
-            dispatch(updateSuccess(updatedProfile)); // Dispatch the update action
-            enqueueSnackbar("Profile updated successfully!", { variant: 'success' });
-
         } catch (error) {
             dispatch(updateFailure(error.message)); // Dispatch failure action
-            enqueueSnackbar("Failed to update profile: " + error.message, { variant: 'error' });
+            showMessageWithTimeout("Failed to update profile: " + error.message, 'error');
         }
     };
 
@@ -122,25 +129,64 @@ export default function StaffProfile() {
             if (xhr.status === 200) {
                 const uploadedImageUrl = JSON.parse(xhr.responseText);
                 setProfileImage(uploadedImageUrl.url); // Update the profileImage state with the new URL
-                enqueueSnackbar("Image uploaded successfully!", { variant: 'success' });
+                showMessageWithTimeout("Image uploaded successfully!", 'success');
             } else {
-                enqueueSnackbar("Image upload failed: " + xhr.statusText, { variant: 'error' });
+                showMessageWithTimeout("Image upload failed: " + xhr.statusText, 'error');
             }
             setLoading(false);
-            setUploadProgress(0); // Reset progress after upload
+            setUploadProgress(0);
         };
 
         xhr.onerror = () => {
-            enqueueSnackbar("Image upload failed: Network error", { variant: 'error' });
+            showMessageWithTimeout("Image upload failed: Network error", 'error');
             setLoading(false);
-            setUploadProgress(0); // Reset progress after error
+            setUploadProgress(0);
         };
 
         xhr.send(data); // Send the request
     };
 
+    const showMessageWithTimeout = (msg, type) => {
+        setMessage(msg);
+        setMessageType(type);
+        setShowMessage(true);
+        
+        setTimeout(() => {
+            setShowMessage(false);
+            setMessage('');
+        }, 5000); // Message will disappear after 5 seconds
+    };
+
+    const handleCloseMessage = () => {
+        setShowMessage(false);
+        setMessage('');
+    };
+
     return (
-        <Box sx={{ padding: '40px', backgroundColor: '#eaeff1' }}>
+        <Box sx={{ padding: '40px', backgroundColor: '#eaeff1', position: 'relative', minHeight: '100vh' }}>
+            {showMessage && (
+                <Box 
+                    sx={{
+                        position: 'fixed',
+                        top: 20,
+                        right: 20,
+                        backgroundColor: messageType === 'success' ? '#00A272' : 'red',
+                        color: 'white',
+                        padding: '15px 25px', // Increased padding for a larger box
+                        borderRadius: '8px',
+                        border: '2px solid white', // Added border
+                        boxShadow: '0 4px 10px rgba(0, 0, 0, 0.2)', // Added shadow for depth
+                        transition: 'all 0.5s ease-in-out',
+                        zIndex: 1000,
+                        animation: `${showMessage ? 'slideIn 0.5s forwards' : 'slideOut 0.5s forwards'}`,
+                    }}
+                >
+                    <Typography variant="body1" sx={{ display: 'inline' }}>{message}</Typography>
+                    <IconButton onClick={handleCloseMessage} sx={{ color: 'white', marginLeft: '10px' }}>
+                        <CloseIcon />
+                    </IconButton>
+                </Box>
+            )}
             <Paper elevation={6} sx={{ padding: '30px', borderRadius: '15px', backgroundColor: '#ffffff' }}>
                 <Typography variant="h4" sx={{ marginBottom: '20px', fontWeight: 'bold', color: '#333' }}>Profile Settings</Typography>
                 <Grid container spacing={3}>
@@ -169,7 +215,6 @@ export default function StaffProfile() {
                                         value={profileData.name}
                                         onChange={handleChange}
                                         variant="outlined"
-                                        required
                                     />
                                 </Grid>
                                 <Grid item xs={12} md={6}>
@@ -180,8 +225,34 @@ export default function StaffProfile() {
                                         value={profileData.email}
                                         onChange={handleChange}
                                         variant="outlined"
-                                        required
                                     />
+                                </Grid>
+                                <Grid item xs={12} md={6}>
+                                    <TextField
+                                        fullWidth
+                                        label="Address"
+                                        name="address"
+                                        value={profileData.address}
+                                        onChange={handleChange}
+                                        variant="outlined"
+                                    />
+                                </Grid>
+                                <Grid item xs={12} md={6}>
+                                    <FormControl fullWidth variant="outlined">
+                                        <InputLabel id="relationshipStatus-label">Relationship</InputLabel>
+                                        <Select
+                                            labelId="relationshipStatus-label"
+                                            name="relationshipStatus"
+                                            value={profileData.relationshipStatus}
+                                            onChange={handleChange}
+                                            label="Relationship Status"
+                                        >
+                                            <MenuItem value="Married">Married</MenuItem>
+                                            <MenuItem value="Single">Single</MenuItem>
+                                            <MenuItem value="Widow">Widow</MenuItem>
+                                            <MenuItem value="Widower">Widower</MenuItem>
+                                        </Select>
+                                    </FormControl>
                                 </Grid>
                                 <Grid item xs={12} md={6}>
                                     <TextField
@@ -191,7 +262,6 @@ export default function StaffProfile() {
                                         value={profileData.phone}
                                         onChange={handleChange}
                                         variant="outlined"
-                                        required
                                     />
                                 </Grid>
                                 <Grid item xs={12} md={6}>
@@ -217,7 +287,6 @@ export default function StaffProfile() {
                                         value={profileData.nextOfKin.name}
                                         onChange={handleChange}
                                         variant="outlined"
-                                        required
                                     />
                                 </Grid>
                                 <Grid item xs={12} md={6}>
@@ -228,7 +297,6 @@ export default function StaffProfile() {
                                         value={profileData.nextOfKin.phone}
                                         onChange={handleChange}
                                         variant="outlined"
-                                        required
                                     />
                                 </Grid>
                                 <Grid item xs={12} md={6}>
@@ -239,7 +307,6 @@ export default function StaffProfile() {
                                         value={profileData.nextOfKin.email}
                                         onChange={handleChange}
                                         variant="outlined"
-                                        required
                                     />
                                 </Grid>
                                 <Grid item xs={12} md={6}>
@@ -250,7 +317,6 @@ export default function StaffProfile() {
                                         value={profileData.nextOfKin.address}
                                         onChange={handleChange}
                                         variant="outlined"
-                                        required
                                     />
                                 </Grid>
                                 <Grid item xs={12} md={6}>
@@ -258,18 +324,16 @@ export default function StaffProfile() {
                                         <InputLabel id="relationship-label">Relationship</InputLabel>
                                         <Select
                                             labelId="relationship-label"
-                                            name="nextOfKin.relationship"
-                                            value={profileData.nextOfKin.relationship}
+                                            name="nextOfKin.relationshipStatus"
+                                            value={profileData.nextOfKin.relationshipStatus}
                                             onChange={handleChange}
                                             label="Relationship"
-                                            required
                                         >
-                                            <MenuItem value="Parent">Parent</MenuItem>
+                                            <MenuItem value="Father">Father</MenuItem>
+                                            <MenuItem value="Mother">Mother</MenuItem>
                                             <MenuItem value="Sibling">Sibling</MenuItem>
-                                            <MenuItem value="Spouse">Spouse</MenuItem>
-                                            <MenuItem value="Child">Child</MenuItem>
                                             <MenuItem value="Friend">Friend</MenuItem>
-                                            <MenuItem value="Other">Other</MenuItem>
+                                            <MenuItem value="Other Relatives">Other Relatives</MenuItem>
                                         </Select>
                                     </FormControl>
                                 </Grid>
@@ -282,7 +346,6 @@ export default function StaffProfile() {
                                             value={profileData.nextOfKin.gender}
                                             onChange={handleChange}
                                             label="Gender"
-                                            required
                                         >
                                             <MenuItem value="Male">Male</MenuItem>
                                             <MenuItem value="Female">Female</MenuItem>
@@ -290,16 +353,30 @@ export default function StaffProfile() {
                                         </Select>
                                     </FormControl>
                                 </Grid>
+                                <Grid item xs={12}>
+                                    <Divider sx={{ margin: '20px 0' }} />
+                                    <Typography variant="h6" sx={{ marginBottom: '10px', fontWeight: 'bold' }}>Password</Typography>
+                                </Grid>
                                 <Grid item xs={12} md={6}>
                                     <TextField
                                         fullWidth
                                         type="password"
-                                        label="Password"
-                                        name="password"
-                                        value={profileData.password}
+                                        label="Old Password"
+                                        name="oldPassword"
+                                        value={profileData.oldPassword} // Correct value here
                                         onChange={handleChange}
                                         variant="outlined"
-                                        required
+                                    />
+                                </Grid>
+                                <Grid item xs={12} md={6}>
+                                    <TextField
+                                        fullWidth
+                                        type="password"
+                                        label="New Password"
+                                        name="newPassword"
+                                        value={profileData.newPassword} // Correct value here
+                                        onChange={handleChange}
+                                        variant="outlined"
                                     />
                                 </Grid>
                                 <Grid item xs={12} md={6}>
@@ -311,7 +388,6 @@ export default function StaffProfile() {
                                         value={profileData.confirmPassword}
                                         onChange={handleChange}
                                         variant="outlined"
-                                        required
                                     />
                                 </Grid>
                                 <Grid item xs={12}>
@@ -324,6 +400,32 @@ export default function StaffProfile() {
                     </Grid>
                 </Grid>
             </Paper>
+
+            {/* Inline CSS for Animations */}
+            <style>
+                {`
+                    @keyframes slideIn {
+                        0% {
+                            transform: translateY(-20px);
+                            opacity: 0;
+                        }
+                        100% {
+                            transform: translateY(0);
+                            opacity: 1;
+                        }
+                    }
+
+                    @keyframes slideOut {
+                        0% {
+                            transform: translateY(0);
+                            opacity: 1;
+                        }
+                        100% {
+                            transform: translateY(-20px);
+                            opacity: 0;
+                        }
+                `}
+            </style>
         </Box>
     );
 }
