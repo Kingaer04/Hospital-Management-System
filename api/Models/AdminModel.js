@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import { type } from "os";
 import passportLocalMongoose from 'passport-local-mongoose';
 
 const AdminSchema = new mongoose.Schema({
@@ -29,12 +30,25 @@ const AdminSchema = new mongoose.Schema({
         required: true
     },
     hospital_Address: {
-        type: String,
-        unique: true,
-        required: true
+        state: {
+            type: String,
+            required: true
+        },
+        lga: {
+            type: String,
+            required: true
+        },
+        number: {
+            type: String,
+            required: true
+        },
+        street: {
+            type: String,
+            required: true
+        }
     },
     hospital_Phone: {
-        type: Number,
+        type: String,
         unique: true,
         required: true
     },

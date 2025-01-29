@@ -1,16 +1,63 @@
 import React, { useState, useEffect } from 'react'
 import statesAndLGAs from './stateLGA';
+import { useDispatch, useSelector } from 'react-redux';
+import { useNavigate } from 'react-router-dom';
 
 export default function General() {
     const [image, setImage] = useState(null);
     const hospitalName = "NHMIS Hospital"; // Replace with actual hospital name
     const initials = hospitalName.split(' ').map(word => word[0]).join('');
+    const [message, setMessage] = useState('');
+    const [messageType, setMessageType] = useState(''); // 'success' or 'error'
+    const [showMessage, setShowMessage] = useState(false);
+    const dispatch = useDispatch();
+    const navigate = useNavigate(); // Initialize useNavigate
+    const { currentAdmin } = useSelector((state) => state.admin); 
+    const [loading, setLoading] = useState(false);
+    const [uploadProgress, setUploadProgress] = useState(0);
+    const [profileImage, setProfileImage] = useState(currentAdmin?.avatar || '/default-avatar.png');
 
     const handleImageUpload = (event) => {
         const file = event.target.files[0];
-        if (file) {
-            setImage(URL.createObjectURL(file));
-        }
+        if (!file) return;
+        setLoading(true);
+        setUploadProgress(0);
+
+        const data = new FormData();
+        data.append('file', file);
+        data.append('upload_preset', 'Hospital_management_profile');
+        data.append('cloud_name', 'dyc0ssabt');
+
+        const xhr = new XMLHttpRequest();
+
+        xhr.open('POST', 'https://api.cloudinary.com/v1_1/dyc0ssabt/image/upload', true);
+
+        xhr.upload.addEventListener('progress', (event) => {
+            if (event.lengthComputable) {
+                const percentComplete = Math.round((event.loaded * 100) / event.total);
+                setUploadProgress(percentComplete); // Update upload progress
+            }
+        });
+
+        xhr.onload = () => {
+            if (xhr.status === 200) {
+                const uploadedImageUrl = JSON.parse(xhr.responseText);
+                setProfileImage(uploadedImageUrl.url); // Update the profileImage state with the new URL
+                showMessageWithTimeout("Image uploaded successfully!", 'success');
+            } else {
+                showMessageWithTimeout("Image upload failed: " + xhr.statusText, 'error');
+            }
+            setLoading(false);
+            setUploadProgress(0);
+        };
+
+        xhr.onerror = () => {
+            showMessageWithTimeout("Image upload failed: Network error", 'error');
+            setLoading(false);
+            setUploadProgress(0);
+        };
+
+        xhr.send(data);
     };
 
     const handleImageDelete = () => {

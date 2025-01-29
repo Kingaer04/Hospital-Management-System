@@ -100,15 +100,13 @@ const StaffTable = () => {
           onChange={(e) => setSearchTerm(e.target.value)}
         />
         <div className='flex border h-[42px] rounded-lg items-center p-2 bg-[#EEFFFC]'>
-          <img src='/Icons/FilterIcon.png' className='w-4 h-4 mb-3 mt-4'/>
+          <img src='/Icons/FilterIcon.png' className='w-4 h-4 mb-3 mt-4' />
           <select
             className="p-2 rounded bg-transparent text-[#00A272] font-semibold"
             value={roleFilter}
             onChange={(e) => setRoleFilter(e.target.value)}
           >
             <option value="">Filter</option>
-            <option value="Admin">Admin</option>
-            <option value="Staff">Staff</option>
             <option value="Doctor">Doctor</option>
             <option value="Receptionist">Receptionist</option>
           </select>
@@ -124,7 +122,6 @@ const StaffTable = () => {
         <table className="min-w-full bg-white border border-gray-300 rounded-lg shadow-md">
           <thead>
             <tr className="bg-[#00a272] text-white">
-              <th className="py-3 px-4 text-left"></th>
               <th className="py-3 px-4 text-left">Name</th>
               <th className="py-3 px-4 text-left">Phone Number</th>
               <th className="py-3 px-4 text-left">Email</th>
@@ -135,15 +132,23 @@ const StaffTable = () => {
           <tbody>
             {filteredData.map((user, index) => (
               <tr key={user._id} className={`border-b transition duration-300 ease-in-out ${index % 2 === 0 ? 'bg-gray-100' : 'bg-white'} hover:bg-green-100`}>
-                <td className="py-3 px-4"><input type="checkbox" /></td>
-                <td className="py-3 px-4">{user.name}</td>
+                <td className="py-3 px-4 flex items-center">
+                  {user.avatar ? (
+                    <img src={user.avatar} alt={`${user.name}'s avatar`} className="w-7 h-7 rounded-full mr-2" />
+                  ) : (
+                    <div className="w-7 h-7 rounded-full flex items-center justify-center bg-gray-300 text-white mr-2">
+                      {user.name.charAt(0).toUpperCase()}
+                    </div>
+                  )}
+                  <span>{user.name}</span>
+                </td>
                 <td className="py-3 px-4">{user.phone}</td>
                 <td className="py-3 px-4">{user.email}</td>
                 <td className="py-3 px-4">{user.role}</td>
                 <td className="py-3 px-4 flex space-x-2">
                   {currentAdmin.role === 'Admin' && (
                     <button onClick={() => handleDelete(user._id)}>
-                      <FaTrash className="text-red-600 hover:text-red-800" />
+                      <FaTrash className="text-red-600 hover:text-red-800 relative top-0 left-[80%]" />
                     </button>
                   )}
                 </td>

@@ -1,28 +1,35 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
 import { useEffect } from 'react';
+import statesAndLGAs from '../components/SettingsComponents/stateLGA.jsx';
 
 export default function SignUp() {
-  const [formData, setFormData] = React.useState({
+  const [step, setStep] = useState(1);
+  const [error, setError] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [visible, setVisible] = useState(false);
+  const navigate = useNavigate();
+  const dispatch = useDispatch();
+  const [selectedLGA, setSelectedLGA] = useState('');
+  const [selectedState, setSelectedState] = useState('');
+  const [lgas, setLgas] = useState([]);
+  const [formData, setFormData] = useState({
     hospital_Name: '',
     hospital_Representative: '',
     hospital_UID: '',
     ownership: 'private',
     hospital_Email: '',
-    hospital_State: '',
-    hospital_Address: '',
+    hospital_Address: {
+      hospital_State: selectedState || '',
+      hospital_LGA: selectedLGA || '',
+      hospital_Address_Number: '',
+      hospital_Address_Street: '',
+    },
     hospital_Phone: '',
     password: '',
     confirmPassword: ''
   });
-
-  const [step, setStep] = React.useState(1);
-  const [error, setError] = React.useState(null);
-  const [loading, setLoading] = React.useState(false);
-  const [visible, setVisible] = React.useState(false);
-  const navigate = useNavigate();
-  const dispatch = useDispatch();
 
   function handleChange(event) {
     const { name, value } = event.target;
@@ -95,6 +102,23 @@ export default function SignUp() {
     }
   }
 
+  useEffect(() => {
+    if (selectedState) {
+        setLgas(statesAndLGAs[selectedState] || []);
+    } else {
+        setLgas([]);
+    }
+  }, [selectedState]);
+
+  const handleStateChange = (e) => {
+    setSelectedState(e.target.value);
+    setSelectedLGA('');
+  };
+
+  const handleLGAChange = (e) => {
+      setSelectedLGA(e.target.value);
+  };
+
   function handlePrevious() {
     if (step > 1) {
       setStep(prevStep => prevStep - 1);
@@ -115,6 +139,18 @@ export default function SignUp() {
     }
     return strength;
   };
+
+  useEffect(() => {
+    setFormData(prevData => ({
+      ...prevData,
+      hospital_LGA: selectedLGA,
+      hospital_State: selectedState,
+    }));
+  }, [selectedState, selectedLGA]);
+
+  useEffect(() => {
+    console.log(formData);
+  },[formData])
 
   return (
     <div className='p-5'>
@@ -202,18 +238,57 @@ export default function SignUp() {
                     <option value="private">Private</option>
                     <option value="public">Public</option>
                   </select>
-                  <label htmlFor="hospital_Email">Hospital Email</label>
-                  <input type="email" placeholder="Hospital Email" name="hospital_Email" className="border p-3 rounded-lg" onChange={handleChange} required />
                 </>
               )}
               {step === 2 && (
                 <>
-                  <label htmlFor="state">State</label>
-                  <input type="text" placeholder="State" name="hospital_State" className="border p-3 rounded-lg" onChange={handleChange} required />
-                  <label htmlFor="address">Address</label>
-                  <input type="text" placeholder="Address" name="hospital_Address" className="border p-3 rounded-lg" onChange={handleChange} required />
-                  <label htmlFor="phone">Phone</label>
-                  <input type="tel" placeholder="Phone" name="hospital_Phone" className="border p-3 rounded-lg" onChange={handleChange} required />
+                  <label htmlFor="hospital_Email">Hospital Email</label>
+                  <input type="email" placeholder="Hospital Email" name="hospital_Email" className="border p-3 rounded-lg" onChange={handleChange} required />
+                  <label htmlFor="hospital_Phone">Hospital Phone</label>
+                  <input type="text" placeholder="Hospital Phone Number" name="hospital_Phone" className="border p-3 rounded-lg" onChange={handleChange} required />
+                  <div>
+                    <select 
+                        id="hospitalState" 
+                        className='w-full border border-[#E0E0E0] p-2 rounded-[5px] mt-1 focus:border-[#00A272] focus:outline-none focus:ring-2 focus:ring-[#00A272]'
+                        value={selectedState}
+                        name='hospital_State'
+                        onChange={handleStateChange}
+                        required
+                    >
+                        <option value="">Select State</option>
+                        {Object.keys(statesAndLGAs).map((state) => (
+                            <option key={state} value={state}>{state}</option>
+                        ))}
+                    </select>
+                  </div>
+                  <div>
+                    <select 
+                        id="hospitalLGA" 
+                        className='w-full border border-[#E0E0E0] p-2 rounded-[5px] mt-1 focus:border-[#00A272] focus:outline-none focus:ring-2 focus:ring-[#00A272]'
+                        value={selectedLGA}
+                        onChange={handleLGAChange}
+                        disabled={!selectedState}
+                        name='hospital_LGA'
+                        required
+                    >
+                        <option value="">Select LGA</option>
+                        {lgas.map((lga) => (
+                            <option key={lga} value={lga}>{lga}</option>
+                        ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label htmlFor="hospital_Address_Number" className='text-[14px]'>
+                        Number
+                    </label>
+                    <input type="text" name="hospital_Address_Number" className='w-full border border-[#E0E0E0] p-2 rounded-[5px] mt-1 focus:border-[#00A272] focus:outline-none focus:ring-2 focus:ring-[#00A272]' onChange={handleChange}/>
+                  </div>
+                  <div>
+                    <label htmlFor="hospital_Address_Street" className='text-[14px]'>
+                        Street
+                    </label>
+                    <input type="text" name="hospital_Address_Street" className='w-full border border-[#E0E0E0] p-2 rounded-[5px] mt-1 focus:border-[#00A272] focus:outline-none focus:ring-2 focus:ring-[#00A272]' onChange={handleChange}/>
+                  </div>
                 </>
               )}
               {step === 3 && (

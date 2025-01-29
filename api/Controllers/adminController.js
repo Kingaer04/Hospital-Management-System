@@ -12,8 +12,13 @@ function getAdminParams(body) {
         ownership: body.ownership,
         hospital_Email: body.hospital_Email,
         hospital_State: body.hospital_State,
-        hospital_Address: body.hospital_Address,
-        hospital_Phone: body.hospital_Phone
+        hospital_Phone: body.hospital_Phone,
+        hospital_Address: {
+            state: body.hospital_State,
+            lga: body.hospital_LGA,
+            number: body.hospital_Address_Number,
+            street: body.hospital_Address_Street,
+        },
     };
 }
 

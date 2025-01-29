@@ -8,7 +8,7 @@ import Toolbar from '@mui/material/Toolbar';
 import List from '@mui/material/List';
 import Divider from '@mui/material/Divider';
 import MenuIcon from '@mui/icons-material/Menu';
-import {SettingsOutlined} from '@mui/icons-material'
+import { SettingsOutlined } from '@mui/icons-material';
 import IconButton from '@mui/material/IconButton';
 import DoubleArrowIcon from '@mui/icons-material/DoubleArrow';
 import ListItem from '@mui/material/ListItem';
@@ -20,16 +20,16 @@ import CalendarMonthOutlinedIcon from '@mui/icons-material/CalendarMonthOutlined
 import MainNavbar from './navbar';
 import Diversity1OutlinedIcon from '@mui/icons-material/Diversity1Outlined';
 import { Link, Outlet, useLocation } from 'react-router-dom';
-import { useOpen } from '../components/openContext'
+import { useOpen } from '../components/openContext';
 import LogoutOutlinedIcon from '@mui/icons-material/LogoutOutlined';
 import SignOutModal from './SignOutModal.jsx';
+import { useSelector } from 'react-redux'; // Import useSelector
 
 const drawerWidth = 240;
 
 const Main = styled('main', { shouldForwardProp: (prop) => prop !== 'open' })(
   ({ theme }) => ({
     flexGrow: 1,
-    // padding: theme.spacing(3),
     transition: theme.transitions.create('margin', {
       easing: theme.transitions.easing.sharp,
       duration: theme.transitions.duration.leavingScreen,
@@ -49,11 +49,6 @@ const Main = styled('main', { shouldForwardProp: (prop) => prop !== 'open' })(
     ],
   }),
 );
-
-// Styled component to rotate the icon
-const RotatedDoubleArrowIcon = styled(DoubleArrowIcon)(({ theme }) => ({
-  transform: theme.direction === 'ltr' ? 'rotate(180deg)' : 'none',
-}));
 
 const AppBar = styled(MuiAppBar, {
   shouldForwardProp: (prop) => prop !== 'open',
@@ -83,15 +78,14 @@ const DrawerHeader = styled('div')(({ theme }) => ({
   display: 'flex',
   alignItems: 'center',
   padding: theme.spacing(0, 1),
-  // necessary for content to be below app bar
   ...theme.mixins.toolbar,
   justifyContent: 'flex-end',
 }));
 
 export default function SideBar() {
   const theme = useTheme();
-  const {open, setOpen, mainContentWidth} = useOpen()
-  const location = useLocation()
+  const { open, setOpen, mainContentWidth } = useOpen();
+  const location = useLocation();
 
   const handleDrawerOpen = () => {
     setOpen(true);
@@ -101,17 +95,18 @@ export default function SideBar() {
     setOpen(false);
   };
 
-  const isHomePage = location.pathname === "/Home"
-
-
   const [signOutModalOpen, setSignOutModalOpen] = React.useState(false);
 
   const handleSignOutClick = () => {
     setSignOutModalOpen(true);
   };
 
+  // Get the current user and admin from the Redux store
+  const { currentUser } = useSelector((state) => state.user);
+  const { currentAdmin } = useSelector((state) => state.admin);
+
   return (
-    <Box sx={{ display: 'flex', maxWidth: '1440px', width:'100%', margin: '0 auto' }}>
+    <Box sx={{ display: 'flex', maxWidth: '1440px', width: '100%', margin: '0 auto' }}>
       <CssBaseline />
       <AppBar position="fixed" open={open}>
         <Toolbar>
@@ -121,16 +116,13 @@ export default function SideBar() {
             onClick={handleDrawerOpen}
             edge="start"
             sx={[
-              {
-                mr: 2,
-                backgroundColor: "#00A272"
-              },
+              { mr: 2, backgroundColor: "#00A272" },
               open && { display: 'none' },
             ]}
           >
             <MenuIcon />
           </IconButton>
-          <MainNavbar/>
+          <MainNavbar />
         </Toolbar>
       </AppBar>
       <Drawer
@@ -140,6 +132,8 @@ export default function SideBar() {
           '& .MuiDrawer-paper': {
             width: drawerWidth,
             boxSizing: 'border-box',
+            display: 'flex',
+            flexDirection: 'column',
           },
         }}
         variant="persistent"
@@ -148,15 +142,17 @@ export default function SideBar() {
       >
         <DrawerHeader>
           <div className='flex gap-3 blur-sm'>
-            <img src="/Logo_Images/logoIcon.png" alt="" className='w-6'/>
+            <img src="/Logo_Images/logoIcon.png" alt="" className='w-6' />
             <img src="/Logo_Images/logoName.png" alt="" className='h-5' />
           </div>
           <IconButton onClick={handleDrawerClose}>
-            <RotatedDoubleArrowIcon/>
+            <DoubleArrowIcon />
           </IconButton>
         </DrawerHeader>
         <Divider />
         <List>
+
+          {/* Always show Home and Appointment for all users */}
           {['Home', 'Appointment'].map((text, index) => (
             <ListItem key={text} disablePadding>
               <ListItemButton component={Link} to={index % 2 === 0 ? '/home' : '/appointment'}>
@@ -170,40 +166,64 @@ export default function SideBar() {
         </List>
         <Divider />
         <List>
-          {['Patient', 'Staff'].map((text, index) => (
+          {['Patient'].map((text) => (
             <ListItem key={text} disablePadding>
-              <ListItemButton component={Link} to={index % 2 === 0 ? '/patient': '/staff'}>
+              <ListItemButton component={Link} to='/patient'>
                 <ListItemIcon>
-                  {index % 2 === 0 ? <Diversity1OutlinedIcon /> : <img src="/Icons/StaffIcon.png"/>}
+                  <Diversity1OutlinedIcon />
                 </ListItemIcon>
                 <ListItemText primary={text} />
               </ListItemButton>
             </ListItem>
           ))}
+          {/* Show Staff link if the user is an Admin */}
+          {currentAdmin?.role === "Admin" && (
+            <ListItem key="Staff" disablePadding>
+              <ListItemButton component={Link} to="/details">
+                <ListItemIcon>
+                  <Diversity1OutlinedIcon />
+                </ListItemIcon>
+                <ListItemText primary="Staff" />
+              </ListItemButton>
+            </ListItem>
+          )}
+
+          {/* Show Profile link for Receptionist or Doctor */}
+          {(currentUser?.role === "Receptionist" || currentUser?.role === "Doctor") && (
+            <ListItem key="Profile" disablePadding>
+              <ListItemButton component={Link} to="/profile">
+                <ListItemIcon>
+                  <OtherHousesOutlinedIcon />
+                </ListItemIcon>
+                <ListItemText primary="Profile" />
+              </ListItemButton>
+            </ListItem>
+          )}
         </List>
-        <Box mt="100%">
-          <Divider/>
-          <Box p="20px">
-            <Box display="flex" alignItems="center" gap="30px">
-              <SettingsOutlined sx={{ color: '#A9A9A9' }}/>
-              <Link to="/settings" style={{ textDecoration: 'none', color: 'inherit' }}>
-                <p>
-                  Settings
-                </p>
-              </Link>
-            </Box>
-            <Box display="flex" alignItems="center" gap="30px" mt="10px">
-              <LogoutOutlinedIcon sx={{ color: '#A9A9A9' }}/>
-              <p onClick={() => handleSignOutClick()} style={{ cursor: 'pointer' }}>
-                Logout
-              </p>
-            </Box>
+        <Box sx={{ marginTop: 'auto' }}>
+          <Divider sx={{ marginBottom: "10px" }}/>
+          <Box display="flex" alignItems="center" gap="30px" padding="20px">
+            {/* Show Settings link for Admin */}
+            {currentAdmin?.role === "Admin" && (
+              <>
+                <SettingsOutlined sx={{ color: '#A9A9A9' }} />
+                <Link to="/settings" style={{ textDecoration: 'none', color: 'inherit' }}>
+                  <p>Settings</p>
+                </Link>
+              </>
+            )}
+          </Box>
+          <Box display="flex" alignItems="center" gap="30px" mt="10px" padding="20px" paddingTop="0px">
+            <LogoutOutlinedIcon sx={{ color: '#A9A9A9' }} />
+            <p onClick={handleSignOutClick} style={{ cursor: 'pointer' }}>
+              Logout
+            </p>
           </Box>
         </Box>
       </Drawer>
       <Main open={open} sx={{ width: mainContentWidth }}>
         <DrawerHeader />
-        <Outlet/>
+        <Outlet />
       </Main>
       <SignOutModal open={signOutModalOpen} onClose={() => setSignOutModalOpen(false)} />
     </Box>
