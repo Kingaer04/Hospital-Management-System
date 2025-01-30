@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import DeactivateModal from './deactivateModal';
 import DeleteAccountModal from './deleteAccountModal';
 import { useDispatch, useSelector } from 'react-redux';
@@ -15,12 +15,14 @@ export default function Account({ updateAccount }) {
     const [profileImage, setProfileImage] = useState(currentAdmin?.avatar || '/default-avatar.png');
     const [adminAccount, setAdminAccount] = useState({
         hospital_Representative_Name: currentAdmin.hospital_Representative || '',
+        avatar: currentAdmin?.avatar || '/default-avatar.png', // Initialize avatar
         oldPassword: '',
         newPassword: '',
         confirmPassword: ''
     });
     const [isDeactivateAccount, setIsDeactivateAccount] = useState(false);
     const [isDeleteAccount, setIsDeleteAccount] = useState(false);
+    const fileInputRef = useRef(null); // Create a ref for the file input
 
     const handleImageUpload = (event) => {
         const file = event.target.files[0];
@@ -34,7 +36,6 @@ export default function Account({ updateAccount }) {
         data.append('cloud_name', 'dyc0ssabt');
 
         const xhr = new XMLHttpRequest();
-
         xhr.open('POST', 'https://api.cloudinary.com/v1_1/dyc0ssabt/image/upload', true);
 
         xhr.upload.addEventListener('progress', (event) => {
@@ -48,8 +49,13 @@ export default function Account({ updateAccount }) {
             if (xhr.status === 200) {
                 const uploadedImageUrl = JSON.parse(xhr.responseText);
                 setProfileImage(uploadedImageUrl.url);
+                setAdminAccount((prev) => ({
+                    ...prev,
+                    avatar: uploadedImageUrl.url // Update avatar in adminAccount
+                }));
                 setLoading(false);
                 setUploadProgress(0);
+                updateAccount('avatar', uploadedImageUrl.url); // Update the account in parent component
             } else {
                 console.error("Image upload failed: " + xhr.statusText);
                 setLoading(false);
@@ -66,6 +72,11 @@ export default function Account({ updateAccount }) {
 
     const handleImageDelete = () => {
         setProfileImage('/default-avatar.png'); // Reset to default avatar
+        setAdminAccount((prev) => ({
+            ...prev,
+            avatar: '/default-avatar.png' // Update adminAccount avatar
+        }));
+        updateAccount('avatar', '/default-avatar.png'); // Update the account in parent component
     };
 
     const handleChange = (event) => {
@@ -74,7 +85,7 @@ export default function Account({ updateAccount }) {
             ...prevData,
             [name]: value // Update state dynamically based on input name
         }));
-        updateAccount( name, value ); // Pass name and value to the updateAccount function
+        updateAccount(name, value); // Pass name and value to the updateAccount function
     };
 
     const handleDeactivateOnClick = () => {
@@ -106,15 +117,19 @@ export default function Account({ updateAccount }) {
                         ) : (
                             <div 
                                 className='w-[40px] h-[40px] flex items-center justify-center bg-[#F5FFFE] text-[12px] cursor-pointer rounded-full font-semibold text-[#00A272]' 
-                                onClick={() => document.getElementById('imageUpload').click()}
+                                onClick={() => fileInputRef.current.click()} // Use ref to trigger click
                                 title="Click to change or upload image"
                             >
                                 {adminAccount.hospital_Representative_Name.charAt(0) || initials}
                             </div>
                         )}
-                        <div style={{ display: 'none' }}>
-                            <input id="imageUpload" type="file" onChange={handleImageUpload} />
-                        </div>
+                        <input 
+                            type="file" 
+                            hidden 
+                            accept='image/*' 
+                            onChange={handleImageUpload} 
+                            ref={fileInputRef} // Attach ref to the input
+                        />
                         <button onClick={handleImageDelete} className='bg-[#FFEBEB] text-[#FF0000] border border-[#FF0000] text-[12px] p-1 pl-3 pr-3 rounded-[5px]'>Delete</button>
                     </div>
                     {loading && <div>Uploading: {uploadProgress}%</div>}

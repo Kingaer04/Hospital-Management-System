@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react';
-import { Link, Route, BrowserRouter as Router, Routes } from 'react-router-dom';
+import { useSelector } from 'react-redux';
 import General from '../components/SettingsComponents/general';
 import NotificationSettings from '@/components/SettingsComponents/notification';
 import Preference from '@/components/SettingsComponents/Preference';
 import Account from '@/components/SettingsComponents/Account';
-import { useSelector } from 'react-redux';
+import Notification from '../components/Notification'; // Import the Notification component
 
 export default function Settings() {
     const { currentAdmin } = useSelector((state) => state.admin);
@@ -31,10 +31,11 @@ export default function Settings() {
         confirmPassword: ''
     });
 
-    // Store initial settings for revert functionality
     const [initialGeneralSettings, setInitialGeneralSettings] = useState(generalSettings);
     const [initialAdminAccount, setInitialAdminAccount] = useState(adminAccount);
     const [hasChanges, setHasChanges] = useState(false);
+
+    const [notification, setNotification] = useState({ message: '', type: '' });
 
     const updateAccount = (name, value) => {
         setAdminAccount(prevData => ({
@@ -50,14 +51,12 @@ export default function Settings() {
         }));
     }
 
-    // Detect changes in generalSettings
     useEffect(() => {
         setHasChanges(JSON.stringify(initialGeneralSettings) !== JSON.stringify(generalSettings) ||
                       JSON.stringify(initialAdminAccount) !== JSON.stringify(adminAccount));
     }, [generalSettings, adminAccount, initialGeneralSettings, initialAdminAccount]);
 
     const handleSave = () => {
-        // Save changes to the backend
         fetch('/api/updateGeneralSettings', {
             method: 'POST',
             headers: {
@@ -68,20 +67,21 @@ export default function Settings() {
         .then(response => response.json())
         .then(data => {
             console.log('Success:', data);
-            setInitialGeneralSettings(generalSettings); // Update initial settings
-            setInitialAdminAccount(adminAccount); // Update initial account settings
-            setHasChanges(false); // Reset change tracker
+            setInitialGeneralSettings(generalSettings);
+            setInitialAdminAccount(adminAccount);
+            setHasChanges(false);
+            setNotification({ message: 'Settings saved successfully!', type: 'success' });
         })
         .catch((error) => {
             console.error('Error:', error);
+            setNotification({ message: 'Error saving settings. Please try again.', type: 'error' });
         });
     };
 
     const handleCancel = () => {
-        // Revert to initial settings
         setGeneralSettings(initialGeneralSettings);
         setAdminAccount(initialAdminAccount);
-        setHasChanges(false); // Reset change tracker
+        setHasChanges(false);
     };
 
     const renderContent = () => {
@@ -105,6 +105,14 @@ export default function Settings() {
 
     return (
         <div className='p-5'>
+            {/* Notification Component */}
+            {notification.message && (
+                <Notification 
+                    message={notification.message} 
+                    type={notification.type} 
+                    onClose={() => setNotification({ message: '', type: '' })} 
+                />
+            )}
             <div className='mb-5'>
                 <div className='flex items-center justify-between'>
                     <div>

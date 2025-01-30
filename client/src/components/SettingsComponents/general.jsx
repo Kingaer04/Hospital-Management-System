@@ -96,14 +96,14 @@ export default function General({updateGeneralSettings}) {
                             <label htmlFor="hospitalEmail" className='text-[14px] font-semibold'>
                                 Email Address
                             </label>
-                            <input type="email" id="hospitalEmail" className='w-full border border-[#E0E0E0] p-2 rounded-[5px] mt-1 focus:border-[#00A272] focus:outline-none focus:ring-2 focus:ring-[#00A272]' value={generalSettings.hospital_Email} onChange={handleChange}/>
+                            <input type="email" name="hospital_Email" className='w-full border border-[#E0E0E0] p-2 rounded-[5px] mt-1 focus:border-[#00A272] focus:outline-none focus:ring-2 focus:ring-[#00A272]' value={generalSettings.hospital_Email} onChange={handleChange}/>
                         </div>
                     </div>
                     <div className='mt-5 w-[45.5%]'>
                         <label htmlFor="hospitalPhoneNumber" className='text-[14px] font-semibold'>
                             Phone Number
                         </label>
-                        <input type="text" id="hospitalPhoneNumber" className='w-full border border-[#E0E0E0] p-2 rounded-[5px] mt-1 focus:border-[#00A272] focus:outline-none focus:ring-2 focus:ring-[#00A272]' value={generalSettings.hospital_Phone} onChange={handleChange}/>    
+                        <input type="text" name="hospital_Phone" className='w-full border border-[#E0E0E0] p-2 rounded-[5px] mt-1 focus:border-[#00A272] focus:outline-none focus:ring-2 focus:ring-[#00A272]' value={generalSettings.hospital_Phone} onChange={handleChange}/>    
                     </div>
                 </div>
                 <hr className='mt-5'/>
