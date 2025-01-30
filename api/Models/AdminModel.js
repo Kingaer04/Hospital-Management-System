@@ -58,6 +58,9 @@ const AdminSchema = new mongoose.Schema({
     role: {
         type: String,
         default: "Admin"
+    },
+    avatar: {
+        type: String,
     }
 }, {timestamps: true})
 

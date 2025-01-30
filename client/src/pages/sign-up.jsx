@@ -148,10 +148,6 @@ export default function SignUp() {
     }));
   }, [selectedState, selectedLGA]);
 
-  useEffect(() => {
-    console.log(formData);
-  },[formData])
-
   return (
     <div className='p-5'>
       {loading && (

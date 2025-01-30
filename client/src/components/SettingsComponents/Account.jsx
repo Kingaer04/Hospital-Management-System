@@ -1,17 +1,70 @@
 import React, { useState, useEffect } from 'react'
 import DeactivateModal from './deactivateModal';
 import DeleteAccountModal from './deleteAccountModal';
+import { useDispatch, useSelector } from 'react-redux';
+import { useNavigate } from 'react-router-dom';
 
 export default function Account() {
     const [image, setImage] = useState(null);
     const hospitalName = "NHMIS Hospital"; // Replace with actual hospital name
     const initials = hospitalName.split(' ').map(word => word[0]).join('');
+    const [message, setMessage] = useState('');
+    const [messageType, setMessageType] = useState(''); // 'success' or 'error'
+    const [showMessage, setShowMessage] = useState(false);
+    const dispatch = useDispatch();
+    const navigate = useNavigate(); // Initialize useNavigate
+    const { currentAdmin } = useSelector((state) => state.admin); 
+    const [loading, setLoading] = useState(false);
+    const [uploadProgress, setUploadProgress] = useState(0);
+    const [profileImage, setProfileImage] = useState(currentAdmin?.avatar || '/default-avatar.png');
+    const [adminAccount, setAdminAccount] = useState({
+        hospital_Representative_Name: currentAdmin.hospital_Representative || '',
+        oldPassword: '',
+        newPassword: '',
+        confirmPassword: ''
+    })
 
     const handleImageUpload = (event) => {
         const file = event.target.files[0];
-        if (file) {
-            setImage(URL.createObjectURL(file));
-        }
+        if (!file) return;
+        setLoading(true);
+        setUploadProgress(0);
+
+        const data = new FormData();
+        data.append('file', file);
+        data.append('upload_preset', 'Hospital_management_profile');
+        data.append('cloud_name', 'dyc0ssabt');
+
+        const xhr = new XMLHttpRequest();
+
+        xhr.open('POST', 'https://api.cloudinary.com/v1_1/dyc0ssabt/image/upload', true);
+
+        xhr.upload.addEventListener('progress', (event) => {
+            if (event.lengthComputable) {
+                const percentComplete = Math.round((event.loaded * 100) / event.total);
+                setUploadProgress(percentComplete); // Update upload progress
+            }
+        });
+
+        xhr.onload = () => {
+            if (xhr.status === 200) {
+                const uploadedImageUrl = JSON.parse(xhr.responseText);
+                setProfileImage(uploadedImageUrl.url); // Update the profileImage state with the new URL
+                showMessageWithTimeout("Image uploaded successfully!", 'success');
+            } else {
+                showMessageWithTimeout("Image upload failed: " + xhr.statusText, 'error');
+            }
+            setLoading(false);
+            setUploadProgress(0);
+        };
+
+        xhr.onerror = () => {
+            showMessageWithTimeout("Image upload failed: Network error", 'error');
+            setLoading(false);
+            setUploadProgress(0);
+        };
+
+        xhr.send(data);
     };
 
     const handleImageDelete = () => {
@@ -26,6 +79,14 @@ export default function Account() {
     }
     const handleDeleteOnClick = () => {
         setIsDeleteAccount(true)
+    }
+
+    const handleChange = (event) => {
+        const {name, value} = event.target;
+        setAdminAccount(prevData => ({
+            ...prevData,
+            [name]: value
+        }))
     }
 
     return (
@@ -71,44 +132,30 @@ export default function Account() {
                 <div className='mt-7'>
                     <div className='flex gap-16'> 
                         <div className='w-[45.5%]'>
-                            <label htmlFor="hospitalName" className='text-[14px] font-semibold'>
-                                First Name
+                            <label htmlFor="hospitalEmail" className='text-[14px] font-semibold'>
+                                Representative Name
                             </label>
-                            <input type="text" id="hospitalName" className='w-full border border-[#E0E0E0] p-2 rounded-[5px] mt-1 focus:border-[#00A272] focus:outline-none focus:ring-2 focus:ring-[#00A272]' value={hospitalName} readOnly/>
+                            <input type="text" id="hospitalEmail" className='w-full border border-[#E0E0E0] p-2 rounded-[5px] mt-1 focus:border-[#00A272] focus:outline-none focus:ring-2 focus:ring-[#00A272]' value={adminAccount.hospital_Representative_Name} onChange={handleChange}/>
                         </div>
                         <div className='w-[45.5%]'>
                             <label htmlFor="hospitalEmail" className='text-[14px] font-semibold'>
-                                Last Name
+                                Old Password
                             </label>
-                            <input type="text" id="hospitalEmail" className='w-full border border-[#E0E0E0] p-2 rounded-[5px] mt-1 focus:border-[#00A272] focus:outline-none focus:ring-2 focus:ring-[#00A272]'/>
+                            <input type="password" id="hospitalEmail" className='w-full border border-[#E0E0E0] p-2 rounded-[5px] mt-1 focus:border-[#00A272] focus:outline-none focus:ring-2 focus:ring-[#00A272]'value={oldPassword} onChange={handleChange}/>
                         </div>
                     </div>
                     <div className='flex gap-16'>
                         <div className='mt-5 w-[45.5%]'>
-                            <label htmlFor="hospitalPhoneNumber" className='text-[14px] font-semibold'>
-                                Phone Number
+                            <label htmlFor="newHospitalPassword" className='text-[14px] font-semibold'>
+                                New Password
                             </label>
-                            <input type="text" id="hospitalPhoneNumber" className='w-full border border-[#E0E0E0] p-2 rounded-[5px] mt-1 focus:border-[#00A272] focus:outline-none focus:ring-2 focus:ring-[#00A272]'/>    
+                            <input type="password" name="newHospitalPassword" className='w-full border border-[#E0E0E0] p-2 rounded-[5px] mt-1 focus:border-[#00A272] focus:outline-none focus:ring-2 focus:ring-[#00A272]'value={newPassword} onChange={handleChange}/>
                         </div>
                         <div className='mt-5 w-[45.5%]'>
-                            <label htmlFor="hospitalEmail" className='text-[14px] font-semibold'>
-                                Email Address
+                            <label htmlFor="confirmHospitalPassword" className='text-[14px] font-semibold'>
+                                Confirm Password
                             </label>
-                            <input type="email" id="hospitalEmail" className='w-full border border-[#E0E0E0] p-2 rounded-[5px] mt-1 focus:border-[#00A272] focus:outline-none focus:ring-2 focus:ring-[#00A272]'/>
-                        </div>
-                    </div>
-                    <div className='flex gap-16'>
-                        <div className='mt-5 w-[45.5%]'>
-                            <label htmlFor="hospitalPhoneNumber" className='text-[14px] font-semibold'>
-                                Date of Birth
-                            </label>
-                            <input type="text" id="hospitalPhoneNumber" className='w-full border border-[#E0E0E0] p-2 rounded-[5px] mt-1 focus:border-[#00A272] focus:outline-none focus:ring-2 focus:ring-[#00A272]'/>    
-                        </div>
-                        <div className='mt-5 w-[45.5%]'>
-                            <label htmlFor="hospitalEmail" className='text-[14px] font-semibold'>
-                                Password
-                            </label>
-                            <input type="password" id="hospitalEmail" className='w-full border border-[#E0E0E0] p-2 rounded-[5px] mt-1 focus:border-[#00A272] focus:outline-none focus:ring-2 focus:ring-[#00A272]'/>
+                            <input type="password" name="confirmHospitalPassword" className='w-full border border-[#E0E0E0] p-2 rounded-[5px] mt-1 focus:border-[#00A272] focus:outline-none focus:ring-2 focus:ring-[#00A272]' value={confirmPassword} onChange={handleChange}/>
                         </div>
                     </div>
                 </div>
