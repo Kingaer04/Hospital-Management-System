@@ -31,19 +31,58 @@ export default function Settings() {
         confirmPassword: ''
     });
 
+    // Store initial settings for revert functionality
+    const [initialGeneralSettings, setInitialGeneralSettings] = useState(generalSettings);
+    const [initialAdminAccount, setInitialAdminAccount] = useState(adminAccount);
+    const [hasChanges, setHasChanges] = useState(false);
+
     const updateAccount = (name, value) => {
         setAdminAccount(prevData => ({
-            ...prevData, // Spread the previous state
-            [name]: value // Update the specific field
+            ...prevData, 
+            [name]: value 
         }));
     }
 
     const updateGeneralSettings = (name, value) => {
         setGeneralSettings(prevData => ({
-            ...prevData, // Spread the previous state
-            [name]: value // Update the specific field
+            ...prevData, 
+            [name]: value 
         }));
     }
+
+    // Detect changes in generalSettings
+    useEffect(() => {
+        setHasChanges(JSON.stringify(initialGeneralSettings) !== JSON.stringify(generalSettings) ||
+                      JSON.stringify(initialAdminAccount) !== JSON.stringify(adminAccount));
+    }, [generalSettings, adminAccount, initialGeneralSettings, initialAdminAccount]);
+
+    const handleSave = () => {
+        // Save changes to the backend
+        fetch('/api/updateGeneralSettings', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(generalSettings),
+        })
+        .then(response => response.json())
+        .then(data => {
+            console.log('Success:', data);
+            setInitialGeneralSettings(generalSettings); // Update initial settings
+            setInitialAdminAccount(adminAccount); // Update initial account settings
+            setHasChanges(false); // Reset change tracker
+        })
+        .catch((error) => {
+            console.error('Error:', error);
+        });
+    };
+
+    const handleCancel = () => {
+        // Revert to initial settings
+        setGeneralSettings(initialGeneralSettings);
+        setAdminAccount(initialAdminAccount);
+        setHasChanges(false); // Reset change tracker
+    };
 
     const renderContent = () => {
         switch (activeTab) {
@@ -74,12 +113,22 @@ export default function Settings() {
                         </h1>
                     </div>
                     <div className='flex gap-5'>
-                        <button className='text-[#00A272] bg-[#F5FFFE] p-1 pr-4 pl-4 rounded-[7px]'>
-                            Cancel
-                        </button>
-                        <button className='text-white bg-[#00A272] p-1 pr-4 pl-4 rounded-[7px]'>
-                            Save
-                        </button>
+                        {hasChanges && (
+                            <>
+                                <button 
+                                    className='text-[#00A272] bg-[#F5FFFE] p-1 pr-4 pl-4 rounded-[7px]'
+                                    onClick={handleCancel}
+                                >
+                                    Cancel
+                                </button>
+                                <button 
+                                    className='text-white bg-[#00A272] p-1 pr-4 pl-4 rounded-[7px]'
+                                    onClick={handleSave}
+                                >
+                                    Save
+                                </button>
+                            </>
+                        )}
                     </div>
                 </div>
                 <p className='text-gray-500 text-xs font-light'>
