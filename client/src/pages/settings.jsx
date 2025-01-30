@@ -1,27 +1,68 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, Route, BrowserRouter as Router, Routes } from 'react-router-dom';
 import General from '../components/SettingsComponents/general';
 import NotificationSettings from '@/components/SettingsComponents/notification';
 import Preference from '@/components/SettingsComponents/Preference';
 import Account from '@/components/SettingsComponents/Account';
+import { useSelector } from 'react-redux';
 
 export default function Settings() {
+    const { currentAdmin } = useSelector((state) => state.admin);
     const [activeTab, setActiveTab] = useState('general');
+    const [generalSettings, setGeneralSettings] = useState({
+        hospital_Name: currentAdmin.hospital_Name || '',
+        hospital_Representative: currentAdmin.hospital_Representative || '',
+        hospital_UID: currentAdmin.hospital_UID || '',
+        ownership: currentAdmin.ownership || '',
+        hospital_Email: currentAdmin.hospital_Email || '',
+        hospital_Address: {
+            hospital_State: currentAdmin.hospital_Address.state || '',
+            hospital_LGA: currentAdmin.hospital_Address.lga || '',
+            hospital_Address_Number: currentAdmin.hospital_Address.number || '',
+            hospital_Address_Street: currentAdmin.hospital_Address.street || '',
+        },
+        hospital_Phone: currentAdmin.hospital_Phone || '',
+    });
+
+    const [adminAccount, setAdminAccount] = useState({
+        hospital_Representative_Name: currentAdmin.hospital_Representative || '',
+        oldPassword: '',
+        newPassword: '',
+        confirmPassword: ''
+    });
+
+    const updateAccount = (name, value) => {
+        setAdminAccount(prevData => ({
+            ...prevData, // Spread the previous state
+            [name]: value // Update the specific field
+        }));
+    }
+
+    const updateGeneralSettings = (name, value) => {
+        setGeneralSettings(prevData => ({
+            ...prevData, // Spread the previous state
+            [name]: value // Update the specific field
+        }));
+    }
 
     const renderContent = () => {
         switch (activeTab) {
             case 'general':
-                return <General />;
+                return <General updateGeneralSettings={updateGeneralSettings} />;
             case 'preference':
                 return <Preference />;
             case 'notification':
                 return <NotificationSettings />;
             case 'account':
-                return <Account />;
+                return <Account updateAccount={updateAccount} />;
             default:
                 return <General />;
         }
     };
+
+    useEffect(() => {
+        console.log(adminAccount);
+    }, [adminAccount]);
 
     return (
         <div className='p-5'>

@@ -3,7 +3,7 @@ import statesAndLGAs from './stateLGA';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 
-export default function General() {
+export default function General({updateGeneralSettings}) {
     const { currentAdmin } = useSelector((state) => state.admin);
     const [generalSettings, setGeneralSettings] = useState({
         hospital_Name: currentAdmin.hospital_Name || '',
@@ -66,6 +66,7 @@ export default function General() {
             ...prevData,
             [name]: value
         }));
+        updateGeneralSettings( name, value );
     };
 
     return (
