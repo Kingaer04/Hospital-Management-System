@@ -25,10 +25,6 @@ const AdminSchema = new mongoose.Schema({
         unique: true,
         required: true
     },
-    hospital_State: {
-        type: String,
-        required: true
-    },
     hospital_Address: {
         state: {
             type: String,

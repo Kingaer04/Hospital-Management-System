@@ -6,12 +6,12 @@ import StaffData from "../Models/StaffModel.js";
 
 function getAdminParams(body) {
     return {
+        avatar: body.avatar,
         hospital_Name: body.hospital_Name,
         hospital_Representative: body.hospital_Representative,
         hospital_UID: body.hospital_UID,
         ownership: body.ownership,
         hospital_Email: body.hospital_Email,
-        hospital_State: body.hospital_State,
         hospital_Phone: body.hospital_Phone,
         hospital_Address: {
             state: body.hospital_State,
@@ -110,6 +110,42 @@ export const adminController = {
         try {
             res.clearCookie('token');
             res.status(200).json("Admin has logged out!");
+        } catch (error) {
+            next(error);
+        }
+    },
+
+    updateAccount: async (req, res, next) => {
+        try {
+            if (req.user.id !== req.params.id) {
+                return res.status(401).json({ error: 'Unauthorized! You can only update your account' });
+            }
+    
+            // Get the current user before updating
+            const currentUser = await HospitalAdminAccount.findById(req.user.id);
+            if (!currentUser) {
+                return res.status(404).json({ error: 'User not found' });
+            }
+    
+            // Update user with provided fields
+            const updatedUser = await HospitalAdminAccount.findByIdAndUpdate(req.user.id, {
+                $set: getAdminParams(req.body) // Ensure this function extracts the right fields
+            }, { new: true });
+    
+            // Check if both old and new passwords are provided
+            if (req.body.oldPassword && req.body.newPassword) {
+                try {
+                    await currentUser.changePassword(req.body.oldPassword, req.body.newPassword);
+                } catch (error) {
+                    return res.status(400).json({ error: 'Old password is incorrect' });
+                }
+            } else if (req.body.oldPassword || req.body.newPassword) {
+                return res.status(400).json({ error: 'Both old and new passwords must be provided.' });
+            }
+    
+            // After updating the user, return the complete user object
+            const fullUser = await HospitalAdminAccount.findById(req.user.id);
+            res.status(200).json(fullUser);
         } catch (error) {
             next(error);
         }

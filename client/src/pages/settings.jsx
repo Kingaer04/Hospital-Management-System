@@ -1,12 +1,14 @@
 import { useEffect, useState } from 'react';
-import { useSelector } from 'react-redux';
+import { useSelector, useDispatch } from 'react-redux';
 import General from '../components/SettingsComponents/general';
 import NotificationSettings from '@/components/SettingsComponents/notification';
 import Preference from '@/components/SettingsComponents/Preference';
 import Account from '@/components/SettingsComponents/Account';
 import Notification from '../components/Notification'; // Import the Notification component
+import { updateStart, updateSuccess, updateFailure } from '@/redux/admin/adminSlice';
 
 export default function Settings() {
+    const dispatch = useDispatch();
     const { currentAdmin } = useSelector((state) => state.admin);
     const [activeTab, setActiveTab] = useState('general');
     const [generalSettings, setGeneralSettings] = useState({
@@ -16,19 +18,20 @@ export default function Settings() {
         ownership: currentAdmin.ownership || '',
         hospital_Email: currentAdmin.hospital_Email || '',
         hospital_Address: {
-            hospital_State: currentAdmin.hospital_Address.state || '',
-            hospital_LGA: currentAdmin.hospital_Address.lga || '',
-            hospital_Address_Number: currentAdmin.hospital_Address.number || '',
-            hospital_Address_Street: currentAdmin.hospital_Address.street || '',
+            hospital_State: currentAdmin?.hospital_Address?.state || '',
+            hospital_LGA: currentAdmin.hospital_Address?.lga || '',
+            hospital_Address_Number: currentAdmin.hospital_Address?.number || '',
+            hospital_Address_Street: currentAdmin.hospital_Address?.street || '',
         },
         hospital_Phone: currentAdmin.hospital_Phone || '',
     });
 
     const [adminAccount, setAdminAccount] = useState({
-        hospital_Representative_Name: currentAdmin.hospital_Representative || '',
+        hospital_Representative: currentAdmin.hospital_Representative || '',
         oldPassword: '',
         newPassword: '',
-        confirmPassword: ''
+        confirmPassword: '',
+        avatar: currentAdmin?.avatar,
     });
 
     const [initialGeneralSettings, setInitialGeneralSettings] = useState(generalSettings);
@@ -56,26 +59,58 @@ export default function Settings() {
                       JSON.stringify(initialAdminAccount) !== JSON.stringify(adminAccount));
     }, [generalSettings, adminAccount, initialGeneralSettings, initialAdminAccount]);
 
-    const handleSave = () => {
-        fetch('/api/updateGeneralSettings', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(generalSettings),
-        })
-        .then(response => response.json())
-        .then(data => {
-            console.log('Success:', data);
-            setInitialGeneralSettings(generalSettings);
-            setInitialAdminAccount(adminAccount);
-            setHasChanges(false);
-            setNotification({ message: 'Settings saved successfully!', type: 'success' });
-        })
-        .catch((error) => {
-            console.error('Error:', error);
-            setNotification({ message: 'Error saving settings. Please try again.', type: 'error' });
-        });
+    const handleSave = async (e) => {
+        e.preventDefault();
+        if (adminAccount.newPassword !== adminAccount.confirmPassword) {
+            setNotification({ message: 'Passwords do not match', type: 'error' });
+            return; // Early return if passwords do not match
+        }
+    
+        dispatch(updateStart()); // Start the update process
+        try {
+            const settingsToUpdate = {
+                avatar: adminAccount.avatar,
+                hospital_Name: generalSettings.hospital_Name,
+                hospital_Representative: adminAccount.hospital_Representative,
+                hospital_Email: generalSettings.hospital_Email,
+                hospital_Phone: generalSettings.hospital_Phone,
+                hospital_Address: {
+                    state: generalSettings.hospital_Address.hospital_State,
+                    lga: generalSettings.hospital_Address.hospital_LGA,
+                    number: generalSettings.hospital_Address.hospital_Address_Number,
+                    street: generalSettings.hospital_Address.hospital_Address_Street,
+                },
+                oldPassword: adminAccount.oldPassword,
+                newPassword: adminAccount.newPassword,
+                confirmPassword: adminAccount.confirmPassword,
+            };
+    
+            const response = await fetch(`/admin/updateAccount/${currentAdmin._id}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(settingsToUpdate),
+            });
+    
+            const data = await response.json();
+    
+            // Check for errors in the response
+            if (response.ok && !data.error) {
+                dispatch(updateSuccess(data)); // Dispatch the update action
+                setInitialGeneralSettings(generalSettings);
+                setInitialAdminAccount(adminAccount);
+                setHasChanges(false);
+                setNotification({ message: 'Settings saved successfully!', type: 'success' });
+            } else {
+                // Handle errors
+                dispatch(updateFailure(data.error || 'Error updating settings'));
+                setNotification({ message: data.error || 'Error updating settings', type: 'error' });
+            }
+        } catch (error) {
+            dispatch(updateFailure(error.message));
+            setNotification({ message: error.message, type: 'error' });
+        }
     };
 
     const handleCancel = () => {
@@ -100,8 +135,8 @@ export default function Settings() {
     };
 
     useEffect(() => {
-        console.log(adminAccount);
-    }, [adminAccount]);
+        console.log(generalSettings);
+    }, [generalSettings]);
 
     return (
         <div className='p-5'>
