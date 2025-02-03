@@ -26,6 +26,7 @@
     "clsx": "^2.1.1",
     "date-fns": "^3.6.0",
     "dayjs": "^1.11.13",
+    "excel-date-to-js": "^1.1.5",
     "firebase": "^11.2.0",
     "lucide-react": "^0.460.0",
     "notistack": "^3.0.2",

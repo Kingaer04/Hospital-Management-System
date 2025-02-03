@@ -2,6 +2,7 @@
   "dependencies": {
     "cookie-parser": "^1.4.6",
     "dotenv": "^16.4.5",
+    "excel-date-to-js": "^1.1.5",
     "express": "^4.21.0",
     "express-session": "^1.18.0",
     "jsonwebtoken": "^9.0.2",

@@ -3,6 +3,7 @@ import passport from "passport";
 import xlsx from "xlsx";
 import jwt from "jsonwebtoken";
 import StaffData from "../Models/StaffModel.js";
+import { getJsDateFromExcel } from "excel-date-to-js";
 
 function getAdminParams(body) {
     return {
@@ -39,29 +40,33 @@ const verifyHospitalStatus = (uid) => {
     }
 };
 
-const verifyDoctorStatus = (licenseNumber) => {
-    // Load the workbook
+// Function to verify doctor's license status
+const verifyDoctorStatus = (licenseNumber, email) => {
     const workbook = xlsx.readFile('c:/Users/DanAnny/Documents/Final Year Project/Hospital Management System/api/nigeria-doctors.xlsx');
     const sheetName = workbook.SheetNames[0];
     const worksheet = workbook.Sheets[sheetName];
-    
-    // Convert the sheet to JSON format
     const data = xlsx.utils.sheet_to_json(worksheet);
-    
-    // Find the doctor by license number
     const doctor = data.find(row => row['License Number'] === licenseNumber);
 
     if (doctor) {
-        const expiryDate = new Date(doctor['Expiry Date']);
+        if (doctor['Email'] !== email) {
+            return { valid: false, message: 'The email provided is not valid.' };
+        }
+
+        // Check if Expiry Date is in Excel serial number format
+        const expiryValue = doctor['Expiry Date'];
+        const expiryDate = typeof expiryValue === 'number' 
+            ? getJsDateFromExcel(expiryValue) 
+            : new Date(expiryValue);
+
         const today = new Date();
-        
         if (expiryDate > today) {
-            return { valid: true, message: 'License is valid and not expired.' };
+            return { valid: true };
         } else {
             return { valid: false, message: 'License has expired.' };
         }
     } else {
-        return { valid: false, message: 'License number not found.' }; // License number not found
+        return { valid: false, message: 'License number not found.' };
     }
 };
 
@@ -195,8 +200,8 @@ export const adminController = {
             }
     
             // If the role is 'doctor', verify the license number
-            if (role === 'doctor') {
-                const verificationResult = verifyDoctorStatus(licenseNumber);
+            if (role === 'Doctor') {
+                const verificationResult = verifyDoctorStatus(licenseNumber, email);
                 if (!verificationResult.valid) {
                     return res.status(400).json({
                         error: 'Invalid license number',

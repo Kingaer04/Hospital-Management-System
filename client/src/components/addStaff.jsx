@@ -319,7 +319,7 @@ const AddStaffModal = ({ show, handleClose, setNotification, setNotificationType
                                 </button>
                                 <button
                                     type="submit"
-                                    className="px-4 py-2 text-white bg-blue-600 rounded-md hover:bg-blue-700"
+                                    className="px-4 py-2 text-white bg-[#00A272] rounded-md hover:bg-[#00A271D3]"
                                 >
                                     Submit
                                 </button>
