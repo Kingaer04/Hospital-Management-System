@@ -39,6 +39,32 @@ const verifyHospitalStatus = (uid) => {
     }
 };
 
+const verifyDoctorStatus = (licenseNumber) => {
+    // Load the workbook
+    const workbook = xlsx.readFile('c:/Users/DanAnny/Documents/Final Year Project/Hospital Management System/api/nigeria-doctors.xlsx');
+    const sheetName = workbook.SheetNames[0];
+    const worksheet = workbook.Sheets[sheetName];
+    
+    // Convert the sheet to JSON format
+    const data = xlsx.utils.sheet_to_json(worksheet);
+    
+    // Find the doctor by license number
+    const doctor = data.find(row => row['License Number'] === licenseNumber);
+
+    if (doctor) {
+        const expiryDate = new Date(doctor['Expiry Date']);
+        const today = new Date();
+        
+        if (expiryDate > today) {
+            return { valid: true, message: 'License is valid and not expired.' };
+        } else {
+            return { valid: false, message: 'License has expired.' };
+        }
+    } else {
+        return { valid: false, message: 'License number not found.' }; // License number not found
+    }
+};
+
 export const adminController = {
     SignUp: (req, res, next) => {
         const { hospital_UID } = req.body;
@@ -120,7 +146,7 @@ export const adminController = {
             if (req.user.id !== req.params.id) {
                 return res.status(401).json({ error: 'Unauthorized! You can only update your account' });
             }
-    
+            console.log(req.body.oldPassword)
             // Get the current user before updating
             const currentUser = await HospitalAdminAccount.findById(req.user.id);
             if (!currentUser) {
@@ -154,26 +180,36 @@ export const adminController = {
     // Staff management functions
     addStaff: async (req, res, next) => {
         try {
-            const { hospital_ID, email, phone } = req.body; // Extract email and phone from the request body
-            // const password = "staff@123";
-
+            const { hospital_ID, email, phone, role, licenseNumber } = req.body; // Extract role and license number
+    
             // Check if a staff member with the same email or phone already exists
             const existingStaff = await StaffData.findOne({
                 $or: [{ email }, { phone }],
             });
-
+    
             if (existingStaff) {
                 return res.status(400).json({
                     error: 'Staff member already exists',
                     message: 'A staff member with this email or phone number already exists.',
                 });
             }
-
+    
+            // If the role is 'doctor', verify the license number
+            if (role === 'doctor') {
+                const verificationResult = verifyDoctorStatus(licenseNumber);
+                if (!verificationResult.valid) {
+                    return res.status(400).json({
+                        error: 'Invalid license number',
+                        message: verificationResult.message,
+                    });
+                }
+            }
+    
             const newStaff = new StaffData({
                 hospital: hospital_ID,
                 ...req.body,
             });
-
+    
             StaffData.register(newStaff, req.body.phone, (error, staffData) => {
                 if (staffData) {
                     res.status(200).json({ message: 'Staff added successfully' });
