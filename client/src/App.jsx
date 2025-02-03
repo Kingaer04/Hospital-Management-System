@@ -15,6 +15,7 @@ import StaffDetails from './pages/staffDetails.jsx'
 import RequestPage from './pages/requestPage.jsx'
 import StaffProfile from './pages/staffProfile.jsx'
 import StaffSignIn from './pages/staffSignIn.jsx'
+import DoctorHome from './pages/doctorHome.jsx'
 
 
 export default function App() {
@@ -34,6 +35,7 @@ export default function App() {
                   <Route path='/home' element={<Home/>}/>
                   <Route path='/Appointment' element={<Appointment/>}/>
                   <Route path='/receptionistHome' element={<ReceptionistHome/>}/>
+                  <Route path='/DoctorHome' element={<DoctorHome/>}/>
                   <Route path='/patient' element={<Patient/>}/>
                   <Route path='/details' element={<StaffDetails/>}/>
                   <Route path='/settings' element={<Settings/>}/>
