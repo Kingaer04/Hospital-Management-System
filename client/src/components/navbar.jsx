@@ -225,9 +225,16 @@ export default function MainNavBar() {
             >
               <AccountCircle sx={{ height: '30px', width: 'auto' }} />
               <Box sx={{ marginLeft: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'flex-start', height: 50 }}>
-              <Typography variant="body2" sx={{ fontSize: "10px", fontWeight: "bold", textTransform: 'uppercase', marginLeft: 0 }}>
-                {currentAdmin?.hospital_Representative?.split(' ')[0] || currentUser?.name?.split(' ')[0]} {/* Picks the first word */}
-              </Typography>
+                <Typography variant="body2" sx={{ fontSize: "10px", fontWeight: "bold", textTransform: 'uppercase', marginLeft: 0 }}>
+                  {(() => {
+                    const name = currentAdmin?.hospital_Representative || currentUser?.name;
+                    if (name) {
+                      const words = name.split(' ');
+                      return (words[0].toLowerCase() === 'dr' || words[0].toLowerCase() === 'dr.') ? words[1] : words[0];
+                    }
+                    return '';
+                  })()}
+                </Typography>
                 <Typography variant="body2" color="text.secondary" sx={{ marginLeft: 0, fontSize: "10px" }}>
                   {currentAdmin?.role || currentUser?.role}
                 </Typography>
