@@ -14,10 +14,10 @@ function getAdminParams(body) {
         hospital_Email: body.hospital_Email,
         hospital_Phone: body.hospital_Phone,
         hospital_Address: {
-            state: body.hospital_State,
-            lga: body.hospital_LGA,
-            number: body.hospital_Address_Number,
-            street: body.hospital_Address_Street,
+            state: body.hospital_Address.state,
+            lga: body.hospital_Address.lga,
+            number: body.hospital_Address.number,
+            street: body.hospital_Address.street,
         },
     };
 }

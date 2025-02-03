@@ -135,7 +135,7 @@ export default function Settings() {
     };
 
     useEffect(() => {
-        console.log(generalSettings);
+        console.log(generalSettings.hospital_Address);
     }, [generalSettings]);
 
     return (
