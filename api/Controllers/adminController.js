@@ -128,10 +128,13 @@ export const adminController = {
         const token = req.cookies.token;
 
         if (!token) return res.status(401).json({ message: 'Unauthorized' });
-
+    
         jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
-            if (err) return res.status(403).json({ message: 'Forbidden' });
-
+            if (err) {
+                // If token is invalid or expired, call signOut
+                return signOut(req, res, next);
+            }
+    
             req.user = user;
             next();
         });
