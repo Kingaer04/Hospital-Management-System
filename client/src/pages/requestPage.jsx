@@ -18,17 +18,9 @@ const RequestPage = () => {
             if (s && s.samples) {
                 try {
                     const samples = JSON.parse(s.samples);
-                    const uniqueFingerprintData = samples[0]; // Assuming the first sample is the one we want
-
-                    // Log data to be saved at the backend
-                    console.log("Fingerprint data to save:", uniqueFingerprintData);
-
-                    // Additional checks for thumb conditions
-                    if (isThumbWet(uniqueFingerprintData) || isThumbTooDry(uniqueFingerprintData)) {
-                        setScannerError("Please ensure your thumbs are not too wet or too dry.");
-                    } else {
-                        setFingerprint("data:image/png;base64," + Fingerprint.b64UrlTo64(uniqueFingerprintData));
-                    }
+                    // Assuming the first sample is the one we want
+                    console.log(Fingerprint.b64UrlTo64(samples[0]))
+                    setFingerprint("data:image/png;base64," + Fingerprint.b64UrlTo64(samples[0]));
                 } catch (error) {
                     console.error("Failed to parse samples:", error);
                     setScannerError("Failed to process fingerprint data.");
@@ -91,18 +83,6 @@ const RequestPage = () => {
         if (testRef.current) {
             testRef.current.stopCapture(); // Call stopCapture on the test instance
         }
-    };
-
-    const isThumbWet = (fingerprintData) => {
-        // Implement your logic to check if the thumb is wet based on the fingerprint data
-        // This is a placeholder function
-        return false; 
-    };
-
-    const isThumbTooDry = (fingerprintData) => {
-        // Implement your logic to check if the thumb is too dry based on the fingerprint data
-        // This is a placeholder function
-        return false; 
     };
 
     return (
