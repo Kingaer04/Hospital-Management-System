@@ -16,7 +16,6 @@ import RequestPage from './pages/requestPage.jsx'
 import StaffProfile from './pages/staffProfile.jsx'
 import StaffSignIn from './pages/staffSignIn.jsx'
 import DoctorHome from './pages/doctorHome.jsx'
-import FingerPrintVerification from './pages/fingerPrintVerification.jsx'
 
 
 export default function App() {
@@ -42,7 +41,6 @@ export default function App() {
                   <Route path='/settings' element={<Settings/>}/>
                   <Route path='/request' element={<RequestPage/>}/>
                   <Route path='/profile' element={<StaffProfile/>}/>
-                  <Route path='/comparison' element={<FingerPrintVerification/>}/>
                 </Route>
               </Route>
             </Routes>

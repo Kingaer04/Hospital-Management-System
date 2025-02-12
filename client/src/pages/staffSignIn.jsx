@@ -101,7 +101,7 @@ export default function StaffSignIn() {
                 <div className='flex flex-col mt-4 gap-5'>
                     <div className='flex flex-col'>
                         <h3 className='font-bold text-3xl mb-2 text-white'>Log In to your account</h3>
-                        <h6 className='text-[110%] text-white'>Welcome Admin! Please enter your details</h6>
+                        <h6 className='text-[110%] text-white'>Welcome! Please enter your details</h6>
                     </div>
                     <form onSubmit={handleSubmit} className="flex justify-center gap-2 flex-col">
                         <label htmlFor="email" className="text-white">Email</label>
@@ -112,12 +112,6 @@ export default function StaffSignIn() {
                             {loading ? 'Loading...' : 'Sign In'}
                         </button>
                     </form>
-                    <div className="mt-7 text-center">
-                        <p className="inline mr-2 text-gray-500">Don't have an account?</p>
-                        <Link to={'/Sign-Up'}>
-                            <span className="text-[#00A272]">Sign Up</span>
-                        </Link>
-                    </div>
                     {error && (
                         <div className={`fixed top-0 right-0 bg-red-600 text-white p-4 flex w-[27%] z-50 rounded-bl-lg shadow-lg`}>
                             <p className="flex-1">{error}</p>
