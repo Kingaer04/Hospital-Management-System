@@ -93,21 +93,20 @@ export default function StaffSignIn() {
             )}
             <div className="absolute inset-0 bg-black opacity-50 z-30"></div> {/* Dimmed overlay */}
             <div className="relative z-40 p-5 flex flex-col items-center">
-                <div className='flex gap-3 mb-5'>
-                    <img src="/Logo_Images/logoIcon.png" alt="Logo Icon" className={`transition-transform duration-500 ${loading ? 'animate-bounce' : ''}`} />
-                    <img src="/Logo_Images/logoName.png" alt="Logo Name" className='h-5' />
+                <div className='flex gap-3 mb-3 items-center'>
+                    <img src="/Logo_Images/nhmis_icon.png" alt="Logo Icon" className={`transition-transform duration-500 w-14 ${loading ? 'animate-bounce' : ''}`} />
                 </div>
 
                 <div className='flex flex-col mt-4 gap-5'>
-                    <div className='flex flex-col'>
+                    <div className='flex flex-col items-center'>
                         <h3 className='font-bold text-3xl mb-2 text-white'>Log In to your account</h3>
                         <h6 className='text-[110%] text-white'>Welcome! Please enter your details</h6>
                     </div>
                     <form onSubmit={handleSubmit} className="flex justify-center gap-2 flex-col">
                         <label htmlFor="email" className="text-white">Email</label>
-                        <input type="email" placeholder="Email" className="border p-3 rounded-lg" id="email" name="email" onChange={handleChange} required />
+                        <input type="email" placeholder="Email" className="border p-3 rounded-lg focus:border-[#00A272] focus:outline-none focus:ring-2 focus:ring-[#00A272]" id="email" name="email" onChange={handleChange} required />
                         <label htmlFor="password" className="text-white">Password</label>
-                        <input type="password" placeholder="Password" className="border p-3 rounded-lg" id="password" name="password" onChange={handleChange} required />
+                        <input type="password" placeholder="Password" className="border p-3 rounded-lg focus:border-[#00A272] focus:outline-none focus:ring-2 focus:ring-[#00A272]" id="password" name="password" onChange={handleChange} required />
                         <button disabled={loading} className="bg-[#00A272] text-white uppercase rounded-lg hover:opacity-95 disabled:opacity-85 p-3 mt-7">
                             {loading ? 'Loading...' : 'Sign In'}
                         </button>
