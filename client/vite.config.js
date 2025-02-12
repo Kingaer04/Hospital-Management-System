@@ -21,6 +21,10 @@ export default defineConfig({
         target: 'http://localhost:5500',
         secure: false,
       },
+      '/fingerprint-api': {
+        target: 'http://localhost:5077',
+        secure: false,
+      }
     }
   }
 })
