@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef} from 'react';
 
 const TabButton = ({ label, isActive, onClick }) => (
     <button
@@ -15,6 +15,181 @@ const TabButton = ({ label, isActive, onClick }) => (
 
 const AddPatient = ({ isOpen, onClose }) => {
     const [activeTab, setActiveTab] = useState('personal');
+    const [selectedOption, setSelectedOption] = useState(null);
+    const [fingerprint, setFingerprint] = useState(null);
+    const [scannerError, setScannerError] = useState(null);
+    const [qualityMessage, setQualityMessage] = useState('');
+    const [acquisitionStarted, setAcquisitionStarted] = useState(false);
+    const [ridgeClarity, setRidgeClarity] = useState(0); // Track ridge clarity
+    const [uploadProgress, setUploadProgress] = useState(0); // Track upload progress
+    const testRef = useRef(null);
+
+    // Cloudinary configuration
+    const cloudinaryUrl = 'https://api.cloudinary.com/v1_1/dyc0ssabt/image/upload';
+    const uploadPreset = 'Hospital_management_profile'; // Your upload preset
+
+    const assessImageQuality = (imageData) => {
+        return new Promise((resolve) => {
+            const img = new Image();
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                canvas.width = img.width;
+                canvas.height = img.height;
+                ctx.drawImage(img, 0, 0);
+                
+                const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                const data = imageData.data;
+
+                // Calculate ridge clarity (using edge detection)
+                let edges = 0;
+                for (let y = 1; y < canvas.height - 1; y++) {
+                    for (let x = 1; x < canvas.width - 1; x++) {
+                        const idx = (y * canvas.width + x) * 4;
+                        const current = (data[idx] + data[idx + 1] + data[idx + 2]) / 3;
+                        const right = (data[idx + 4] + data[idx + 1 + 4] + data[idx + 2 + 4]) / 3;
+                        const bottom = (data[idx + canvas.width * 4] + data[idx + canvas.width * 4 + 1] + data[idx + canvas.width * 4 + 2]) / 3;
+
+                        if (Math.abs(current - right) > 20 || Math.abs(current - bottom) > 20) {
+                            edges++;
+                        }
+                    }
+                }
+                const ridgeClarity = edges / (canvas.width * canvas.height);
+                
+                resolve({
+                    ridgeClarity: Math.round(ridgeClarity * 100),
+                });
+            };
+            img.src = imageData;
+        });
+    };
+
+    const FingerprintSdkTest = function () {
+        this.sdk = new Fingerprint.WebApi();
+
+        this.sdk.onSamplesAcquired = async (s) => {
+            if (s && s.samples) {
+                try {
+                    const samples = JSON.parse(s.samples);
+                    const base64Image = "data:image/png;base64," + Fingerprint.b64UrlTo64(samples[0]);
+                    setFingerprint(base64Image);
+                    
+                    // Assess quality
+                    const qualityResults = await assessImageQuality(base64Image);
+                    setRidgeClarity(qualityResults.ridgeClarity); // Update ridge clarity state
+                    if (qualityResults.ridgeClarity > 30) {
+                        setQualityMessage("Good, click on the save button to save the image.");
+                        setScannerError(null); // Clear error if quality is good
+                    } else {
+                        setQualityMessage("Poor image, please retake.");
+                        setScannerError("Poor quality fingerprint detected. Please try again.");
+                    }
+                } catch (error) {
+                    console.error("Failed to process samples:", error);
+                    setScannerError("Failed to process fingerprint data.");
+                }
+            } else {
+                console.error("No samples data received.");
+                setScannerError("No fingerprint data received.");
+            }
+        };
+
+        this.startCapture = function () {
+            this.sdk.startAcquisition(Fingerprint.SampleFormat.PngImage).then(() => {
+                setAcquisitionStarted(true);
+            }).catch((error) => {
+                console.error("Error starting capture:", error.message);
+                setScannerError(error.message);
+            });
+        };
+
+        this.stopCapture = function () {
+            this.sdk.stopAcquisition().then(() => {
+                setAcquisitionStarted(false);
+            }).catch((error) => {
+                console.error("Error stopping capture:", error.message);
+                setScannerError(error.message);
+            });
+        };
+    };
+
+    useEffect(() => {
+        testRef.current = new FingerprintSdkTest();
+    }, []);
+
+    const handleOptionClick = (option) => {
+        setSelectedOption(option);
+        setScannerError(null);
+        setFingerprint(null);
+        setRidgeClarity(0); // Reset ridge clarity
+        setQualityMessage(''); // Reset quality message
+        if (option === 'fingerprint') {
+            document.getElementById('fingerprintCaptureSection').style.display = 'block';
+        } else {
+            document.getElementById('fingerprintCaptureSection').style.display = 'none';
+        }
+    };
+
+    const handleFingerprintScan = () => {
+        setScannerError('');
+        setQualityMessage('');
+        if (testRef.current) {
+            testRef.current.startCapture();
+        } else {
+            console.error('Fingerprint SDK instance is not initialized.');
+        }
+    };
+
+    const handleFileUpload = (base64Image) => {
+        const data = new FormData();
+        data.append('file', base64Image);
+        data.append('upload_preset', uploadPreset);
+
+        const xhr = new XMLHttpRequest();
+
+        xhr.open('POST', cloudinaryUrl, true);
+
+        xhr.upload.addEventListener('progress', (event) => {
+            if (event.lengthComputable) {
+                const percentComplete = Math.round((event.loaded * 100) / event.total);
+                setUploadProgress(percentComplete); // Update upload progress
+            }
+        });
+
+        xhr.onload = () => {
+            if (xhr.status === 200) {
+                const uploadedImageUrl = JSON.parse(xhr.responseText);
+                console.log("Uploaded Image URL: ", uploadedImageUrl.secure_url); // Log the URL
+                // Reset the state after upload
+                setFingerprint(null);
+                setQualityMessage('');
+                setRidgeClarity(0);
+                setAcquisitionStarted(false);
+                setScannerError(null);
+            } else {
+                console.error("Image upload failed: " + xhr.statusText);
+                setScannerError("Image upload failed: " + xhr.statusText);
+            }
+            setUploadProgress(0);
+        };
+
+        xhr.onerror = () => {
+            console.error("Image upload failed: Network error");
+            setScannerError("Image upload failed: Network error");
+            setUploadProgress(0);
+        };
+
+        xhr.send(data); // Send the request
+    };
+
+    const handleSave = () => {
+        if (ridgeClarity > 30 && fingerprint) {
+            handleFileUpload(fingerprint); // Upload the fingerprint image to Cloudinary
+        } else {
+            setScannerError("Ridge clarity is too low. Please retake the fingerprint.");
+        }
+    };
 
     return (
         <div>
@@ -157,7 +332,7 @@ const AddPatient = ({ isOpen, onClose }) => {
                             {activeTab === 'profile' && (
                                 <div className="flex gap-6">
                                     {/* Profile Picture Section */}
-                                    <div className="w-1/3">
+                                    <div className="w-[70%]">
                                         <div className="mb-4">
                                             <label className="block text-sm font-medium text-gray-700">Profile Picture</label>
                                             <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md">
@@ -192,42 +367,43 @@ const AddPatient = ({ isOpen, onClose }) => {
                                         </div>
 
                                         {/* Fingerprint Section */}
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-700">Fingerprint</label>
-                                            <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md">
-                                                <div className="space-y-1 text-center">
-                                                    <svg
-                                                        className="mx-auto h-12 w-12 text-gray-400"
-                                                        stroke="currentColor"
-                                                        fill="none"
-                                                        viewBox="0 0 48 48"
-                                                        aria-hidden="true"
-                                                    >
-                                                        <path
-                                                            d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02"
-                                                            strokeWidth="2"
-                                                            strokeLinecap="round"
-                                                            strokeLinejoin="round"
-                                                        />
-                                                    </svg>
-                                                    <div className="flex text-sm text-gray-600">
-                                                        <label
-                                                            htmlFor="fingerprint-upload"
-                                                            className="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-blue-500"
-                                                        >
-                                                            <span>Upload a file</span>
-                                                            <input id="fingerprint-upload" name="fingerprint-upload" type="file" className="sr-only" />
-                                                        </label>
-                                                        <p className="pl-1">or drag and drop</p>
-                                                    </div>
-                                                    <p className="text-xs text-gray-500">PNG, JPG, GIF up to 10MB</p>
+                                        <div id="fingerprintCaptureSection" className="mt-8 border p-4 rounded-lg bg-white">
+                                            <h2 className="text-xl font-bold text-center mb-4">Capture Fingerprint</h2>
+                                            {fingerprint ? (
+                                                <div className="text-center">
+                                                    <img src={fingerprint} alt="Captured Fingerprint" className="w-32 h-32" />
+                                                    <p className="mt-2 text-sm text-gray-600">Fingerprint Captured</p>
+                                                    {quality && (
+                                                        <p className="mt-2 text-sm text-gray-600">
+                                                            Quality Assessment: {quality}
+                                                        </p>
+                                                    )}
                                                 </div>
+                                            ) : (
+                                                <p className="text-center text-gray-600">No fingerprint captured yet.</p>
+                                            )}
+                                            <div className="flex justify-around mt-4">
+                                                <button
+                                                    onClick={handleFingerprintScan}
+                                                    className="bg-green-500 text-white px-4 py-2 rounded"
+                                                    disabled={acquisitionStarted}
+                                                >
+                                                    Start Scan
+                                                </button>
+                                                <button
+                                                    onClick={handleStopCapture}
+                                                    className="bg-red-500 text-white px-4 py-2 rounded"
+                                                    disabled={!acquisitionStarted}
+                                                >
+                                                    Stop Scan
+                                                </button>
                                             </div>
+                                            {scannerError && <p className="mt-2 text-sm text-red-600">{scannerError}</p>}
                                         </div>
                                     </div>
 
                                     {/* Preview Section */}
-                                    <div className="w-2/3">
+                                    <div className="w-[60%]">
                                         <div className="mb-4">
                                             <label className="block text-sm font-medium text-gray-700">Preview</label>
                                             <div className="mt-1 p-4 border-2 border-gray-300 rounded-md">
