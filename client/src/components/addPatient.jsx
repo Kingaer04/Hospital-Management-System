@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef} from 'react';
+import { useSelector } from 'react-redux';
 
 const TabButton = ({ label, isActive, onClick }) => (
     <button
@@ -14,6 +15,7 @@ const TabButton = ({ label, isActive, onClick }) => (
 );
 
 const AddPatient = ({ isOpen, onClose }) => {
+    const {currentUser} = useSelector((state) => state.user)
     const [activeTab, setActiveTab] = useState('personal');
     const [selectedOption, setSelectedOption] = useState(null);
     const [fingerprint, setFingerprint] = useState(null);
@@ -23,10 +25,33 @@ const AddPatient = ({ isOpen, onClose }) => {
     const [ridgeClarity, setRidgeClarity] = useState(0); // Track ridge clarity
     const [uploadProgress, setUploadProgress] = useState(0); // Track upload progress
     const testRef = useRef(null);
+    const [profileImage, setProfileImage] = useState(null);
+    const [fingerprintData, setFingerPrintData] = useState(null)
+    const [patientData, setPatientData] = useState({
+        first_name: '',
+        last_name: '',
+        email: '',
+        gender: '',
+        patientID: '',
+        patientDoB: '',
+        phone: '',
+        address: '',
+        relationshipStatus: '',
+        avatar: profileImage,
+        fingerprint_Data: '',
+        nextOfKin: {
+        name: '',
+        phone: '',
+        email: '',
+        address: '',
+        relationshipStatus: '',
+        gender: '',
+        },
+    });
 
     // Cloudinary configuration
-    const cloudinaryUrl = 'https://api.cloudinary.com/v1_1/dyc0ssabt/image/upload';
-    const uploadPreset = 'Hospital_management_profile'; // Your upload preset
+    const cloudinaryUrl = import.meta.env.VITE_CLOUDINARY_URL
+    const uploadPreset = import.meta.env.VITE_UPLOAD_PRESET
 
     const assessImageQuality = (imageData) => {
         return new Promise((resolve) => {
@@ -118,19 +143,6 @@ const AddPatient = ({ isOpen, onClose }) => {
         testRef.current = new FingerprintSdkTest();
     }, []);
 
-    const handleOptionClick = (option) => {
-        setSelectedOption(option);
-        setScannerError(null);
-        setFingerprint(null);
-        setRidgeClarity(0); // Reset ridge clarity
-        setQualityMessage(''); // Reset quality message
-        if (option === 'fingerprint') {
-            document.getElementById('fingerprintCaptureSection').style.display = 'block';
-        } else {
-            document.getElementById('fingerprintCaptureSection').style.display = 'none';
-        }
-    };
-
     const handleFingerprintScan = () => {
         setScannerError('');
         setQualityMessage('');
@@ -191,6 +203,25 @@ const AddPatient = ({ isOpen, onClose }) => {
         }
     };
 
+    const handleChange = (e) => {
+        const { name, value } = e.target
+        if (name.startsWith('nextOfKin')) {
+            const kinField = name.split('.')[1]
+            setPatientData((prevData) => ({
+                ...prevData,
+                nextOfKin: {
+                    ...prevData.nextOfKin,
+                    [kinField]: value
+                },
+            }));
+        } else {
+            setPatientData((prevData) => ({
+                ...prevData,
+                [name]: value
+            }))
+        }
+    }
+
     return (
         <div>
             {isOpen && (
@@ -232,15 +263,15 @@ const AddPatient = ({ isOpen, onClose }) => {
                                 <div className="grid grid-cols-2 gap-4">
                                     <div>
                                         <label className="block text-sm font-medium text-gray-700">First Name</label>
-                                        <input type="text" className="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:border-[#00A272] focus:outline-none focus:ring-2 focus:ring-[#00A272] p-2" />
+                                        <input type="text" className="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:border-[#00A272] focus:outline-none focus:ring-2 focus:ring-[#00A272] p-2" name="first_name" value={patientData.first_name} onChange={ handleChange}/>
                                     </div>
                                     <div>
                                         <label className="block text-sm font-medium text-gray-700">Last Name</label>
-                                        <input type="text" className="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:border-[#00A272] focus:outline-none focus:ring-2 focus:ring-[#00A272] p-2" />
+                                        <input type="text" className="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:border-[#00A272] focus:outline-none focus:ring-2 focus:ring-[#00A272] p-2" name="last_name" value={patientData.last_name} onChange={handleChange}/>
                                     </div>
                                     <div>
                                         <label className="block text-sm font-medium text-gray-700">Gender</label>
-                                        <select className="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:border-[#00A272] focus:outline-none focus:ring-2 focus:ring-[#00A272] p-2">
+                                        <select className="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:border-[#00A272] focus:outline-none focus:ring-2 focus:ring-[#00A272] p-2" name='gender' value={patientData.gender} onChange={handleChange}>
                                             <option>Select Gender</option>
                                             <option>Male</option>
                                             <option>Female</option>
@@ -248,23 +279,23 @@ const AddPatient = ({ isOpen, onClose }) => {
                                     </div>
                                     <div>
                                         <label className="block text-sm font-medium text-gray-700">Patient ID</label>
-                                        <input type="text" className="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:border-[#00A272] focus:outline-none focus:ring-2 focus:ring-[#00A272] p-2" />
+                                        <input type="text" className="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:border-[#00A272] focus:outline-none focus:ring-2 focus:ring-[#00A272] p-2" name='patientID' value={patientData.patientID} onChange={handleChange}/>
                                     </div>
                                     <div>
                                         <label className="block text-sm font-medium text-gray-700">Phone Number</label>
-                                        <input type="tel" className="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:border-[#00A272] focus:outline-none focus:ring-2 focus:ring-[#00A272] p-2" />
+                                        <input type="tel" className="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:border-[#00A272] focus:outline-none focus:ring-2 focus:ring-[#00A272] p-2" name='phone' value={patientData.phone} onChange={handleChange}/>
                                     </div>
                                     <div>
                                         <label className="block text-sm font-medium text-gray-700">Date of Birth</label>
-                                        <input type="date" className="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:border-[#00A272] focus:outline-none focus:ring-2 focus:ring-[#00A272] p-2" />
+                                        <input type="date" className="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:border-[#00A272] focus:outline-none focus:ring-2 focus:ring-[#00A272] p-2" name='patientDoB' value={patientData.patientDoB} onChange={handleChange}/>
                                     </div>
                                     <div>
                                         <label className="block text-sm font-medium text-gray-700">Email Address</label>
-                                        <input type="email" className="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:border-[#00A272] focus:outline-none focus:ring-2 focus:ring-[#00A272] p-2" />
+                                        <input type="email" className="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:border-[#00A272] focus:outline-none focus:ring-2 focus:ring-[#00A272] p-2" name='email' value={patientData.email} onChange={handleChange}/>
                                     </div>
                                     <div>
                                         <label className="block text-sm font-medium text-gray-700">Relationship Status</label>
-                                        <select className="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:border-[#00A272] focus:outline-none focus:ring-2 focus:ring-[#00A272] p-2">
+                                        <select className="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:border-[#00A272] focus:outline-none focus:ring-2 focus:ring-[#00A272] p-2" name='relationshipStatus' value={patientData.relationshipStatus} onChange={handleChange}>
                                             <option>Select Status</option>
                                             <option>Single</option>
                                             <option>Married</option>
@@ -274,7 +305,7 @@ const AddPatient = ({ isOpen, onClose }) => {
                                     </div>
                                     <div className="col-span-2">
                                         <label className="block text-sm font-medium text-gray-700">Address</label>
-                                        <textarea className="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:border-[#00A272] focus:outline-none focus:ring-2 focus:ring-[#00A272] p-2" rows="3"></textarea>
+                                        <textarea className="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:border-[#00A272] focus:outline-none focus:ring-2 focus:ring-[#00A272] p-2" rows="3" name='address' value={patientData.address} onChange={handleChange}></textarea>
                                     </div>
                                     <div className="col-span-2">
                                         <button className="w-full bg-[#00a272] text-white py-2 rounded-md hover:bg-opacity-90">
@@ -288,11 +319,11 @@ const AddPatient = ({ isOpen, onClose }) => {
                                 <div className="grid grid-cols-2 gap-4">
                                     <div>
                                         <label className="block text-sm font-medium text-gray-700">Full Name</label>
-                                        <input type="text" className="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:border-[#00A272] focus:outline-none focus:ring-2 focus:ring-[#00A272] p-2" />
+                                        <input type="text" className="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:border-[#00A272] focus:outline-none focus:ring-2 focus:ring-[#00A272] p-2" name='nextOfKin.name' value={patientData.nextOfKin.name} onChange={handleChange}/>
                                     </div>
                                     <div>
                                         <label className="block text-sm font-medium text-gray-700">Gender</label>
-                                        <select className="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:border-[#00A272] focus:outline-none focus:ring-2 focus:ring-[#00A272] p-2">
+                                        <select className="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:border-[#00A272] focus:outline-none focus:ring-2 focus:ring-[#00A272] p-2" name='nextOfKin.gender' value={patientData.nextOfKin.gender} onChange={handleChange}>
                                             <option>Select Gender</option>
                                             <option>Male</option>
                                             <option>Female</option>
@@ -301,11 +332,11 @@ const AddPatient = ({ isOpen, onClose }) => {
                                     </div>
                                     <div>
                                         <label className="block text-sm font-medium text-gray-700">Phone Number</label>
-                                        <input type="tel" className="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:border-[#00A272] focus:outline-none focus:ring-2 focus:ring-[#00A272] p-2" />
+                                        <input type="tel" className="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:border-[#00A272] focus:outline-none focus:ring-2 focus:ring-[#00A272] p-2" name='nextOfKin.phone' value={patientData.nextOfKin.phone} onChange={handleChange}/>
                                     </div>
                                     <div>
                                         <label className="block text-sm font-medium text-gray-700">Relationship</label>
-                                        <select className="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:border-[#00A272] focus:outline-none focus:ring-2 focus:ring-[#00A272] p-2">
+                                        <select className="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:border-[#00A272] focus:outline-none focus:ring-2 focus:ring-[#00A272] p-2" name='nextOfKin.relationshipStatus' value={patientData.nextOfKin.relationshipStatus} onChange={handleChange}>
                                             <option>Select Relationship</option>
                                             <option>Mother</option>
                                             <option>Father</option>
@@ -319,12 +350,7 @@ const AddPatient = ({ isOpen, onClose }) => {
                                     </div>
                                     <div className="col-span-2">
                                         <label className="block text-sm font-medium text-gray-700">Address</label>
-                                        <textarea className="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:border-[#00A272] focus:outline-none focus:ring-2 focus:ring-[#00A272] p-2" rows="3"></textarea>
-                                    </div>
-                                    <div className="col-span-2">
-                                        <button className="w-full bg-[#00a272] text-white py-2 rounded-md hover:bg-opacity-90">
-                                            Add Patient
-                                        </button>
+                                        <textarea className="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:border-[#00A272] focus:outline-none focus:ring-2 focus:ring-[#00A272] p-2" rows="3" name='nextOfKin.address' value={patientData.nextOfKin.address} onChange={handleChange}></textarea>
                                     </div>
                                 </div>
                             )}
@@ -332,7 +358,7 @@ const AddPatient = ({ isOpen, onClose }) => {
                             {activeTab === 'profile' && (
                                 <div className="flex gap-6">
                                     {/* Profile Picture Section */}
-                                    <div className="w-[70%]">
+                                    <div className="w-[100%]">
                                         <div className="mb-4">
                                             <label className="block text-sm font-medium text-gray-700">Profile Picture</label>
                                             <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md">
@@ -373,11 +399,8 @@ const AddPatient = ({ isOpen, onClose }) => {
                                                 <div className="text-center">
                                                     <img src={fingerprint} alt="Captured Fingerprint" className="w-32 h-32" />
                                                     <p className="mt-2 text-sm text-gray-600">Fingerprint Captured</p>
-                                                    {quality && (
-                                                        <p className="mt-2 text-sm text-gray-600">
-                                                            Quality Assessment: {quality}
-                                                        </p>
-                                                    )}
+                                                    <p className="mt-2 text-sm text-gray-600">{qualityMessage}</p>
+                                                    <p className="mt-2 text-sm text-gray-600">Ridge Clarity Score: {ridgeClarity}%</p>
                                                 </div>
                                             ) : (
                                                 <p className="text-center text-gray-600">No fingerprint captured yet.</p>
@@ -386,41 +409,20 @@ const AddPatient = ({ isOpen, onClose }) => {
                                                 <button
                                                     onClick={handleFingerprintScan}
                                                     className="bg-green-500 text-white px-4 py-2 rounded"
-                                                    disabled={acquisitionStarted}
+                                                    disabled={acquisitionStarted || (ridgeClarity > 30 && fingerprint)} // Disable if good fingerprint is captured
                                                 >
                                                     Start Scan
                                                 </button>
                                                 <button
-                                                    onClick={handleStopCapture}
-                                                    className="bg-red-500 text-white px-4 py-2 rounded"
-                                                    disabled={!acquisitionStarted}
+                                                    onClick={handleSave}
+                                                    className={`px-4 py-2 rounded ${ridgeClarity > 30 ? 'bg-blue-500 text-white' : 'bg-gray-300 text-gray-600'}`}
+                                                    disabled={!fingerprint || ridgeClarity <= 30} // Disable if ridge clarity <= 30
                                                 >
-                                                    Stop Scan
+                                                    Save
                                                 </button>
                                             </div>
                                             {scannerError && <p className="mt-2 text-sm text-red-600">{scannerError}</p>}
-                                        </div>
-                                    </div>
-
-                                    {/* Preview Section */}
-                                    <div className="w-[60%]">
-                                        <div className="mb-4">
-                                            <label className="block text-sm font-medium text-gray-700">Preview</label>
-                                            <div className="mt-1 p-4 border-2 border-gray-300 rounded-md">
-                                                <div className="flex items-center space-x-4">
-                                                    <div className="flex-shrink-0">
-                                                        <img
-                                                            className="h-16 w-16 rounded-full"
-                                                            src="https://via.placeholder.com/150"
-                                                            alt="Profile Preview"
-                                                        />
-                                                    </div>
-                                                    <div>
-                                                        <div className="text-sm font-medium text-gray-900">John Doe</div>
-                                                        <div className="text-sm text-gray-500">Patient ID: 123456</div>
-                                                    </div>
-                                                </div>
-                                            </div>
+                                            {uploadProgress > 0 && <p className="mt-2 text-sm text-gray-600">Upload Progress: {uploadProgress}%</p>}
                                         </div>
                                     </div>
                                 </div>

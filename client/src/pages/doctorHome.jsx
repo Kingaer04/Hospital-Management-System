@@ -2,7 +2,7 @@ import CalendarMonthOutlinedIcon from '@mui/icons-material/CalendarMonthOutlined
 import Diversity1OutlinedIcon from '@mui/icons-material/Diversity1Outlined';
 import BadgeOutlinedIcon from '@mui/icons-material/BadgeOutlined';
 import SearchBar from '../components/searchBar';
-import PatientTable from '../components/tableComponet';
+import PatientTable from '../components/patientTable.jsx';
 import { Calendar } from '@/components/ui/calendar';
 
 export default function ReceptionistHome() {

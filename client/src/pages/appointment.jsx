@@ -1,6 +1,6 @@
 import { Box, Button } from '@mui/material';
 import Typography from '@mui/material/Typography';
-import PatientTable from '../components/tableComponet';
+import PatientTable from '../components/patientTable.jsx';
 
 export default function Appointment() {
   return (

@@ -63,6 +63,10 @@ const PatientSchema = new mongoose.Schema({
                 enum: ['Male', 'Female'],
                 required: true
             },
+            DoB: {
+                type: Date,
+                required: true
+            },
             address: {
                 type: String,
                 required: true

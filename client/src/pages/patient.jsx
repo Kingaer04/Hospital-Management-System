@@ -1,6 +1,6 @@
 import { Box } from '@mui/material';
 import Typography from '@mui/material/Typography';
-import PatientTable from '../components/tableComponet';
+import PatientTable from '../components/patientTable.jsx';
 import AddPatient from '@/components/addPatient';
 import { useState } from 'react';
 
