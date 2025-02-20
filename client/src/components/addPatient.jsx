@@ -26,7 +26,6 @@ const AddPatient = ({ isOpen, onClose }) => {
     const [uploadProgress, setUploadProgress] = useState(0); // Track upload progress
     const testRef = useRef(null);
     const [profileImage, setProfileImage] = useState(null);
-    const [fingerprintData, setFingerPrintData] = useState(null)
     const [patientData, setPatientData] = useState({
         first_name: '',
         last_name: '',
@@ -38,7 +37,7 @@ const AddPatient = ({ isOpen, onClose }) => {
         address: '',
         relationshipStatus: '',
         avatar: profileImage,
-        fingerprint_Data: '',
+        fingerprint_Data: null,
         nextOfKin: {
         name: '',
         phone: '',
@@ -48,6 +47,10 @@ const AddPatient = ({ isOpen, onClose }) => {
         gender: '',
         },
     });
+
+    useEffect(() => {
+        console.log(patientData)
+    }, [patientData])
 
     // Cloudinary configuration
     const cloudinaryUrl = import.meta.env.VITE_CLOUDINARY_URL
@@ -172,8 +175,10 @@ const AddPatient = ({ isOpen, onClose }) => {
         xhr.onload = () => {
             if (xhr.status === 200) {
                 const uploadedImageUrl = JSON.parse(xhr.responseText);
-                console.log("Uploaded Image URL: ", uploadedImageUrl.secure_url); // Log the URL
+                // console.log("Uploaded Image URL: ", uploadedImageUrl.secure_url); // Log the URL
                 // Reset the state after upload
+                patientData.fingerprint_Data = uploadedImageUrl.secure_url
+                // console.log(patientData.fingerprint_Data)
                 setFingerprint(null);
                 setQualityMessage('');
                 setRidgeClarity(0);
