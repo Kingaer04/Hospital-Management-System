@@ -12,7 +12,7 @@ const TabButton = ({ label, isActive, onClick, disabled }) => (
 )
 
 const AddPatient = ({ isOpen, onClose }) => {
-    const defaultImage = '/icons/default-image.jpeg'
+    const defaultImage = '/Icons/default-image.jpeg'
     const {currentUser} = useSelector((state) => state.user)
     const [loading, setLoading] = useState(false)
     const [activeTab, setActiveTab] = useState('personal');
@@ -298,10 +298,10 @@ const AddPatient = ({ isOpen, onClose }) => {
     };
 
     const handleImageDelete = () => {
-        setProfileImage(null);
+        setProfileImage('/Icons/default-image.jpeg');
         setPatientData((prev) => ({
             ...prev,
-            avatar: null
+            avatar: '/Icons/default-image.jpeg'
         }));
     }
 
@@ -447,27 +447,30 @@ const AddPatient = ({ isOpen, onClose }) => {
                                         <div className="mb-4">
                                             <label className="block text-sm font-medium text-gray-700">Profile Picture</label>
                                             <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 rounded-md border-dashed">
-        <div className="space-y-1 text-center">
-            <div className='flex gap-10'>
-                <img 
-                    src={profileImage} 
-                    alt={patientData.first_name || "Default Image"} 
-                    className='w-[100px] h-[100px] object-cover cursor-pointer rounded-full mb-5' 
-                    onClick={() => fileInputRef.current.click()} 
-                    title="Click to change or upload image"
-                />
-                <input 
-                    type="file" 
-                    hidden 
-                    accept='image/*' 
-                    onChange={handleImageUpload} 
-                    ref={fileInputRef}
-                />
-            </div>
-            {patientData.avatar && <button onClick={handleImageDelete} className='bg-[#FFEBEB] text-[#FF0000] border border-[#FF0000] text-[12px] p-1 pl-3 pr-3 rounded-[5px]'>Delete</button>}
-            {loading && <div>Uploading: {uploadProgress}%</div>}
-        </div>
-    </div>
+                                                <div className="space-y-1 text-center">
+                                                    <div className='flex flex-col justify-center items-center gap-10'>
+                                                        <img 
+                                                            src={profileImage} 
+                                                            alt={patientData.first_name || "Default Image"} 
+                                                            className='w-[100px] h-[100px] object-cover cursor-pointer rounded-full mb-5' 
+                                                            onClick={() => fileInputRef.current.click()} 
+                                                            title="Click to change or upload image"
+                                                        />
+                                                        <input 
+                                                            type="file" 
+                                                            hidden 
+                                                            accept='image/*' 
+                                                            onChange={handleImageUpload} 
+                                                            ref={fileInputRef}
+                                                        />
+                                                        {(patientData.avatar === "/Icons/default-image.jpeg" || patientData.avatar === '') && (
+                                                            <p className='text-black'>Click on the image to upload your profile image</p>
+                                                        )}
+                                                    </div>
+                                                    {(patientData.avatar && patientData.avatar !== "/Icons/default-image.jpeg") && <button onClick={handleImageDelete} className='bg-[#301d1d] text-[#FF0000] border border-[#FF0000] text-[12px] p-1 pl-3 pr-3 rounded-[5px]'>Delete</button>}
+                                                    {loading && <div>Uploading: {uploadProgress}%</div>}
+                                                </div>
+                                            </div>
                                         </div>
 
                                         {/* Fingerprint Section */}
