@@ -1,21 +1,20 @@
 import React, { useState, useEffect, useRef} from 'react';
 import { useSelector } from 'react-redux';
 
-const TabButton = ({ label, isActive, onClick }) => (
+const TabButton = ({ label, isActive, onClick, disabled }) => (
     <button
-        onClick={onClick}
-        className={`px-4 py-2 ${
-            isActive 
-            ? 'border-b-2 border-[#00A272] text-[#00a271d0]' 
-            : 'text-gray-500 hover:text-gray-700'
-        }`}
+        onClick={disabled ? null : onClick}
+        className={`px-4 py-2 ${isActive ? 'border-b-2 border-[#00A272]' : 'text-gray-500 hover:text-gray-700'} ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+        disabled={disabled}
     >
         {label}
     </button>
-);
+)
 
 const AddPatient = ({ isOpen, onClose }) => {
+    const defaultImage = '/icons/default-image.jpeg'
     const {currentUser} = useSelector((state) => state.user)
+    const [loading, setLoading] = useState(false)
     const [activeTab, setActiveTab] = useState('personal');
     const [selectedOption, setSelectedOption] = useState(null);
     const [fingerprint, setFingerprint] = useState(null);
@@ -25,7 +24,10 @@ const AddPatient = ({ isOpen, onClose }) => {
     const [ridgeClarity, setRidgeClarity] = useState(0); // Track ridge clarity
     const [uploadProgress, setUploadProgress] = useState(0); // Track upload progress
     const testRef = useRef(null);
-    const [profileImage, setProfileImage] = useState(null);
+    const fileInputRef = useRef(null);
+    const [isPersonalFilled, setIsPersonalFilled] = useState(false);
+    const [isNextOfKinFilled, setIsNextOfKinFilled] = useState(false);
+    const [profileImage, setProfileImage] = useState(defaultImage);
     const [patientData, setPatientData] = useState({
         first_name: '',
         last_name: '',
@@ -36,7 +38,7 @@ const AddPatient = ({ isOpen, onClose }) => {
         phone: '',
         address: '',
         relationshipStatus: '',
-        avatar: profileImage,
+        avatar: '',
         fingerprint_Data: null,
         nextOfKin: {
         name: '',
@@ -175,10 +177,7 @@ const AddPatient = ({ isOpen, onClose }) => {
         xhr.onload = () => {
             if (xhr.status === 200) {
                 const uploadedImageUrl = JSON.parse(xhr.responseText);
-                // console.log("Uploaded Image URL: ", uploadedImageUrl.secure_url); // Log the URL
-                // Reset the state after upload
                 patientData.fingerprint_Data = uploadedImageUrl.secure_url
-                // console.log(patientData.fingerprint_Data)
                 setFingerprint(null);
                 setQualityMessage('');
                 setRidgeClarity(0);
@@ -227,6 +226,89 @@ const AddPatient = ({ isOpen, onClose }) => {
         }
     }
 
+    const checkPersonalFilled = () => {
+        const { first_name, last_name, email, gender, patientID, phone, address, relationshipStatus } = patientData;
+        return first_name && last_name && email && gender && patientID && phone && address && relationshipStatus;
+    }
+
+    const checkNextOfKinFilled = () => {
+        const { name, phone, relationshipStatus } = patientData.nextOfKin;
+        return name && phone && relationshipStatus;
+    };
+
+    const handleNext = () => {
+        if (activeTab === 'personal') {
+            setIsPersonalFilled(checkPersonalFilled());
+            if (isPersonalFilled) setActiveTab('nextOfKin');
+        } else if (activeTab === 'nextOfKin') {
+            setIsNextOfKinFilled(checkNextOfKinFilled());
+            if (isNextOfKinFilled) setActiveTab('profile');
+        }
+    };
+
+    const handlePrevious = () => {
+        if (activeTab === 'nextOfKin') setActiveTab('personal');
+        else if (activeTab === 'profile') setActiveTab('nextOfKin');
+    };
+
+    const handleImageUpload = (event) => {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        setLoading(true);
+        setUploadProgress(0);
+
+        const data = new FormData();
+        data.append('file', file);
+        data.append('upload_preset', 'Hospital_management_profile');
+        data.append('cloud_name', 'dyc0ssabt');
+
+        const xhr = new XMLHttpRequest();
+        xhr.open('POST', 'https://api.cloudinary.com/v1_1/dyc0ssabt/image/upload', true);
+
+        xhr.upload.addEventListener('progress', (event) => {
+            if (event.lengthComputable) {
+                const percentComplete = Math.round((event.loaded * 100) / event.total);
+                setUploadProgress(percentComplete);
+            }
+        });
+
+        xhr.onload = () => {
+            if (xhr.status === 200) {
+                const uploadedImageUrl = JSON.parse(xhr.responseText);
+                setProfileImage(uploadedImageUrl.url);
+                setPatientData((prev) => ({
+                    ...prev,
+                    avatar: uploadedImageUrl.url
+                }));
+                setLoading(false);
+                setUploadProgress(0);
+            } else {
+                console.error("Image upload failed: " + xhr.statusText);
+                setLoading(false);
+            }
+        };
+
+        xhr.onerror = () => {
+            console.error("Image upload failed: Network error");
+            setLoading(false);
+        };
+
+        xhr.send(data);
+    };
+
+    const handleImageDelete = () => {
+        setProfileImage(null);
+        setPatientData((prev) => ({
+            ...prev,
+            avatar: null
+        }));
+    }
+
+    const handleSubmit = (event) => {
+        event.pre
+    }
+
     return (
         <div>
             {isOpen && (
@@ -249,16 +331,19 @@ const AddPatient = ({ isOpen, onClose }) => {
                                 label="Personal Information"
                                 isActive={activeTab === 'personal'}
                                 onClick={() => setActiveTab('personal')}
+                                disabled={false}
                             />
                             <TabButton
                                 label="Next of Kin"
                                 isActive={activeTab === 'nextOfKin'}
                                 onClick={() => setActiveTab('nextOfKin')}
+                                disabled={!isPersonalFilled}
                             />
                             <TabButton
                                 label="Profile & Fingerprint"
                                 isActive={activeTab === 'profile'}
                                 onClick={() => setActiveTab('profile')}
+                                disabled={isNextOfKinFilled}
                             />
                         </div>
 
@@ -312,11 +397,6 @@ const AddPatient = ({ isOpen, onClose }) => {
                                         <label className="block text-sm font-medium text-gray-700">Address</label>
                                         <textarea className="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:border-[#00A272] focus:outline-none focus:ring-2 focus:ring-[#00A272] p-2" rows="3" name='address' value={patientData.address} onChange={handleChange}></textarea>
                                     </div>
-                                    <div className="col-span-2">
-                                        <button className="w-full bg-[#00a272] text-white py-2 rounded-md hover:bg-opacity-90">
-                                            Continue
-                                        </button>
-                                    </div>
                                 </div>
                             )}
 
@@ -366,35 +446,28 @@ const AddPatient = ({ isOpen, onClose }) => {
                                     <div className="w-[100%]">
                                         <div className="mb-4">
                                             <label className="block text-sm font-medium text-gray-700">Profile Picture</label>
-                                            <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md">
-                                                <div className="space-y-1 text-center">
-                                                    <svg
-                                                        className="mx-auto h-12 w-12 text-gray-400"
-                                                        stroke="currentColor"
-                                                        fill="none"
-                                                        viewBox="0 0 48 48"
-                                                        aria-hidden="true"
-                                                    >
-                                                        <path
-                                                            d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02"
-                                                            strokeWidth="2"
-                                                            strokeLinecap="round"
-                                                            strokeLinejoin="round"
-                                                        />
-                                                    </svg>
-                                                    <div className="flex text-sm text-gray-600">
-                                                        <label
-                                                            htmlFor="file-upload"
-                                                            className="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-blue-500"
-                                                        >
-                                                            <span>Upload a file</span>
-                                                            <input id="file-upload" name="file-upload" type="file" className="sr-only" />
-                                                        </label>
-                                                        <p className="pl-1">or drag and drop</p>
-                                                    </div>
-                                                    <p className="text-xs text-gray-500">PNG, JPG, GIF up to 10MB</p>
-                                                </div>
-                                            </div>
+                                            <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 rounded-md border-dashed">
+        <div className="space-y-1 text-center">
+            <div className='flex gap-10'>
+                <img 
+                    src={profileImage} 
+                    alt={patientData.first_name || "Default Image"} 
+                    className='w-[100px] h-[100px] object-cover cursor-pointer rounded-full mb-5' 
+                    onClick={() => fileInputRef.current.click()} 
+                    title="Click to change or upload image"
+                />
+                <input 
+                    type="file" 
+                    hidden 
+                    accept='image/*' 
+                    onChange={handleImageUpload} 
+                    ref={fileInputRef}
+                />
+            </div>
+            {patientData.avatar && <button onClick={handleImageDelete} className='bg-[#FFEBEB] text-[#FF0000] border border-[#FF0000] text-[12px] p-1 pl-3 pr-3 rounded-[5px]'>Delete</button>}
+            {loading && <div>Uploading: {uploadProgress}%</div>}
+        </div>
+    </div>
                                         </div>
 
                                         {/* Fingerprint Section */}
@@ -431,6 +504,22 @@ const AddPatient = ({ isOpen, onClose }) => {
                                         </div>
                                     </div>
                                 </div>
+                            )}
+                        </div>
+                        <div className="flex justify-between mt-4">
+                            {activeTab !== 'personal' && (
+                                <button onClick={handlePrevious} className="bg-gray-300 text-gray-700 py-2 px-4 rounded">
+                                    Previous
+                                </button>
+                            )}
+                            {activeTab !== 'profile' ? (
+                                <button onClick={handleNext} className="bg-[#00a272] text-white py-2 px-4 rounded">
+                                    Next
+                                </button>
+                            ) : (
+                                <button className="bg-[#00a272] text-white py-2 px-4 rounded">
+                                    Submit
+                                </button>
                             )}
                         </div>
                     </div>
