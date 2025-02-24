@@ -2,14 +2,18 @@ import React, { useEffect, useState } from 'react';
 import { Box, Button, TextField, Typography, Grid, Avatar, Paper, Divider, FormControl, InputLabel, Select, MenuItem, LinearProgress, IconButton } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close'; // Import Close icon
 import { useDispatch, useSelector } from 'react-redux';
-import { updateStart, updateSuccess, updateFailure } from '../redux/user/userSlice'; // Import your update actions
-import { useNavigate } from 'react-router-dom'; // Import useNavigate
+import { updateStart, updateSuccess, updateFailure } from '../redux/user/userSlice'; 
+import { useParams, useNavigate } from 'react-router-dom';
 
 export default function PatientProfile() {
     const dispatch = useDispatch();
-    const navigate = useNavigate(); // Initialize useNavigate
     const { currentUser } = useSelector((state) => state.user);
     const { currentAdmin } = useSelector((state) => state.admin); 
+    // State for messages
+    const [message, setMessage] = useState('');
+    const [messageType, setMessageType] = useState(''); // 'success' or 'error'
+    const [showMessage, setShowMessage] = useState(false);
+    const { id } = useParams();
     const [loading, setLoading] = useState(false);
     const [uploadProgress, setUploadProgress] = useState(0);
     const [profileImage, setProfileImage] = useState(currentUser?.avatar || '/default-avatar.png');
@@ -35,24 +39,6 @@ export default function PatientProfile() {
         },
     });
 
-    // State for messages
-    const [message, setMessage] = useState('');
-    const [messageType, setMessageType] = useState(''); // 'success' or 'error'
-    const [showMessage, setShowMessage] = useState(false);
-
-    // useEffect(() => {
-    //     // Redirect logic based on role
-    //     if (!currentUser && !currentAdmin) {
-    //         navigate('/Staff-SignIn'); // Redirect to Staff Sign-In if no user is logged in
-    //     } else if (currentAdmin && currentAdmin.role === 'Admin') {
-    //         navigate('/settings'); // Redirect if currentAdmin is Admin
-    //     } else if (currentUser) {
-    //         if (currentUser.role === 'Receptionist' || currentUser.role === 'Doctor') {
-    //             navigate('/profile'); // Redirect for Receptionist and Doctor
-    //         }
-    //     }
-    // }, [currentUser, currentAdmin, navigate]);
-
     const handleChange = (e) => {
         const { name, value } = e.target;
         if (name.startsWith('nextOfKin')) {
@@ -71,6 +57,30 @@ export default function PatientProfile() {
             }));
         }
     };
+
+    useEffect(() => {
+        const fetchPatientData = async () => {
+            try{
+                const res = await fetch(`/receptionist/patientData/${id}`, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                })
+
+                const data = await res.json();
+                console.log(data)
+                if(data.error){
+                    setMessage(data.error, 'error');
+                }else{
+                    setPatientData(data.patient);
+                }
+            }catch(error){
+
+            }
+        }
+        fetchPatientData();
+    }, [])
 
     const handleProfileUpdate = async (e) => {
         e.preventDefault();
@@ -196,7 +206,7 @@ export default function PatientProfile() {
                         <Box display="flex" flexDirection="column" alignItems="center">
                             <Avatar
                                 alt={patientData.first_name}
-                                src={profileImage} // Use the state variable for the profile image
+                                src={patientData.avatar} // Use the state variable for the profile image
                                 sx={{ width: 120, height: 120, marginBottom: '10px', border: '2px solid #00A272' }}
                             />
                             <Button variant="contained" component="label" sx={{ backgroundColor: '#00A272', color: '#fff' }}>
@@ -356,41 +366,9 @@ export default function PatientProfile() {
                                 </Grid>
                                 <Grid item xs={12}>
                                     <Divider sx={{ margin: '20px 0' }} />
-                                    <Typography variant="h6" sx={{ marginBottom: '10px', fontWeight: 'bold' }}>Password</Typography>
+                                    <Typography variant="h6" sx={{ marginBottom: '10px', fontWeight: 'bold' }}>FingerPrint Data</Typography>
                                 </Grid>
-                                <Grid item xs={12} md={6}>
-                                    <TextField
-                                        fullWidth
-                                        type="password"
-                                        label="Old Password"
-                                        name="oldPassword"
-                                        value={patientData.oldPassword} // Correct value here
-                                        onChange={handleChange}
-                                        variant="outlined"
-                                    />
-                                </Grid>
-                                <Grid item xs={12} md={6}>
-                                    <TextField
-                                        fullWidth
-                                        type="password"
-                                        label="New Password"
-                                        name="newPassword"
-                                        value={patientData.newPassword} // Correct value here
-                                        onChange={handleChange}
-                                        variant="outlined"
-                                    />
-                                </Grid>
-                                <Grid item xs={12} md={6}>
-                                    <TextField
-                                        fullWidth
-                                        type="password"
-                                        label="Confirm Password"
-                                        name="confirmPassword"
-                                        value={patientData.confirmPassword}
-                                        onChange={handleChange}
-                                        variant="outlined"
-                                    />
-                                </Grid>
+                                {/* will add fingerprint data here */}
                                 <Grid item xs={12}>
                                     <Button type="submit" variant="contained" color="primary" sx={{ backgroundColor: '#00A272' }}>
                                         Update Profile

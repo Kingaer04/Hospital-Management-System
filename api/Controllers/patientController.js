@@ -76,12 +76,21 @@ export const patientController = {
         }
     },
 
+    getPatientData: async (req, res, next) => {
+        try {
+            const { id } = req.params
+            const patient = await PatientData.findById(id);
+            res.status(200).json({ patient: patient });
+        } catch (error) {
+            res.status(500).json({ error: 'Failed to retrieve patient', message: error.message });
+            next(error);
+        }
+    },
+
     getAllPatient: async (req, res, next) => {
         try {
             const { hospital_ID } = req.params
-            console.log(hospital_ID);
             const patients = await PatientData.find({ hospital_ID: hospital_ID });
-            console.log(patients)
             res.status(200).json({ patient: patients });
         } catch (error) {
             res.status(500).json({ error: 'Failed to retrieve staff', message: error.message });
