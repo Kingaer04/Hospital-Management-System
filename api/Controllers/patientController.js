@@ -19,6 +19,7 @@ function getPatientParams(body) {
             name: body.nextOfKin.name,
             gender: body.nextOfKin.gender,
             address: body.nextOfKin.address,
+            email: body.nextOfKin.email,
             phone: body.nextOfKin.phone,
             relationshipStatus: body.nextOfKin.relationshipStatus
         },
@@ -39,6 +40,7 @@ export const patientController = {
             }
     
             req.user = user;
+            // console.log(req.user)
             next();
         });
     },
@@ -98,28 +100,15 @@ export const patientController = {
         }
     },
 
-    updateStaff: async (req, res, next) => {
+    updatePatient: async (req, res, next) => {
         try {
-            const { staffId } = req.params;
-            const { role } = req.body; // Only role should be updated
-            const { role: adminRole, hospitalId } = req.user; // Assuming role and hospitalId are included in the JWT payload
-
-            // Check if the admin has permission
-            if (adminRole !== 'Admin') {
-                return res.status(403).json({ error: 'Only admins can update staff roles' });
-            }
-
-            const staff = await StaffData.findById(staffId);
-            if (!staff || staff.hospital.toString() !== hospitalId) {
-                return res.status(404).json({ error: 'Staff not found or you do not have permission to update this staff' });
-            }
-
-            staffData.role = role; // Update the staff role
-            await staff.save();
-
-            res.status(200).json({ message: 'Staff role updated successfully', staff });
+            if (req.user.hospitalId !== req.params.hospital_ID) return res.status(401).json({ error: 'Unauthorized! you can only update patient that is registered in your hospital' });
+            const updatedUser = await PatientData.findByIdAndUpdate(req.params.id, {
+                $set: getPatientParams(req.body)
+            }, { new: true });
+    
+            res.status(200).json(updatedUser);
         } catch (error) {
-            res.status(400).json({ error: 'Failed to update staff role', message: error.message });
             next(error);
         }
     },

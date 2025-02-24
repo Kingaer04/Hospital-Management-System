@@ -71,7 +71,7 @@ export default function PatientProfile() {
                 const data = await res.json();
                 console.log(data)
                 if(data.error){
-                    setMessage(data.error, 'error');
+                    showMessageWithTimeout(data.error, 'error');
                 }else{
                     setPatientData(data.patient);
                 }
@@ -84,17 +84,10 @@ export default function PatientProfile() {
 
     const handleProfileUpdate = async (e) => {
         e.preventDefault();
-        if (patientData.newPassword !== patientData.confirmPassword) {
-            showMessageWithTimeout('Passwords do not match', 'error');
-            return;
-        }
-
-        dispatch(updateStart()); // Start the update process
-        setMessage(''); // Clear previous messages
 
         try {
-            const updatedProfile = { ...patientData, avatar: profileImage };
-            const response = await fetch(`/staff/Update/${currentUser._id}`, { 
+            const updatedProfile = { ...patientData };
+            const response = await fetch(`/receptionist/updatePatientProfile/${currentUser.hospital_ID}/${id}`, { 
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -103,14 +96,11 @@ export default function PatientProfile() {
             });
             const data = await response.json();
             if (data.error) {
-                dispatch(updateFailure(data.error)); // Dispatch failure action
                 showMessageWithTimeout(data.error, 'error');
             } else {
-                dispatch(updateSuccess(data)); // Dispatch the update action
                 showMessageWithTimeout("Profile updated successfully!", 'success');
             }
         } catch (error) {
-            dispatch(updateFailure(error.message)); // Dispatch failure action
             showMessageWithTimeout("Failed to update profile: " + error.message, 'error');
         }
     };

@@ -72,6 +72,10 @@ const PatientSchema = new mongoose.Schema({
                 required: true,
                 unique: true
             },
+            email: {
+                type: String,
+                unique: true
+            },
             relationshipStatus: {
                 type: String,
                 enum: ['Father', 'Mother', 'Spouse', 'Sibling', 'Child', 'Friend', 'Other Relatives'],
