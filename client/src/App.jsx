@@ -16,6 +16,7 @@ import RequestPage from './pages/requestPage.jsx'
 import StaffProfile from './pages/staffProfile.jsx'
 import StaffSignIn from './pages/staffSignIn.jsx'
 import DoctorHome from './pages/doctorHome.jsx'
+import PatientProfile from './pages/patientProfile.jsx'
 
 
 export default function App() {
@@ -37,6 +38,7 @@ export default function App() {
                   <Route path='/receptionistHome' element={<ReceptionistHome/>}/>
                   <Route path='/DoctorHome' element={<DoctorHome/>}/>
                   <Route path='/patient' element={<Patient/>}/>
+                  <Route path="/patient/edit/:id" element={<PatientProfile />} />
                   <Route path='/details' element={<StaffDetails/>}/>
                   <Route path='/settings' element={<Settings/>}/>
                   <Route path='/request' element={<RequestPage/>}/>
