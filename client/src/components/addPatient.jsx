@@ -29,11 +29,11 @@ const AddPatient = ({ isOpen, onClose }) => {
     const [isNextOfKinFilled, setIsNextOfKinFilled] = useState(false);
     const [profileImage, setProfileImage] = useState(defaultImage);
     const [patientData, setPatientData] = useState({
+        hospital_ID: currentUser.hospital_ID,
         first_name: '',
         last_name: '',
         email: '',
         gender: '',
-        patientID: '',
         patientDoB: '',
         phone: '',
         address: '',
@@ -41,12 +41,12 @@ const AddPatient = ({ isOpen, onClose }) => {
         avatar: '',
         fingerprint_Data: null,
         nextOfKin: {
-        name: '',
-        phone: '',
-        email: '',
-        address: '',
-        relationshipStatus: '',
-        gender: '',
+            name: '',
+            phone: '',
+            email: '',
+            address: '',
+            relationshipStatus: '',
+            gender: '',
         },
     });
 
@@ -305,8 +305,24 @@ const AddPatient = ({ isOpen, onClose }) => {
         }));
     }
 
-    const handleSubmit = (event) => {
-        event.pre
+    const handleSubmit = async (event) => {
+        event.preventDefault();
+        try {
+            const res = await fetch(`/receptionist/addPatient/${currentUser.hospital_ID}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(patientData),
+            })
+
+            const data = await res.json()
+            if (data.error) {
+                console.log("Error: ", data.error)
+            }
+        } catch(error) {
+            console.log("Failed to update profile: " + error.message, 'error')
+        }
     }
 
     return (
@@ -520,7 +536,7 @@ const AddPatient = ({ isOpen, onClose }) => {
                                     Next
                                 </button>
                             ) : (
-                                <button className="bg-[#00a272] text-white py-2 px-4 rounded">
+                                <button type='submit' onClick={handleSubmit} className="bg-[#00a272] text-white py-2 px-4 rounded">
                                     Submit
                                 </button>
                             )}

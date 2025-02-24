@@ -1,15 +1,11 @@
 import mongoose from 'mongoose'
+import { type } from 'os';
 
 const PatientSchema = new mongoose.Schema({
     hospital_ID: {
             type: mongoose.Schema.Types.ObjectId,
             ref: 'HospitalAdminAccount',
             required: true
-        },
-        patient_ID: {
-            type: String,
-            required: true,
-            unique: true
         },
         first_name: {
             type: String,
@@ -26,6 +22,10 @@ const PatientSchema = new mongoose.Schema({
         },
         address: {
             type: String,
+            required: true
+        },
+        DoB: {
+            type: Date,
             required: true
         },
         email: {
@@ -63,15 +63,7 @@ const PatientSchema = new mongoose.Schema({
                 enum: ['Male', 'Female'],
                 required: true
             },
-            DoB: {
-                type: Date,
-                required: true
-            },
             address: {
-                type: String,
-                required: true
-            },
-            email: {
                 type: String,
                 required: true
             },
@@ -102,6 +94,6 @@ PatientSchema.pre('save', function(next) {
     next();
 });
 
-const PatientModel = mongoose.model('patient', PatientSchema);
+const PatientData = mongoose.model('PatientData', PatientSchema);
 
-export default PatientModel;
+export default PatientData;
