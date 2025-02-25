@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
+import { Box, Button, TextField, Typography, Grid, Avatar, Paper, Divider, FormControl, InputLabel, Select, MenuItem, LinearProgress, IconButton } from '@mui/material';
 
 const AppointmentFormPage = () => {
     const { id } = useParams(); // Extract patient ID from URL
@@ -12,6 +13,8 @@ const AppointmentFormPage = () => {
         email: '',
         phone: '',
         avatar: '',
+        reason: '',
+
     });
 
     useEffect(() => {
@@ -84,31 +87,114 @@ const AppointmentFormPage = () => {
     if (!patientData) return <div>Loading...</div>;
 
     return (
-        <form onSubmit={handleSubmit}>
-            <input type="text" value={patientData.first_name} placeholder="First Name" name="first_name" onChange={handleChange} />
-            <input type="text" value={patientData.last_name} readOnly placeholder="Last Name" />
-            <input type="email" value={patientData.email} readOnly placeholder="Email" />
-            <input type="text" value={patientData.phone} readOnly placeholder="Phone" />
-            <textarea
-                placeholder="Reason for appointment"
-                value={reason}
-                onChange={(e) => setReason(e.target.value)}
-                required
-            ></textarea>
-            <select
-                value={selectedDoctor}
-                onChange={(e) => setSelectedDoctor(e.target.value)}
-                required
-            >
-                <option value="">Select Doctor</option>
-                {doctors.map((doctor) => (
-                    <option key={doctor._id} value={doctor._id}>
-                        {doctor.name}
-                    </option>
-                ))}
-            </select>
-            <button type="submit" className="bg-blue-500 text-white p-2">Send & Assign</button>
-        </form>
+        <Paper elevation={6} sx={{ padding: '30px', borderRadius: '15px', backgroundColor: '#ffffff' }}>
+            <Typography variant="h4" sx={{ marginBottom: '20px', fontWeight: 'bold', color: '#333' }}>Book Appointment</Typography>
+            <Grid container spacing={3}>
+                <Grid item xs={12} md={4}>
+                    <Box display="flex" flexDirection="column" alignItems="center">
+                        <Avatar
+                            alt={patientData.first_name}
+                            src={patientData.avatar} // Use the state variable for the profile image
+                            sx={{ width: 120, height: 120, marginBottom: '10px', border: '2px solid #00A272' }}
+                        />
+                    </Box>
+                </Grid>
+                <Grid item xs={12} md={8}>
+                    <form onSubmit={handleSubmit}>
+                        <Grid container spacing={2}>
+                            <Grid item xs={12} md={6}>
+                                <TextField
+                                    fullWidth
+                                    label="First Name"
+                                    name="first_name"
+                                    value={patientData.first_name}
+                                    variant="outlined"
+                                    InputProps={{
+                                        readOnly: true, 
+                                    }}
+                                />
+                            </Grid>
+                            <Grid item xs={12} md={6}>
+                                <TextField
+                                    fullWidth
+                                    label="Last Name"
+                                    name="last_name"
+                                    value={patientData.last_name}
+                                    variant="outlined"
+                                    InputProps={{
+                                        readOnly: true, 
+                                    }}
+                                />
+                            </Grid>
+                            <Grid item xs={12} md={6}>
+                                <TextField
+                                    fullWidth
+                                    label="Email"
+                                    name="email"
+                                    value={patientData.email}
+                                    variant="outlined"
+                                    InputProps={{
+                                        readOnly: true, 
+                                    }}
+                                />
+                            </Grid>
+                            <Grid item xs={12} md={6}>
+                                <TextField
+                                    fullWidth
+                                    label="Phone Number"
+                                    name="phone"
+                                    value={patientData.phone}
+                                    variant="outlined"
+                                    InputProps={{
+                                        readOnly: true, 
+                                    }}
+                                />
+                            </Grid>
+                            <Grid item xs={12}>
+                                <Divider sx={{ margin: '20px 0' }} />
+                                <Typography variant="h6" sx={{ marginBottom: '10px', fontWeight: 'bold' }}>Reason for Appointment</Typography>
+                            </Grid>
+                            <Grid item xs={12} md={6}>
+                                <TextField
+                                    fullWidth
+                                    label="Reason for appointment"
+                                    name="reason"
+                                    value={patientData.reason}
+                                    onChange={handleChange}
+                                    variant="outlined"
+                                />
+                            </Grid>
+                            <Grid item xs={12} md={6}>
+                                <FormControl fullWidth variant="outlined">
+                                    <InputLabel id="select-doctor">Assign Doctor</InputLabel>
+                                    <Select
+                                        labelId="select-doctor"
+                                        value={selectedDoctor}
+                                        onChange={(e) => setSelectedDoctor(e.target.value)}
+                                        label="Assign Doctor"
+                                        required
+                                    >
+                                        <MenuItem value="">
+                                            <em>Select Doctor</em>
+                                        </MenuItem>
+                                        {doctors.map((doctor) => (
+                                            <MenuItem key={doctor._id} value={doctor._id}>
+                                                {doctor.name}
+                                            </MenuItem>
+                                        ))}
+                                    </Select>
+                                </FormControl>
+                            </Grid>
+                            <Grid item xs={12}>
+                            <Button type="submit" className="bg-blue-500 text-white p-2">
+                                Send & Assign
+                            </Button>
+                            </Grid>
+                        </Grid>
+                    </form>
+                </Grid>
+            </Grid>
+        </Paper>
     );
 };
 
