@@ -7,6 +7,6 @@ const router = express.Router();
 
 router.use('/admin', adminRoute);
 router.use('/staff', staffRoute);
-router.use('/receptionist', receptionsistRoute);
+router.use('/recep-patient', receptionsistRoute);
 
 export default router;

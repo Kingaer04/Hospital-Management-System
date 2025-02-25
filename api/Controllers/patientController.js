@@ -112,4 +112,17 @@ export const patientController = {
             next(error);
         }
     },
+
+    patientSearch: async (req, res, next) => {
+        try {
+            const { query } = req.body;
+            const results = await PatientData.find({
+                $or: [{ phone: query }, { email: query }]
+            }).lean(); // Use .lean() for plain objects
+    
+            res.status(200).json(results);
+        } catch (error) {
+            next(error); // Pass the error to the error handling middleware
+        }
+    },
 };

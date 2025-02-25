@@ -1,13 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
 
 const RequestPage = () => {
-    const [selectedOption, setSelectedOption] = useState(null);
     const [fingerprint, setFingerprint] = useState(null);
     const [scannerError, setScannerError] = useState(null);
     const [qualityMessage, setQualityMessage] = useState('');
     const [acquisitionStarted, setAcquisitionStarted] = useState(false);
     const [ridgeClarity, setRidgeClarity] = useState(0); // Track ridge clarity
     const [uploadProgress, setUploadProgress] = useState(0); // Track upload progress
+    const [matchedPatientData, setMatchedPatientData] = useState(null);
     const testRef = useRef(null);
 
     // Cloudinary configuration
@@ -24,8 +24,7 @@ const RequestPage = () => {
                 canvas.height = img.height;
                 ctx.drawImage(img, 0, 0);
                 
-                const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-                const data = imageData.data;
+                const data = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
 
                 // Calculate ridge clarity (using edge detection)
                 let edges = 0;
@@ -43,9 +42,7 @@ const RequestPage = () => {
                 }
                 const ridgeClarity = edges / (canvas.width * canvas.height);
                 
-                resolve({
-                    ridgeClarity: Math.round(ridgeClarity * 100),
-                });
+                resolve(Math.round(ridgeClarity * 100));
             };
             img.src = imageData;
         });
@@ -62,11 +59,13 @@ const RequestPage = () => {
                     setFingerprint(base64Image);
                     
                     // Assess quality
-                    const qualityResults = await assessImageQuality(base64Image);
-                    setRidgeClarity(qualityResults.ridgeClarity); // Update ridge clarity state
-                    if (qualityResults.ridgeClarity > 30) {
-                        setQualityMessage("Good, click on the save button to save the image.");
-                        setScannerError(null); // Clear error if quality is good
+                    const clarity = await assessImageQuality(base64Image);
+                    setRidgeClarity(clarity);
+
+                    if (clarity > 30) {
+                        setQualityMessage("Good, processing the image...");
+                        setScannerError(null);
+                        handleFileUpload(base64Image); // Automatically upload after good quality
                     } else {
                         setQualityMessage("Poor image, please retake.");
                         setScannerError("Poor quality fingerprint detected. Please try again.");
@@ -76,7 +75,6 @@ const RequestPage = () => {
                     setScannerError("Failed to process fingerprint data.");
                 }
             } else {
-                console.error("No samples data received.");
                 setScannerError("No fingerprint data received.");
             }
         };
@@ -104,22 +102,10 @@ const RequestPage = () => {
         testRef.current = new FingerprintSdkTest();
     }, []);
 
-    const handleOptionClick = (option) => {
-        setSelectedOption(option);
-        setScannerError(null);
-        setFingerprint(null);
-        setRidgeClarity(0); // Reset ridge clarity
-        setQualityMessage(''); // Reset quality message
-        if (option === 'fingerprint') {
-            document.getElementById('fingerprintCaptureSection').style.display = 'block';
-        } else {
-            document.getElementById('fingerprintCaptureSection').style.display = 'none';
-        }
-    };
-
     const handleFingerprintScan = () => {
         setScannerError('');
         setQualityMessage('');
+        setMatchedPatientData(null); // Reset matched patient data
         if (testRef.current) {
             testRef.current.startCapture();
         } else {
@@ -133,48 +119,60 @@ const RequestPage = () => {
         data.append('upload_preset', uploadPreset);
 
         const xhr = new XMLHttpRequest();
-
         xhr.open('POST', cloudinaryUrl, true);
 
         xhr.upload.addEventListener('progress', (event) => {
             if (event.lengthComputable) {
                 const percentComplete = Math.round((event.loaded * 100) / event.total);
-                setUploadProgress(percentComplete); // Update upload progress
+                setUploadProgress(percentComplete);
             }
         });
 
-        xhr.onload = () => {
+        xhr.onload = async () => {
             if (xhr.status === 200) {
-                const uploadedImageUrl = JSON.parse(xhr.responseText);
-                console.log("Uploaded Image URL: ", uploadedImageUrl.secure_url); // Log the URL
-                // Reset the state after upload
-                setFingerprint(null);
-                setQualityMessage('');
-                setRidgeClarity(0);
-                setAcquisitionStarted(false);
-                setScannerError(null);
+                const uploadedImageUrl = JSON.parse(xhr.responseText).secure_url;
+                await compareFingerprintWithDatabase(uploadedImageUrl); // Compare with database
             } else {
-                console.error("Image upload failed: " + xhr.statusText);
                 setScannerError("Image upload failed: " + xhr.statusText);
             }
             setUploadProgress(0);
         };
 
         xhr.onerror = () => {
-            console.error("Image upload failed: Network error");
             setScannerError("Image upload failed: Network error");
             setUploadProgress(0);
         };
 
-        xhr.send(data); // Send the request
+        xhr.send(data);
     };
 
-    const handleSave = () => {
-        if (ridgeClarity > 30 && fingerprint) {
-            handleFileUpload(fingerprint); // Upload the fingerprint image to Cloudinary
-        } else {
-            setScannerError("Ridge clarity is too low. Please retake the fingerprint.");
+    const compareFingerprintWithDatabase = async (fingerprintUrl) => {
+        try {
+            const response = await fetch('/api/compare-fingerprint', { // Adjust the API endpoint as needed
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ fingerprintUrl }),
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to compare fingerprint');
+            }
+
+            const data = await response.json();
+            setMatchedPatientData(data); // Set matched patient data from the response
+        } catch (error) {
+            setScannerError("Error comparing fingerprint: " + error.message);
         }
+    };
+
+    const handleRetake = () => {
+        setFingerprint(null);
+        setScannerError(null);
+        setRidgeClarity(0);
+        setQualityMessage('');
+        handleFingerprintScan(); // Restart the scanning process
     };
 
     return (
@@ -182,42 +180,39 @@ const RequestPage = () => {
             <div className="max-w-md mx-auto">
                 <h2 className="text-center text-3xl font-extrabold text-gray-900">Patient Data Request</h2>
                 <div className="flex justify-around mt-8 space-x-4">
-                    <div className="card" onClick={() => handleOptionClick('fingerprint')}>
+                    <div className="card" onClick={handleFingerprintScan}>
                         <div className="p-4 bg-blue-500 shadow rounded-lg text-center cursor-pointer h-40 w-40 flex flex-col justify-center items-center">
-                            <h3 className="text-lg font-medium text-white">Patient Fingerprint</h3>
+                            <h3 className="text-lg font-medium text-white">Scan Fingerprint</h3>
                         </div>
                     </div>
                 </div>
 
-                <div id="fingerprintCaptureSection" style={{ display: 'none' }} className="mt-8 border p-4 rounded-lg bg-white">
-                    {fingerprint ? (
+                <div className="mt-8 border p-4 rounded-lg bg-white">
+                    {fingerprint && (
                         <div className="text-center">
                             <img src={fingerprint} alt="Captured Fingerprint" className="w-32 h-32" />
-                            <p className="mt-2 text-sm text-gray-600">Fingerprint Captured</p>
                             <p className="mt-2 text-sm text-gray-600">{qualityMessage}</p>
                             <p className="mt-2 text-sm text-gray-600">Ridge Clarity Score: {ridgeClarity}%</p>
                         </div>
-                    ) : (
-                        <p className="text-center text-gray-600">No fingerprint captured yet.</p>
                     )}
-                    <div className="flex justify-around mt-4">
-                        <button
-                            onClick={handleFingerprintScan}
-                            className="bg-green-500 text-white px-4 py-2 rounded"
-                            disabled={acquisitionStarted || (ridgeClarity > 30 && fingerprint)} // Disable if good fingerprint is captured
-                        >
-                            Start Scan
-                        </button>
-                        <button
-                            onClick={handleSave}
-                            className={`px-4 py-2 rounded ${ridgeClarity > 30 ? 'bg-blue-500 text-white' : 'bg-gray-300 text-gray-600'}`}
-                            disabled={!fingerprint || ridgeClarity <= 30} // Disable if ridge clarity <= 30
-                        >
-                            Save
-                        </button>
-                    </div>
-                    {scannerError && <p className="mt-2 text-sm text-red-600">{scannerError}</p>}
+                    {scannerError && (
+                        <div>
+                            <p className="mt-2 text-sm text-red-600">{scannerError}</p>
+                            <button
+                                onClick={handleRetake}
+                                className="mt-4 bg-yellow-500 text-white px-4 py-2 rounded"
+                            >
+                                Retake
+                            </button>
+                        </div>
+                    )}
                     {uploadProgress > 0 && <p className="mt-2 text-sm text-gray-600">Upload Progress: {uploadProgress}%</p>}
+                    {matchedPatientData && (
+                        <div className="mt-4">
+                            <h3 className="text-lg font-bold">Matched Patient Data:</h3>
+                            <pre className="mt-2 bg-gray-100 p-2 rounded">{JSON.stringify(matchedPatientData, null, 2)}</pre>
+                        </div>
+                    )}
                 </div>
             </div>
         </div>

@@ -21,7 +21,7 @@ export default defineConfig({
         target: 'http://localhost:5500',
         secure: false,
       },
-      '/receptionist': {
+      '/recep-patient': {
         target: 'http://localhost:5500',
         secure: false
       },
