@@ -4,7 +4,7 @@ import BadgeOutlinedIcon from '@mui/icons-material/BadgeOutlined';
 import PatientTable from '../components/patientTable.jsx';
 import { Calendar } from '@/components/ui/calendar';
 import { useSelector } from 'react-redux';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import PatientModal from '../components/patientModal';
 
 export default function ReceptionistHome() {
@@ -13,6 +13,7 @@ export default function ReceptionistHome() {
   const [patientData, setPatientData] = useState([]);
   const [selectedPatient, setSelectedPatient] = useState(null);
   const [modalOpen, setModalOpen] = useState(false);
+  const [searchMessage, setSearchMessage] = useState(''); // State for search message
 
   const handleSearch = async (event) => {
       event.preventDefault();
@@ -26,9 +27,19 @@ export default function ReceptionistHome() {
 
       const data = await response.json();
       setPatientData(data);
+
       if (data.length > 0) {
-          setSelectedPatient(data[0]); // Assuming you want to show the first patient found
+          setSelectedPatient(data[0]); // Show the first patient found
           setModalOpen(true);
+          setSearchMessage(''); // Clear any previous messages
+      } else {
+          setSearchMessage('No patient found with the provided credentials.'); // Set no patient found message
+          setSelectedPatient(null); // Clear selected patient if none found
+
+          // Clear the message after 5 seconds
+          setTimeout(() => {
+              setSearchMessage('');
+          }, 5000);
       }
   };
 
@@ -37,10 +48,6 @@ export default function ReceptionistHome() {
       setPatientData([]); // Reset patient data if needed
       setSearchItem(''); // Clear search input
   };
-
-  useEffect(() => {
-    console.log(patientData)
-},[])
 
   return (
     <div className="p-5 w-[100%]">
@@ -107,6 +114,9 @@ export default function ReceptionistHome() {
                   </button>
                 )}
               </form>
+              {searchMessage && (
+                <p className="text-red-500 mt-2">{searchMessage}</p> // Display search message
+              )}
             </div>
           </div>
         </div>

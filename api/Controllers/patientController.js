@@ -118,9 +118,25 @@ export const patientController = {
             const { query } = req.body;
             const results = await PatientData.find({
                 $or: [{ phone: query }, { email: query }]
-            }).lean(); // Use .lean() for plain objects
+            })
+            .populate('hospital_ID', 'hospital_Name hospital_Address') // Populate with hospital name and address
+            .lean(); // Use .lean() for plain objects
     
-            res.status(200).json(results);
+            // Format the results to include hospital details
+            const formattedResults = results.map(patient => {
+                const hospitalAddress = patient.hospital_ID?.hospital_Address;
+                const fullAddress = hospitalAddress ? 
+                    `${hospitalAddress.number}, ${hospitalAddress.street}, ${hospitalAddress.lga}, ${hospitalAddress.state}` : 
+                    'Address not available';
+    
+                return {
+                    ...patient,
+                    hospitalName: patient.hospital_ID?.name,
+                    hospitalAddress: fullAddress
+                };
+            });
+    
+            res.status(200).json(formattedResults);
         } catch (error) {
             next(error); // Pass the error to the error handling middleware
         }
