@@ -87,7 +87,7 @@ const AppointmentFormPage = () => {
     if (!patientData) return <div>Loading...</div>;
 
     return (
-        <Paper elevation={6} sx={{ padding: '30px', borderRadius: '15px', backgroundColor: '#ffffff' }}>
+        <Box sx={{ padding: '30px', height: '100vh' }}>
             <Typography variant="h4" sx={{ marginBottom: '20px', fontWeight: 'bold', color: '#333' }}>Book Appointment</Typography>
             <Grid container spacing={3}>
                 <Grid item xs={12} md={4}>
@@ -186,7 +186,7 @@ const AppointmentFormPage = () => {
                                 </FormControl>
                             </Grid>
                             <Grid item xs={12}>
-                            <Button type="submit" className="bg-blue-500 text-white p-2">
+                            <Button type="submit" variant="contained" color="primary" sx={{ backgroundColor: '#00A272' }}>
                                 Send & Assign
                             </Button>
                             </Grid>
@@ -194,7 +194,7 @@ const AppointmentFormPage = () => {
                     </form>
                 </Grid>
             </Grid>
-        </Paper>
+        </Box>
     );
 };
 
