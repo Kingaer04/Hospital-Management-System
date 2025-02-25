@@ -50,10 +50,6 @@ const AddPatient = ({ isOpen, onClose }) => {
         },
     });
 
-    useEffect(() => {
-        console.log(patientData)
-    }, [patientData])
-
     // Cloudinary configuration
     const cloudinaryUrl = import.meta.env.VITE_CLOUDINARY_URL
     const uploadPreset = import.meta.env.VITE_UPLOAD_PRESET

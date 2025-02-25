@@ -6,7 +6,7 @@ import { updateStart, updateSuccess, updateFailure } from '../redux/user/userSli
 import { useParams, useNavigate } from 'react-router-dom';
 
 export default function PatientProfile() {
-    const dispatch = useDispatch();
+    const navigate = useNavigate()
     const { currentUser } = useSelector((state) => state.user);
     const { currentAdmin } = useSelector((state) => state.admin); 
     // State for messages
@@ -16,7 +16,7 @@ export default function PatientProfile() {
     const { id } = useParams();
     const [loading, setLoading] = useState(false);
     const [uploadProgress, setUploadProgress] = useState(0);
-    const [profileImage, setProfileImage] = useState(currentUser?.avatar || '/default-avatar.png');
+    const [profileImage, setProfileImage] = useState();
     const [patientData, setPatientData] = useState({
         hospital_ID: currentUser.hospital_ID,
         first_name: '',
@@ -27,7 +27,7 @@ export default function PatientProfile() {
         phone: '',
         address: '',
         relationshipStatus: '',
-        avatar: '',
+        avatar: profileImage,
         fingerprint_Data: null,
         nextOfKin: {
             name: '',
@@ -38,7 +38,10 @@ export default function PatientProfile() {
             gender: '',
         },
     });
-
+    
+    useEffect(()  => {
+        console.log(profileImage)
+    }, [])
     const handleChange = (e) => {
         const { name, value } = e.target;
         if (name.startsWith('nextOfKin')) {
@@ -73,6 +76,8 @@ export default function PatientProfile() {
                 if(data.error){
                     showMessageWithTimeout(data.error, 'error');
                 }else{
+                    setProfileImage(data.patient.avatar)
+                    console.log(data.patient.avatar)
                     setPatientData(data.patient);
                 }
             }catch(error){
@@ -86,7 +91,7 @@ export default function PatientProfile() {
         e.preventDefault();
 
         try {
-            const updatedProfile = { ...patientData };
+            const updatedProfile = { ...patientData, avatar: profileImage };
             const response = await fetch(`/receptionist/updatePatientProfile/${currentUser.hospital_ID}/${id}`, { 
                 method: 'POST',
                 headers: {
@@ -99,6 +104,7 @@ export default function PatientProfile() {
                 showMessageWithTimeout(data.error, 'error');
             } else {
                 showMessageWithTimeout("Profile updated successfully!", 'success');
+                navigate('/patient');
             }
         } catch (error) {
             showMessageWithTimeout("Failed to update profile: " + error.message, 'error');
@@ -196,7 +202,7 @@ export default function PatientProfile() {
                         <Box display="flex" flexDirection="column" alignItems="center">
                             <Avatar
                                 alt={patientData.first_name}
-                                src={patientData.avatar} // Use the state variable for the profile image
+                                src={profileImage} // Use the state variable for the profile image
                                 sx={{ width: 120, height: 120, marginBottom: '10px', border: '2px solid #00A272' }}
                             />
                             <Button variant="contained" component="label" sx={{ backgroundColor: '#00A272', color: '#fff' }}>
