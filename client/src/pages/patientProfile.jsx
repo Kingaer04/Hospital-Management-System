@@ -64,7 +64,7 @@ export default function PatientProfile() {
     useEffect(() => {
         const fetchPatientData = async () => {
             try{
-                const res = await fetch(`/receptionist/patientData/${id}`, {
+                const res = await fetch(`/recep-patient/patientData/${id}`, {
                     method: 'GET',
                     headers: {
                         'Content-Type': 'application/json',

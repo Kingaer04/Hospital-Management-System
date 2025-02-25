@@ -18,7 +18,7 @@ const PatientTable = () => {
   useEffect(() => {
     async function fetchData() {
       try {
-        const response = await fetch(`/receptionist/patientDetails/${hospital_ID}`, {
+        const response = await fetch(`/recep-patient/patientDetails/${hospital_ID}`, {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',

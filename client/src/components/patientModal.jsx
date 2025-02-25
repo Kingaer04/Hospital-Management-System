@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useSelector } from 'react-redux';
-import CloseIcon from '@mui/icons-material/Close'; // Import close icon
+import CloseIcon from '@mui/icons-material/Close'; 
+import AppointmentForm from '@/pages/appointment-booking';
 
 const PatientModal = ({ patient, onClose }) => {
     const { currentUser } = useSelector((state) => state.user);
@@ -12,6 +13,10 @@ const PatientModal = ({ patient, onClose }) => {
             setIsRegistered(true);
         }
     }, [currentUser.hospital_ID, patient.hospital_ID]);
+
+    useEffect(() => {
+        console.log(patient)
+    }, [])
 
     return (
         <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
@@ -30,7 +35,7 @@ const PatientModal = ({ patient, onClose }) => {
                         Close
                     </button>
                     {isRegistered && (
-                        <a href={`/booking-appointments/${patient.id}`} className='bg-[#00A272] text-white rounded-sm p-2'>
+                        <a href={`/booking-appointments/${patient._id}`} className='bg-[#00A272] text-white rounded-sm p-2'>
                             Book Appointment
                         </a>
                     )}

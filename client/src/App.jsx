@@ -17,6 +17,7 @@ import StaffProfile from './pages/staffProfile.jsx'
 import StaffSignIn from './pages/staffSignIn.jsx'
 import DoctorHome from './pages/doctorHome.jsx'
 import PatientProfile from './pages/patientProfile.jsx'
+import AppointmentForm from './pages/appointment-booking.jsx'
 // import CustomWebcam from './components/CustomWebcam.jsx' will check the driver of my camera
 
 
@@ -44,6 +45,7 @@ export default function App() {
                   <Route path='/settings' element={<Settings/>}/>
                   <Route path='/request' element={<RequestPage/>}/>
                   <Route path='/profile' element={<StaffProfile/>}/>
+                  <Route path='/booking-appointments/:id' element={<AppointmentForm/>}/>
                   {/* <Route path='/webcam' element={<CustomWebcam/>}/> */}
                 </Route>
               </Route>
