@@ -1,12 +1,11 @@
 import CalendarMonthOutlinedIcon from '@mui/icons-material/CalendarMonthOutlined';
 import Diversity1OutlinedIcon from '@mui/icons-material/Diversity1Outlined';
 import BadgeOutlinedIcon from '@mui/icons-material/BadgeOutlined';
-import SearchBar from '../components/searchBar';
 import PatientTable from '../components/patientTable.jsx';
 import { Calendar } from '@/components/ui/calendar';
 import { useSelector } from 'react-redux';
-import { useState } from 'react';
-import PatientModal from '../components/PatientModal';
+import { useState, useEffect } from 'react';
+import PatientModal from '../components/patientModal';
 
 export default function ReceptionistHome() {
   const { currentUser } = useSelector((state) => state.user);
@@ -38,6 +37,10 @@ export default function ReceptionistHome() {
       setPatientData([]); // Reset patient data if needed
       setSearchItem(''); // Clear search input
   };
+
+  useEffect(() => {
+    console.log(patientData)
+},[])
 
   return (
     <div className="p-5 w-[100%]">
