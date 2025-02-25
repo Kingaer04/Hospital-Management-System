@@ -4,13 +4,16 @@ import BadgeOutlinedIcon from '@mui/icons-material/BadgeOutlined';
 import SearchBar from '../components/searchBar';
 import PatientTable from '../components/patientTable.jsx';
 import { Calendar } from '@/components/ui/calendar';
+import { useSelector } from 'react-redux';
 
 export default function ReceptionistHome() {
+  const { currentUser } = useSelector((state) => state.user)
+
   return (
     <div className="p-5 w-[100%]">
       <div className="mb-8">
         <h5 className='font-bold text-[18px]'>
-          Welcome, Anny
+          Welcome, {currentUser.name.split(' ')[1]}!
         </h5>
         <p className="text-[#A9A9A9] text-[11px] font-[400]">
           Here's an insight of your activity
@@ -52,24 +55,24 @@ export default function ReceptionistHome() {
                 </div>
                 </div>
                 <div className='mt-[40px] border border-[#A9A9A9] p-[4%] rounded-[10px]'>
-                <p className='font-bold text-[100%]'>
-                  Search For Patient By Name or ID
-                </p>
-                <SearchBar/>
-                <div className="flex flex-wrap items-center mt-2 gap-3">
-                  <p className='text-[65%]'>
-                  Status: Available
+                  <p className='font-bold text-[100%]'>
+                    Search For Patient By Name or ID
                   </p>
-                  <p className='text-[65%]'>
-                  Patient's Name: Samuel Sophia
-                  </p>
-                  <p className='text-[65%]'>
-                  Patient's ID: 001
-                  </p>
-                  <button className='bg-[#00A272] text-white text-[65%] rounded-sm p-3'>
-                  Book new Appointment
-                  </button>
-                </div>
+                  <SearchBar/>
+                  <div className="flex justify-between items-center mt-2 gap-3">
+                    <p className='text-[65%]'>
+                    Status: Available
+                    </p>
+                    <p className='text-[65%]'>
+                    Patient's Name: Samuel Sophia
+                    </p>
+                    <p className='text-[65%]'>
+                    Patient's ID: 001
+                    </p>
+                    <button className='bg-[#00A272] text-white text-[65%] rounded-sm p-3'>
+                    Book new Appointment
+                    </button>
+                  </div>
                 </div>
                 <div>
                 <p className='mt-10 font-bold'>Patient's Data</p>
