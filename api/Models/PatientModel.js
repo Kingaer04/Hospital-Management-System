@@ -86,17 +86,17 @@ const PatientSchema = new mongoose.Schema({
         timestamps: true
     });
 
-// Pre-save middleware to update the lastUpdatedBy Doctor and name of the hospital
-PatientSchema.pre('save', function(next) {
-    if (this.isModified()) {
-        this.lastUpdatedBy = {
-            doctorId: this.doctorId, 
-            doctorName: this.doctorName,
-            hospital_name: this.hospital_ID 
-        };
-    }
-    next();
-});
+// // Pre-save middleware to update the lastUpdatedBy Doctor and name of the hospital
+// PatientSchema.pre('save', function(next) {
+//     if (this.isModified()) {
+//         this.lastUpdatedBy = {
+//             doctorId: this.doctorId, 
+//             doctorName: this.doctorName,
+//             hospital_name: this.hospital_ID 
+//         };
+//     }
+//     next();
+// });
 
 const PatientData = mongoose.model('PatientData', PatientSchema);
 

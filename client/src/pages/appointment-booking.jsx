@@ -1,12 +1,16 @@
 import { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
-import { Box, Button, TextField, Typography, Grid, Avatar, Paper, Divider, FormControl, InputLabel, Select, MenuItem, LinearProgress, IconButton } from '@mui/material';
+import { useParams, useNavigate } from 'react-router-dom';
+import { Box, Button, TextField, Typography, Grid, Avatar, Divider, FormControl, InputLabel, Select, MenuItem } from '@mui/material';
+import { useSelector } from 'react-redux';
 
 const AppointmentFormPage = () => {
+    const navigate = useNavigate();
     const { id } = useParams(); // Extract patient ID from URL
+    const {currentUser} = useSelector((state) => state.user);
     const [doctors, setDoctors] = useState([]);
     const [selectedDoctor, setSelectedDoctor] = useState('');
     const [reason, setReason] = useState('');
+    const [isRegistered, setIsRegistered] = useState(false);
     const [patientData, setPatientData] = useState({
         first_name: '',
         last_name: '',
@@ -14,13 +18,11 @@ const AppointmentFormPage = () => {
         phone: '',
         avatar: '',
         reason: '',
-
     });
 
     useEffect(() => {
         // Fetch patient data using the patientId
         const fetchPatientData = async () => {
-            // console.log(id)
             try {
                 const res = await fetch(`/recep-patient/patientData/${id}`, {
                     method: 'GET',
@@ -38,6 +40,9 @@ const AppointmentFormPage = () => {
                     console.log(data.error, 'error');
                 } else {
                     setPatientData(data.patient);
+                    if (data.patient.hospital_ID === currentUser.hospital_ID) {
+                        setIsRegistered(true);
+                    }
                 }
             } catch (error) {
                 console.log(error.message, 'error'); // Improved error logging
@@ -46,36 +51,53 @@ const AppointmentFormPage = () => {
 
         // Fetch doctors for the dropdown
         const fetchDoctors = async () => {
-            const response = await fetch('/api/doctors');
-            const data = await response.json();
-            setDoctors(data);
+            try {
+                const response = await fetch(`/recep-patient/doctorData/${currentUser.hospital_ID}`, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                });
+                const data = await response.json();
+                setDoctors(data);
+            } catch (error) {
+                console.error('Error fetching doctors:', error);
+            }
         };
+
         fetchDoctors();
         fetchPatientData();
+        console.log(patientData)
     }, [id])
 
     const handleSubmit = async (event) => {
         event.preventDefault();
-
+    
         const appointmentData = {
-            patientId: patient._id,
+            patientId: patientData._id,
             doctorId: selectedDoctor,
+            status: isRegistered,
             reason,
-            checkin: new Date().toISOString(),
+            checkIn: new Date().toISOString(), // This will capture the current time
         };
-
-        const response = await fetch('/api/appointments', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(appointmentData),
-        });
-
-        if (response.ok) {
-            console.log('Appointment created successfully');
-        } else {
-            console.error('Failed to create appointment');
+        console.log(appointmentData);
+        try {
+            const response = await fetch(`/recep-patient/book-appointment/${id}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(appointmentData),
+            });
+    
+            if (response.ok) {
+                console.log('Appointment created successfully');
+                navigate('/appointment');
+            } else {
+                console.error('Failed to create appointment');
+            }
+        } catch (error) {
+            console.error('Error while creating appointment:', error);
         }
     };
 
@@ -159,8 +181,8 @@ const AppointmentFormPage = () => {
                                     fullWidth
                                     label="Reason for appointment"
                                     name="reason"
-                                    value={patientData.reason}
-                                    onChange={handleChange}
+                                    value={reason} // Change this to use the reason state
+                                    onChange={(e) => setReason(e.target.value)} // Update the state directly
                                     variant="outlined"
                                 />
                             </Grid>
@@ -174,9 +196,6 @@ const AppointmentFormPage = () => {
                                         label="Assign Doctor"
                                         required
                                     >
-                                        <MenuItem value="">
-                                            <em>Select Doctor</em>
-                                        </MenuItem>
                                         {doctors.map((doctor) => (
                                             <MenuItem key={doctor._id} value={doctor._id}>
                                                 {doctor.name}

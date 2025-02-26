@@ -1,5 +1,6 @@
 import express from 'express'
 import { patientController } from '../Controllers/patientController.js';
+import { receptionistController } from '../Controllers/receptionistController.js';
 
 const router = express.Router();
 
@@ -8,12 +9,7 @@ router.get('/patientDetails/:hospital_ID', patientController.getAllPatient);
 router.get('/patientData/:id', patientController.getPatientData);
 router.post('/updatePatientProfile/:hospital_ID/:id', patientController.verifyToken, patientController.updatePatient);
 router.post('/searchPatient', patientController.patientSearch);
-// router.post('/SignIn', adminController.authenticate_admin);
-// router.get('/SignOut', adminController.signOut);
-// router.post('/updateAccount/:id', adminController.verifyToken, adminController.updateAccount);
-// router.post('/addStaff', adminController.addStaff);
-// router.put('/updateStaff', adminController.updateStaff);
-// router.delete('/deleteStaff/:id', adminController.deleteStaff);
-// router.get('/staffDetails/:hospital_ID', adminController.getAllStaff);
+router.post('/book-appointment/:id', patientController.bookingAppointment)
+router.get('/doctorData/:hospital_ID', receptionistController.getDoctors)
 
 export default router;

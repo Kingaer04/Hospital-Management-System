@@ -1,5 +1,6 @@
 import jwt from "jsonwebtoken";
 import PatientData from "../Models/PatientModel.js";
+import BookingAppointment from "../Models/BoookingAppointmentModel.js";
 
 function getPatientParams(body) {
     return {
@@ -141,4 +142,24 @@ export const patientController = {
             next(error); // Pass the error to the error handling middleware
         }
     },
+
+    bookingAppointment: async (req, res, next) => {
+        try {
+            const { patientId, doctorId, reason, status, checkIn, checkOut } = req.body;
+            const newAppointment = new BookingAppointment({
+                patientId,
+                doctorId,
+                reason,
+                status,
+                checkIn,
+                checkOut
+            });
+    
+            await newAppointment.save();
+            res.status(201).json({ message: 'Appointment booked successfully' });
+        } catch (error) {
+            res.status(400).json({ error: 'Failed to book appointment', message: error.message });
+            next(error);
+        }
+    }
 };
