@@ -145,9 +145,10 @@ export const patientController = {
 
     bookingAppointment: async (req, res, next) => {
         try {
-            const { patientId, doctorId, reason, status, checkIn, checkOut } = req.body;
+            const { patientId, hospital_ID, doctorId, reason, status, checkIn, checkOut } = req.body;
             const newAppointment = new BookingAppointment({
                 patientId,
+                hospital_ID,
                 doctorId,
                 reason,
                 status,

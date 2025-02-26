@@ -6,6 +6,11 @@ const BookingAppointmentSchema = new mongoose.Schema({
         ref: 'PatientData',
         required: true
     },
+    hospital_ID: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'HospitalAdminAccount',
+        required: true
+    },
     doctorId: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'StaffData',
@@ -25,6 +30,7 @@ const BookingAppointmentSchema = new mongoose.Schema({
     },
     checkOut: {
         type: Date,
+        default: null
     }
 })
 

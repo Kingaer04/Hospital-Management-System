@@ -75,6 +75,7 @@ const AppointmentFormPage = () => {
     
         const appointmentData = {
             patientId: patientData._id,
+            hospital_ID: currentUser.hospital_ID,
             doctorId: selectedDoctor,
             status: isRegistered,
             reason,

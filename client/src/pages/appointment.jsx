@@ -1,6 +1,6 @@
 import { Box, Button } from '@mui/material';
 import Typography from '@mui/material/Typography';
-import PatientTable from '../components/patientTable.jsx';
+import AppointmentTable from '../components/AppointmentTable';
 
 export default function Appointment() {
   return (
@@ -27,7 +27,7 @@ export default function Appointment() {
       <Box sx={{ display: "flex", width: "100%", gap: "5%" }}>
         <Box sx={{ flex: "0 0 100%", padding: "" }}>
           <Box>
-            <PatientTable/>
+            <AppointmentTable/>
           </Box>
         </Box>
       </Box>

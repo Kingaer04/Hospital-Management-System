@@ -11,5 +11,6 @@ router.post('/updatePatientProfile/:hospital_ID/:id', patientController.verifyTo
 router.post('/searchPatient', patientController.patientSearch);
 router.post('/book-appointment/:id', patientController.bookingAppointment)
 router.get('/doctorData/:hospital_ID', receptionistController.getDoctors)
+router.get('/appointmentData/:hospital_ID', receptionistController.getAllAppointment)
 
 export default router;

@@ -13,7 +13,8 @@ export const receptionistController = {
 
     getAllAppointment: async (req, res) => {
         try {
-            const appointment_bookings = await BookingAppointment.find({ hospital_ID: req.params.hospital_ID });
+            const appointment_bookings = await BookingAppointment.find({ hospital_ID: req.params.hospital_ID }).populate('patientId', 'first_name last_name email phone avatar').populate('doctorId', 'first_name last_name email phone');
+            console.log(appointment_bookings);
             res.status(200).json(appointment_bookings);
         } catch (error) {
             res.status(500).json({ message: error.message });
