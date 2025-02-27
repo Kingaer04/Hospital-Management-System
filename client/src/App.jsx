@@ -43,7 +43,7 @@ export default function App() {
                   <Route path="/patient/edit/:id" element={<PatientProfile />} />
                   <Route path='/details' element={<StaffDetails/>}/>
                   <Route path='/settings' element={<Settings/>}/>
-                  <Route path='/request' element={<RequestPage/>}/>
+                  <Route path='/request/:id' element={<RequestPage/>}/>
                   <Route path='/profile' element={<StaffProfile/>}/>
                   <Route path='/booking-appointments/:id' element={<AppointmentForm/>}/>
                   {/* <Route path='/webcam' element={<CustomWebcam/>}/> */}

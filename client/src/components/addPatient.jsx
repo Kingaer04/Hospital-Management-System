@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef} from 'react';
 import { useSelector } from 'react-redux';
+import { useNavigate } from 'react-router-dom';
 
 const TabButton = ({ label, isActive, onClick, disabled }) => (
     <button
@@ -12,6 +13,7 @@ const TabButton = ({ label, isActive, onClick, disabled }) => (
 )
 
 const AddPatient = ({ isOpen, onClose }) => {
+    const navigate = useNavigate()
     const defaultImage = '/Icons/default-image.jpeg'
     const {currentUser} = useSelector((state) => state.user)
     const [loading, setLoading] = useState(false)
@@ -304,7 +306,7 @@ const AddPatient = ({ isOpen, onClose }) => {
     const handleSubmit = async (event) => {
         event.preventDefault();
         try {
-            const res = await fetch(`/receptionist/addPatient/${currentUser.hospital_ID}`, {
+            const res = await fetch(`/recep-patient/addPatient/${currentUser.hospital_ID}`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -313,6 +315,7 @@ const AddPatient = ({ isOpen, onClose }) => {
             })
 
             const data = await res.json()
+            navigate("/patient")
             if (data.error) {
                 console.log("Error: ", data.error)
             }

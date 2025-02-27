@@ -125,6 +125,10 @@ export default function SignUp() {
     }
   }
 
+  useEffect(() => {
+    console.log(formData);
+  },[])
+
   const [passwordStrength, setPasswordStrength] = React.useState('');
 
   // Function to evaluate password strength

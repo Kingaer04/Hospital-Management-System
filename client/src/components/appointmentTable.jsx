@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { useSelector } from 'react-redux';
-import { FaEdit, FaTrash, FaEllipsisV } from 'react-icons/fa';
+import { FaEllipsisV } from 'react-icons/fa';
 import { useSnackbar } from 'notistack';
 import { Link } from 'react-router-dom';
 import Modal from '@mui/material/Modal';
 import Box from '@mui/material/Box';
+import CloseIcon from '@mui/icons-material/Close';
 
 const AppointmentTable = () => {
   const [data, setData] = useState([]);
@@ -12,6 +13,7 @@ const AppointmentTable = () => {
   const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedAppointment, setSelectedAppointment] = useState(null);
+  const [statusFilter, setStatusFilter] = useState('');
   const { currentUser } = useSelector((state) => state.user);
   const { currentAdmin } = useSelector((state) => state.admin);
   const hospital_ID = currentUser.hospital_ID;
@@ -33,10 +35,8 @@ const AppointmentTable = () => {
         }
 
         const result = await response.json();
-        // console.log(result)
         if (Array.isArray(result)) {
           setData(result);
-          console.log(result)
         } else {
           throw new Error('Data format is incorrect');
         }
@@ -47,7 +47,6 @@ const AppointmentTable = () => {
         setLoading(false);
       }
     }
-    console.log(data)
     fetchData();
   }, [hospital_ID]);
 
@@ -68,6 +67,7 @@ const AppointmentTable = () => {
 
         setData(data.filter(appointment => appointment._id !== id));
         enqueueSnackbar("Appointment deleted successfully!", { variant: 'success' });
+        handleCloseModal(); // Close the modal after deletion
       } catch (error) {
         enqueueSnackbar("Error deleting appointment: " + error.message, { variant: 'error' });
       }
@@ -82,9 +82,15 @@ const AppointmentTable = () => {
     setSelectedAppointment(null);
   };
 
-  const filteredData = data.filter(appointment =>
-    appointment.patientId.first_name.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredData = data.filter(appointment => {
+    const fullName = `${appointment.patientId.first_name} ${appointment.patientId.last_name}`.toLowerCase();
+    return (
+      (fullName.includes(searchTerm.toLowerCase()) || 
+      appointment.patientId.first_name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+      appointment.patientId.last_name.toLowerCase().includes(searchTerm.toLowerCase())) &&
+      (statusFilter ? (statusFilter === 'Registered' ? appointment.status === "true" : appointment.status !== "true") : true)
+    );
+  });
 
   if (loading) {
     return (
@@ -105,6 +111,16 @@ const AppointmentTable = () => {
         value={searchTerm}
         onChange={(e) => setSearchTerm(e.target.value)}
       />
+
+      <select
+        className="p-2 border border-gray-300 rounded mb-4"
+        value={statusFilter}
+        onChange={(e) => setStatusFilter(e.target.value)}
+      >
+        <option value="">All Statuses</option>
+        <option value="Registered">Registered</option>
+        <option value="Not Registered">Not Registered</option>
+      </select>
 
       {filteredData.length === 0 ? (
         <div className="text-center text-gray-500">
@@ -128,7 +144,7 @@ const AppointmentTable = () => {
               <tr key={appointment._id} className={`border-b transition duration-300 ease-in-out ${index % 2 === 0 ? 'bg-gray-100' : 'bg-white'} hover:bg-green-100`}>
                 <td className="py-3 px-4 flex items-center">
                   {appointment.patientId.avatar ? (
-                    <img src={appointment.patientId.avatar} alt={`${appointment.patientId.first_name}'s avatar`} className="w-7 h-7 rounded-full mr-2" />
+                    <img src={appointment.patientId.avatar} alt={`${appointment.patientId.first_name}'s avatar`} className="w-7 h-7 rounded-full mr-2 object-cover" />
                   ) : (
                     <div className="w-7 h-7 rounded-full flex items-center justify-center bg-gray-300 text-white mr-2">
                       {appointment.patientId.first_name.charAt(0).toUpperCase()}
@@ -148,17 +164,17 @@ const AppointmentTable = () => {
                   {appointment.checkOut ? new Date(appointment.checkOut).toLocaleString() : <span style={{ color: 'red' }}>Pending</span>}
                 </td>
                 <td className="py-3 px-4 flex space-x-2">
-                  <Link to={`/patient/edit/${appointment.patientId._id}`} className="flex items-center">
-                    <FaEdit className="text-blue-600 hover:text-blue-800" />
-                  </Link>
-                  {currentAdmin?.role === 'Admin' && (
-                    <button onClick={() => handleDelete(appointment._id)}>
-                      <FaTrash className="text-red-600 hover:text-red-800" />
-                    </button>
-                  )}
                   <button onClick={() => handleOpenModal(appointment)}>
                     <FaEllipsisV className="text-gray-600 hover:text-gray-800" />
                   </button>
+                  {currentAdmin?.role === 'Admin' && (
+                    <button 
+                      onClick={() => handleDelete(appointment._id)}
+                      className="text-red-600 hover:text-red-800"
+                    >
+                      Delete
+                    </button>
+                  )}
                 </td>
               </tr>
             ))}
@@ -170,17 +186,36 @@ const AppointmentTable = () => {
       <Modal open={!!selectedAppointment} onClose={handleCloseModal}>
         <Box sx={{ padding: 2, width: 400, margin: 'auto', marginTop: '20%', bgcolor: 'white', borderRadius: 2 }}>
           {selectedAppointment && (
-            <>
-              <h2 className="text-lg font-bold">{selectedAppointment.patientId.first_name} {selectedAppointment.patientId.last_name}</h2>
-              <img src={selectedAppointment.patientId.avatar} alt="Patient Avatar" className="w-16 h-16 rounded-full mb-2" />
-              <p>Email: {selectedAppointment.patientId.email}</p>
-              <p>Phone: {selectedAppointment.patientId.phone}</p>
-              <p>Reason: {selectedAppointment.reason}</p>
-              <p>Status: {selectedAppointment.status === "true" ? 'Registered' : 'Not Registered'}</p>
-              <Link to={`/checkout/${selectedAppointment._id}`} className="mt-2 inline-block bg-green-500 text-white py-1 px-3 rounded">
-                Check Out
-              </Link>
-            </>
+            <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
+              <div className="bg-white rounded-lg shadow-lg p-6 w-11/12 sm:w-1/2 relative">
+                <button onClick={handleCloseModal} className="absolute top-2 right-2">
+                  <CloseIcon sx={{ color: '#00A272' }} />
+                </button>
+                <img src={selectedAppointment.patientId.avatar} alt={`${selectedAppointment.patientId.first_name} ${selectedAppointment.patientId.last_name}`} className="w-24 h-24 rounded-full my-4 mx-auto border-2 border-[#00A272] object-cover" />
+                <p className='text-gray-700'>Name: <span className='font-semibold'>{selectedAppointment.patientId.first_name} {selectedAppointment.patientId.last_name}</span></p>
+                <p className='text-gray-700'>Email: <span className="font-semibold">{selectedAppointment.patientId.email}</span></p>
+                <p className='text-gray-700'>Phone: <span className="font-semibold">{selectedAppointment.patientId.phone}</span></p>
+                <p className='text-gray-700'>Reason: <span className="font-semibold">{selectedAppointment.reason}</span></p>
+                <p className='text-gray-700'>Status: <span className="font-semibold">{selectedAppointment.status === "true" ? 'Registered' : 'Not Registered'}</span></p>
+                <p className='text-gray-700'>Consultant Name: <span className="font-semibold">{selectedAppointment.doctorId.name}</span></p>
+                <p className='text-gray-700'>Consultant Email: <span className="font-semibold">{selectedAppointment.doctorId.email}</span></p>
+                
+                {currentAdmin?.role === 'Admin' && (
+                  <div className="flex justify-end mt-4">
+                    <button 
+                      onClick={() => handleDelete(selectedAppointment._id)} 
+                      className="bg-red-600 text-white py-1 px-3 rounded hover:bg-red-700"
+                    >
+                      Delete Appointment
+                    </button>
+                  </div>
+                )}
+
+                <Link to={`/checkout/${selectedAppointment._id}`} className="mt-2 inline-block bg-green-500 text-white py-1 px-3 rounded">
+                  Check Out
+                </Link>
+              </div>
+            </div>
           )}
         </Box>
       </Modal>

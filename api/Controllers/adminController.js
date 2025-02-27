@@ -15,10 +15,10 @@ function getAdminParams(body) {
         hospital_Email: body.hospital_Email,
         hospital_Phone: body.hospital_Phone,
         hospital_Address: {
-            state: body.hospital_Address.state,
-            lga: body.hospital_Address.lga,
-            number: body.hospital_Address.number,
-            street: body.hospital_Address.street,
+            state: body.hospital_State,
+            lga: body.hospital_LGA,
+            number: body.hospital_Address_Number,
+            street: body.hospital_Address_Street,
         },
     };
 }
@@ -78,6 +78,7 @@ export const adminController = {
         if (hospitalStatus) {
             if (hospitalStatus.registered && hospitalStatus.licensed) {
                 let newHospital = new HospitalAdminAccount(getAdminParams(req.body));
+                console.log(req.body);
                 HospitalAdminAccount.register(newHospital, req.body.password, (error, hospital) => {
                     if (hospital) {
                         res.status(200).json({ message: 'Hospital Account Created Successfully' });

@@ -162,5 +162,18 @@ export const patientController = {
             res.status(400).json({ error: 'Failed to book appointment', message: error.message });
             next(error);
         }
+    },
+
+    fetchFingerprintData: async (req, res, next) => {
+        try {
+            const { id } = req.params;
+            const patient = await PatientData
+                .findById(id)
+                .select('fingerprintImage');
+            res.status(200).json({ fingerprintData: patient.fingerprintImage });
+        } catch (error) {
+            res.status(500).json({ error: 'Failed to retrieve fingerprint data', message: error.message });
+            next(error);
+        }
     }
 };
