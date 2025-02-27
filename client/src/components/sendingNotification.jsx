@@ -8,7 +8,7 @@ const SendingNotification = () => {
     const [message, setMessage] = useState('');
 
     const sendNotification = () => {
-        fetch('http://localhost:3000/send-notification', {
+        fetch('http://localhost:3000/notification/send-notification', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ message })
@@ -33,7 +33,7 @@ const SendingNotification = () => {
             if(Notification.permission === 'granted') {
                 new Notification('Notification', {
                     body: data.message,
-                    icon: 'https://via.placeholder.com/50'
+                    // icon: 'https://via.placeholder.com/50'
                 });
             }
 
