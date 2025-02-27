@@ -1,15 +1,18 @@
 {
   "dependencies": {
     "cookie-parser": "^1.4.6",
+    "cors": "^2.8.5",
     "dotenv": "^16.4.5",
     "excel-date-to-js": "^1.1.5",
     "express": "^4.21.0",
     "express-session": "^1.18.0",
+    "http": "^0.0.1-security",
     "jsonwebtoken": "^9.0.2",
     "module-alias": "^2.2.3",
     "mongoose": "^8.6.2",
     "passport": "^0.7.0",
     "passport-local-mongoose": "^8.0.0",
+    "socket.io": "^4.8.1",
     "xlsx": "^0.18.5"
   },
   "name": "hospital-management-system",

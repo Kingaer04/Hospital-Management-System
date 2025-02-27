@@ -8,7 +8,6 @@ import router from './Routes/indexRoute.js'
 import HospitalAdminAccount from './Models/AdminModel.js'
 import StaffData from './Models/StaffModel.js'
 
-
 dotenv.config()
 
 const app = express()
