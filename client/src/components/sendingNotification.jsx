@@ -33,7 +33,7 @@ const SendingNotification = () => {
             if(Notification.permission === 'granted') {
                 new Notification('Notification', {
                     body: data.message,
-                    // icon: 'https://via.placeholder.com/50'
+                    icon: 'https://th.bing.com/th/id/OIP.lE62x1N59IinU1S4RvBL6QHaHa?w=900&h=900&rs=1&pid=ImgDetMain'
                 });
             }
 
