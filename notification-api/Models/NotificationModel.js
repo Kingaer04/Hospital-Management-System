@@ -16,6 +16,16 @@ const notificationSchema = new mongoose.Schema({
         ref: 'PatientData',
         required: true
     },
+    patientName: {
+        type: String,
+        required: true
+    },
+    patientImage: {
+        type: String,
+    },
+    receptionistImage: {
+        type: String,
+    },
     message: {
         type: String,
         required: true

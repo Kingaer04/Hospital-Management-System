@@ -19,7 +19,7 @@ export default function NotificationPage() {
                 setLoading(true);
                 const response = await fetch(`http://localhost:3000/notification/doctor-notifications/${currentUser._id}`);
                 const data = await response.json();
-                
+                console.log(data)
                 if (data.success) {
                     // Transform the data to match our UI expectations
                     const formattedNotifications = data.notifications.map(notification => ({
@@ -30,9 +30,9 @@ export default function NotificationPage() {
                         Read: notification.Read,
                         patientId: notification.patient_ID,
                         receptionistId: notification.receptionist_ID,
-                        // Default images (replace with actual profile images when available)
-                        receptionistImage: "/api/placeholder/48/48",
-                        patientImage: "/api/placeholder/48/48"
+                        receptionistImage: notification.receptionistImage,
+                        patientImage: notification.patientImage,
+                        patientName: notification.patientName
                     }));
                     
                     setNotifications(formattedNotifications);

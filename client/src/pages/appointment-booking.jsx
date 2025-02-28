@@ -20,6 +20,7 @@ const AppointmentFormPage = () => {
         avatar: '',
         reason: '',
     });
+    const [notificationSent, setNotificationSent] = useState(false); // New state for notification
 
     useEffect(() => {
         // Fetch patient data using the patientId
@@ -72,16 +73,16 @@ const AppointmentFormPage = () => {
 
     const handleSubmit = async (event) => {
         event.preventDefault();
-
+    
         const appointmentData = {
             patientId: patientData._id,
             hospital_ID: currentUser.hospital_ID,
             doctorId: selectedDoctor,
             status: isRegistered,
             reason,
-            checkIn: new Date().toISOString(), // This will capture the current time
+            checkIn: new Date().toISOString(), // Capture the current time
         };
-
+    
         try {
             const response = await fetch(`/recep-patient/book-appointment/${id}`, {
                 method: 'POST',
@@ -90,10 +91,14 @@ const AppointmentFormPage = () => {
                 },
                 body: JSON.stringify(appointmentData),
             });
-
+    
             if (response.ok) {
                 console.log('Appointment created successfully');
-                navigate('/appointment');
+                setNotificationSent(true); // Set notification flag
+                // Wait for a moment to ensure notification is sent before navigating
+                setTimeout(() => {
+                    navigate('/appointment');
+                }, 1000); // Adjust delay as needed
             } else {
                 console.error('Failed to create appointment');
             }
@@ -212,11 +217,14 @@ const AppointmentFormPage = () => {
                             </Grid>
                         </Grid>
                     </form>
-                    {selectedDoctor && patientData._id && (
+                    {notificationSent && selectedDoctor && patientData._id && ( // Only show after appointment creation
                         <SendingNotification 
                             doctorId={selectedDoctor}
                             patientId={patientData._id}
-                            receptionistId={currentUser._id} // Assuming currentUser has an ID
+                            patientName={`${patientData.first_name} ${patientData.last_name}`}
+                            patientImage={patientData.avatar}
+                            receptionistId={currentUser._id} 
+                            receptionistImage={currentUser.avatar ? currentUser.avatar : 'Icons/default-image.jpeg'} 
                             reason={reason}
                         />
                     )}

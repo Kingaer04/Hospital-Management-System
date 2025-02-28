@@ -22,6 +22,9 @@ const NotificationController = {
                 doctor_ID,
                 patient_ID,
                 message,
+                patientName: req.body.patientName,
+                patientImage: req.body.patientImage,
+                receptionistImage: req.body.receptionistImage,
                 Read: false
             });
             
@@ -35,6 +38,9 @@ const NotificationController = {
                 doctor_ID,
                 patient_ID,
                 message,
+                patientName: savedNotification.patientName,
+                patientImage: savedNotification.patientImage,
+                receptionistImage: savedNotification.receptionistImage,
                 createdAt: savedNotification.createdAt,
                 Read: false
             };

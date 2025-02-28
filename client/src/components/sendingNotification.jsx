@@ -4,7 +4,7 @@ import io from 'socket.io-client';
 // Create a singleton socket instance
 const socket = io('http://localhost:3000');
 
-const SendingNotification = ({ doctorId, patientId, receptionistId, reason }) => {
+const SendingNotification = ({ doctorId, patientId, patientName, patientImage, receptionistId, receptionistImage, reason }) => {
     useEffect(() => {
         const sendNotification = async () => {
             // Ensure all required data is available
@@ -22,8 +22,11 @@ const SendingNotification = ({ doctorId, patientId, receptionistId, reason }) =>
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         receptionist_ID: receptionistId,
+                        receptionistImage: receptionistImage,
                         doctor_ID: doctorId,
                         patient_ID: patientId,
+                        patientName: patientName,
+                        patientImage: patientImage,
                         message: message,
                     }),
                 });
@@ -41,7 +44,7 @@ const SendingNotification = ({ doctorId, patientId, receptionistId, reason }) =>
         };
 
         sendNotification();
-    }, [doctorId, patientId, receptionistId, reason]);
+    }, [doctorId, patientId, patientName, patientImage, receptionistId, receptionistImage, reason]);
 
     return null; // This component doesn't render anything
 };
