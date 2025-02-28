@@ -1,38 +1,110 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom"; // Import useNavigate for navigation
+import { useNavigate } from "react-router-dom";
+import { useSelector } from "react-redux";
+import io from "socket.io-client";
+
+// Create singleton socket connection
+const socket = io("http://localhost:3000");
 
 export default function NotificationPage() {
-    const [messages, setMessages] = useState([]);
+    const [notifications, setNotifications] = useState([]);
+    const [loading, setLoading] = useState(true);
     const navigate = useNavigate();
+    const { currentUser } = useSelector((state) => state.user);
 
-    // Sample data for notifications
     useEffect(() => {
-        // Fetch or simulate fetching notifications
-        const fetchedMessages = [
-            {
-                id: 1,
-                title: "New Patient Incoming",
-                body: "A new patient has arrived for your attention. Please check their information.",
-                receptionistImage: "https://th.bing.com/th/id/OIP.kJcXCsX-f8VI5hhuIl9ljgHaHa?w=166&h=180&c=7&r=0&o=5&pid=1.7",
-                patientImage: "https://th.bing.com/th?q=Draw+Person&w=120&h=120&c=1&rs=1&qlt=90&cb=1&pid=InlineBlock&mkt=en-WW&cc=NG&setlang=en&adlt=moderate&t=1&mw=247",
-                timestamp: new Date(Date.now() - 1000 * 60 * 15), // 15 minutes ago
-            },
-            {
-                id: 2,
-                title: "Appointment Reminder",
-                body: "Don't forget your appointment with Dr. Smith tomorrow at 10 AM.",
-                receptionistImage: "https://th.bing.com/th/id/OIP.QAY8zJIk3VkCfwdfxr4ilAHaJb?w=184&h=235&c=7&r=0&o=5&pid=1.7",
-                patientImage: "https://th.bing.com/th/id/OIP.T9JAjD62Bdbaqn5nyyPjwAHaHa?w=184&h=184&c=7&r=0&o=5&pid=1.7",
-                timestamp: new Date(Date.now() - 1000 * 60 * 45), // 45 minutes ago
-            },
-            // Add more notifications as needed
-        ];
-        setMessages(fetchedMessages);
-    }, []);
+        // Fetch actual notifications from the database when component mounts
+        const fetchNotifications = async () => {
+            try {
+                setLoading(true);
+                const response = await fetch(`http://localhost:3000/notification/doctor-notifications/${currentUser._id}`);
+                const data = await response.json();
+                
+                if (data.success) {
+                    // Transform the data to match our UI expectations
+                    const formattedNotifications = data.notifications.map(notification => ({
+                        id: notification._id,
+                        title: "New Patient Appointment",
+                        body: notification.message,
+                        timestamp: new Date(notification.createdAt || Date.now()),
+                        Read: notification.Read,
+                        patientId: notification.patient_ID,
+                        receptionistId: notification.receptionist_ID,
+                        // Default images (replace with actual profile images when available)
+                        receptionistImage: "/api/placeholder/48/48",
+                        patientImage: "/api/placeholder/48/48"
+                    }));
+                    
+                    setNotifications(formattedNotifications);
+                }
+            } catch (error) {
+                console.error("Error fetching notifications:", error);
+            } finally {
+                setLoading(false);
+            }
+        };
 
-    const handleNotificationClick = (id) => {
-        // Navigate to the detailed notification page
-        navigate(`/notification-body`);
+        if (currentUser && currentUser._id) {
+            fetchNotifications();
+            
+            // Register doctor for real-time notifications
+            socket.emit("doctor_login", currentUser._id);
+            
+            // Listen for new notifications
+            socket.on("newNotification", (notification) => {
+                console.log("New notification received:", notification);
+                
+                // Only process notifications for this doctor
+                if (notification.doctor_ID === currentUser._id) {
+                    // Format the notification to match our UI structure
+                    const formattedNotification = {
+                        id: notification._id,
+                        title: "New Patient Appointment",
+                        body: notification.message,
+                        timestamp: new Date(notification.createdAt || Date.now()),
+                        Read: notification.Read || false,
+                        patientId: notification.patient_ID,
+                        receptionistId: notification.receptionist_ID,
+                        // Default images (replace with actual profile images when available)
+                        receptionistImage: "/api/placeholder/48/48",
+                        patientImage: "/api/placeholder/48/48"
+                    };
+                    
+                    // Add new notification to the top of the list
+                    setNotifications(prev => [formattedNotification, ...prev]);
+                    
+                    // Play notification sound (optional)
+                    const audio = new Audio("/notification-sound.mp3");
+                    audio.play().catch(err => console.log("Error playing sound", err));
+                }
+            });
+        }
+        
+        // Clean up socket listeners on component unmount
+        return () => {
+            socket.off("newNotification");
+        };
+    }, [currentUser]);
+
+    const handleNotificationClick = async (notification) => {
+        // Mark notification as read if it's not already
+        if (!notification.Read) {
+            try {
+                await fetch(`http://localhost:3000/notification/mark-as-read/${notification.id}`, {
+                    method: "PUT"
+                });
+                
+                // Update local state to mark this notification as read
+                setNotifications(notifications.map(notif => 
+                    notif.id === notification.id ? { ...notif, Read: true } : notif
+                ));
+            } catch (error) {
+                console.error("Error marking notification as read:", error);
+            }
+        }
+        
+        // Navigate to patient details or appointment page
+        navigate(`/patient/${notification.patientId}`);
     };
 
     const timeAgo = (timestamp) => {
@@ -40,50 +112,78 @@ export default function NotificationPage() {
         const seconds = Math.floor((now - timestamp) / 1000);
         let interval = Math.floor(seconds / 31536000);
 
-        if (interval >= 1) return `${interval} year${interval === 1 ? '' : 's'} ago`;
+        if (interval >= 1) return `${interval} year${interval === 1 ? "" : "s"} ago`;
         interval = Math.floor(seconds / 2592000);
-        if (interval >= 1) return `${interval} month${interval === 1 ? '' : 's'} ago`;
+        if (interval >= 1) return `${interval} month${interval === 1 ? "" : "s"} ago`;
         interval = Math.floor(seconds / 86400);
-        if (interval >= 1) return `${interval} day${interval === 1 ? '' : 's'} ago`;
+        if (interval >= 1) return `${interval} day${interval === 1 ? "" : "s"} ago`;
         interval = Math.floor(seconds / 3600);
-        if (interval >= 1) return `${interval} hour${interval === 1 ? '' : 's'} ago`;
+        if (interval >= 1) return `${interval} hour${interval === 1 ? "" : "s"} ago`;
         interval = Math.floor(seconds / 60);
-        if (interval >= 1) return `${interval} minute${interval === 1 ? '' : 's'} ago`;
-        return 'Less than a minute ago';
+        if (interval >= 1) return `${interval} minute${interval === 1 ? "" : "s"} ago`;
+        return "Less than a minute ago";
     };
+
+    // Function to fetch profile images (you can implement this based on your API)
+    const fetchProfileImages = async (notificationsList) => {
+        // This is a placeholder - implement actual image fetching based on your API
+        return notificationsList;
+    };
+
+    if (loading) {
+        return (
+            <div className="p-10 flex justify-center items-center h-64">
+                <div className="loader animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-green-500"></div>
+            </div>
+        );
+    }
 
     return (
         <div className="p-10">
             <h1 className="text-2xl font-bold mb-5">Notifications</h1>
-            <div className="space-y-4">
-                {messages.map((message) => (
-                    <div
-                        key={message.id}
-                        className="flex items-center p-4 border rounded-lg shadow hover:bg-gray-100 cursor-pointer"
-                        onClick={() => handleNotificationClick(message.id)}
-                    >
-                        <img
-                            src={message.receptionistImage}
-                            alt="Receptionist"
-                            className="w-12 h-12 rounded-full mr-4"
-                        />
-                        <div className="flex-1">
-                            <h2 className="font-semibold">{message.title}</h2>
-                            <p className="text-gray-600">
-                                {message.body.length > 30
-                                    ? `${message.body.substring(0, 30)}...`
-                                    : message.body}
-                            </p>
-                            <p className="text-gray-500 text-sm">{timeAgo(message.timestamp)}</p>
+            
+            {notifications.length === 0 ? (
+                <div className="text-center p-10 text-gray-500">
+                    <p>No notifications yet</p>
+                </div>
+            ) : (
+                <div className="space-y-4">
+                    {notifications.map((notification) => (
+                        <div
+                            key={notification.id}
+                            className={`flex items-center p-4 border rounded-lg shadow hover:bg-gray-100 cursor-pointer ${
+                                !notification.Read ? "bg-green-50 border-green-200" : ""
+                            }`}
+                            onClick={() => handleNotificationClick(notification)}
+                        >
+                            <img
+                                src={notification.receptionistImage}
+                                alt="Receptionist"
+                                className="w-12 h-12 rounded-full mr-4 object-cover border border-gray-200"
+                            />
+                            <div className="flex-1">
+                                <h2 className={`font-semibold ${!notification.Read ? "text-green-700" : ""}`}>
+                                    {notification.title}
+                                    {!notification.Read && (
+                                        <span className="ml-2 inline-block w-2 h-2 bg-green-500 rounded-full"></span>
+                                    )}
+                                </h2>
+                                <p className="text-gray-600">
+                                    {notification.body.length > 60
+                                        ? `${notification.body.substring(0, 60)}...`
+                                        : notification.body}
+                                </p>
+                                <p className="text-gray-500 text-sm">{timeAgo(notification.timestamp)}</p>
+                            </div>
+                            <img
+                                src={notification.patientImage}
+                                alt="Patient"
+                                className="w-12 h-12 rounded-full ml-4 object-cover border border-gray-200"
+                            />
                         </div>
-                        <img
-                            src={message.patientImage}
-                            alt="Patient"
-                            className="w-12 h-12 rounded-full ml-4"
-                        />
-                    </div>
-                ))}
-            </div>
+                    ))}
+                </div>
+            )}
         </div>
     );
 }

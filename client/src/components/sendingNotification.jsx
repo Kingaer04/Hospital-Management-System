@@ -1,67 +1,49 @@
+import { useEffect } from 'react';
 import io from 'socket.io-client';
-import { useEffect, useState } from 'react';
 
+// Create a singleton socket instance
 const socket = io('http://localhost:3000');
 
-const SendingNotification = () => {
-    const [notifications, setNotifications] = useState([]);
-    const [message, setMessage] = useState('');
-
-    const sendNotification = () => {
-        fetch('http://localhost:3000/notification/send-notification', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ message })
-        });
-        setMessage('');
-    };
+const SendingNotification = ({ doctorId, patientId, receptionistId, reason }) => {
     useEffect(() => {
-        if (Notification.permission === 'default' || Notification.permission === 'denied') {
-            Notification.requestPermission().then((permission) => {
-                if (permission === 'granted') {
-                    console.log('Permission granted!');
-                }
-                else {
-                    console.log('Permission denied!');
-                }
-            })
-            
-        }
-        socket.on('pushNotification', (data) => {
-            console.log("Received Notification", data)
-
-            if(Notification.permission === 'granted') {
-                new Notification('Notification', {
-                    body: data.message,
-                    icon: 'https://th.bing.com/th/id/OIP.lE62x1N59IinU1S4RvBL6QHaHa?w=900&h=900&rs=1&pid=ImgDetMain'
-                });
+        const sendNotification = async () => {
+            // Ensure all required data is available
+            if (!doctorId || !patientId || !receptionistId || !reason) {
+                console.log('Missing required data for notification');
+                return;
             }
 
-            setNotifications((prev) => [...prev, data]);
-        });
-
-        return () => {
-            socket.off('pushNotification');
+            const message = `New Patient Arrival: Reason - ${reason}`;
+            
+            try {
+                // Send notification to the backend for storage and immediate delivery
+                const response = await fetch('http://localhost:3000/notification/send-notification', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        receptionist_ID: receptionistId,
+                        doctor_ID: doctorId,
+                        patient_ID: patientId,
+                        message: message,
+                    }),
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    console.log('Notification sent successfully:', result.notification);
+                } else {
+                    console.error('Failed to send notification:', result.message);
+                }
+            } catch (error) {
+                console.error('Error sending notification:', error);
+            }
         };
-    }, []);
-    
-    return (
-        <div>
-            <h1>To Doctor</h1>
-            <input 
-                type="text" 
-                value={message} 
-                onChange={(e) => setMessage(e.target.value)} 
-                placeholder="Type your message here" 
-            />
-            <button onClick={sendNotification}>Send Notification</button>
-            <ul>
-                {notifications.map((noty, index) => (
-                    <li key={index}>{noty.message}</li>
-                ))}
-            </ul>
-        </div>
-    );
-}
+
+        sendNotification();
+    }, [doctorId, patientId, receptionistId, reason]);
+
+    return null; // This component doesn't render anything
+};
 
 export default SendingNotification;

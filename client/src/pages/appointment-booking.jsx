@@ -2,11 +2,12 @@ import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Box, Button, TextField, Typography, Grid, Avatar, Divider, FormControl, InputLabel, Select, MenuItem } from '@mui/material';
 import { useSelector } from 'react-redux';
+import SendingNotification from '../components/SendingNotification';
 
 const AppointmentFormPage = () => {
     const navigate = useNavigate();
     const { id } = useParams(); // Extract patient ID from URL
-    const {currentUser} = useSelector((state) => state.user);
+    const { currentUser } = useSelector((state) => state.user);
     const [doctors, setDoctors] = useState([]);
     const [selectedDoctor, setSelectedDoctor] = useState('');
     const [reason, setReason] = useState('');
@@ -30,11 +31,11 @@ const AppointmentFormPage = () => {
                         'Content-Type': 'application/json',
                     },
                 });
-        
+
                 if (!res.ok) {
                     throw new Error(`HTTP error! status: ${res.status}`);
                 }
-        
+
                 const data = await res.json();
                 if (data.error) {
                     console.log(data.error, 'error');
@@ -67,12 +68,11 @@ const AppointmentFormPage = () => {
 
         fetchDoctors();
         fetchPatientData();
-        console.log(patientData)
-    }, [id])
+    }, [id]);
 
     const handleSubmit = async (event) => {
         event.preventDefault();
-    
+
         const appointmentData = {
             patientId: patientData._id,
             hospital_ID: currentUser.hospital_ID,
@@ -81,7 +81,7 @@ const AppointmentFormPage = () => {
             reason,
             checkIn: new Date().toISOString(), // This will capture the current time
         };
-        console.log(appointmentData);
+
         try {
             const response = await fetch(`/recep-patient/book-appointment/${id}`, {
                 method: 'POST',
@@ -90,7 +90,7 @@ const AppointmentFormPage = () => {
                 },
                 body: JSON.stringify(appointmentData),
             });
-    
+
             if (response.ok) {
                 console.log('Appointment created successfully');
                 navigate('/appointment');
@@ -105,7 +105,7 @@ const AppointmentFormPage = () => {
     const handleChange = (event) => {
         const { name, value } = event.target;
         setPatientData({ ...patientData, [name]: value });
-    }
+    };
 
     if (!patientData) return <div>Loading...</div>;
 
@@ -133,7 +133,7 @@ const AppointmentFormPage = () => {
                                     value={patientData.first_name}
                                     variant="outlined"
                                     InputProps={{
-                                        readOnly: true, 
+                                        readOnly: true,
                                     }}
                                 />
                             </Grid>
@@ -145,7 +145,7 @@ const AppointmentFormPage = () => {
                                     value={patientData.last_name}
                                     variant="outlined"
                                     InputProps={{
-                                        readOnly: true, 
+                                        readOnly: true,
                                     }}
                                 />
                             </Grid>
@@ -157,7 +157,7 @@ const AppointmentFormPage = () => {
                                     value={patientData.email}
                                     variant="outlined"
                                     InputProps={{
-                                        readOnly: true, 
+                                        readOnly: true,
                                     }}
                                 />
                             </Grid>
@@ -169,7 +169,7 @@ const AppointmentFormPage = () => {
                                     value={patientData.phone}
                                     variant="outlined"
                                     InputProps={{
-                                        readOnly: true, 
+                                        readOnly: true,
                                     }}
                                 />
                             </Grid>
@@ -182,8 +182,8 @@ const AppointmentFormPage = () => {
                                     fullWidth
                                     label="Reason for appointment"
                                     name="reason"
-                                    value={reason} // Change this to use the reason state
-                                    onChange={(e) => setReason(e.target.value)} // Update the state directly
+                                    value={reason}
+                                    onChange={(e) => setReason(e.target.value)}
                                     variant="outlined"
                                 />
                             </Grid>
@@ -206,12 +206,20 @@ const AppointmentFormPage = () => {
                                 </FormControl>
                             </Grid>
                             <Grid item xs={12}>
-                            <Button type="submit" variant="contained" color="primary" sx={{ backgroundColor: '#00A272' }}>
-                                Send & Assign
-                            </Button>
+                                <Button type="submit" variant="contained" color="primary" sx={{ backgroundColor: '#00A272' }}>
+                                    Send & Assign
+                                </Button>
                             </Grid>
                         </Grid>
                     </form>
+                    {selectedDoctor && patientData._id && (
+                        <SendingNotification 
+                            doctorId={selectedDoctor}
+                            patientId={patientData._id}
+                            receptionistId={currentUser._id} // Assuming currentUser has an ID
+                            reason={reason}
+                        />
+                    )}
                 </Grid>
             </Grid>
         </Box>

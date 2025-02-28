@@ -20,8 +20,12 @@ const notificationSchema = new mongoose.Schema({
         type: String,
         required: true
     },
+    Read: {
+        type: Boolean,
+        default: false
+    },
 }, {timestamps: true})
 
 const NotificationData = mongoose.model('NotificationData', notificationSchema)
 
-module.exports = NotificationData
+module.exports = {NotificationData}
