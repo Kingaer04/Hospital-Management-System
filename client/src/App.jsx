@@ -21,6 +21,7 @@ import AppointmentForm from './pages/appointment-booking.jsx'
 import SendingNotification from './components/sendingNotification.jsx'
 import NotificationPage from './pages/notificationPage.jsx'
 import NotificationDetail from './pages/notificationBody.jsx'
+import {NotificationProvider} from './components/notificationSound.jsx'
 // import CustomWebcam from './components/CustomWebcam.jsx' will check the driver of my camera
 
 
@@ -31,31 +32,33 @@ export default function App() {
     <div className=''>
         <BrowserRouter>
           <OpenProvider>
+          <NotificationProvider>
             <Routes>
               <Route path='/Sign-In' element={<SignIn/>}/>
               <Route path='/Sign-Up' element={<SignUp/>}/>
               <Route path='/Staff-SignIn' element={<StaffSignIn/>}/>
               <Route element={<PrivateRoute/>}>
                 <Route element={<Layout/>}>
-                  <Route path="/" element={<Navigate to="/home" replace/>}/>
-                  <Route path='/home' element={<Home/>}/>
-                  <Route path='/Appointment' element={<Appointment/>}/>
-                  <Route path='/receptionistHome' element={<ReceptionistHome/>}/>
-                  <Route path='/DoctorHome' element={<DoctorHome/>}/>
-                  <Route path='/patient' element={<Patient/>}/>
-                  <Route path="/patient/edit/:id" element={<PatientProfile />} />
-                  <Route path='/details' element={<StaffDetails/>}/>
-                  <Route path='/settings' element={<Settings/>}/>
-                  <Route path='/request/:id' element={<RequestPage/>}/>
-                  <Route path='/profile' element={<StaffProfile/>}/>
-                  <Route path='/booking-appointments/:id' element={<AppointmentForm/>}/>
-                  <Route path='/send-notification' element={<SendingNotification/>}/>
-                  <Route path='/notifications' element={<NotificationPage/>}/>
-                  <Route path='/notification-body' element={<NotificationDetail/>}/>
-                  {/* <Route path='/webcam' element={<CustomWebcam/>}/> */}
+                    <Route path="/" element={<Navigate to="/home" replace/>}/>
+                    <Route path='/home' element={<Home/>}/>
+                    <Route path='/Appointment' element={<Appointment/>}/>
+                    <Route path='/receptionistHome' element={<ReceptionistHome/>}/>
+                    <Route path='/DoctorHome' element={<DoctorHome/>}/>
+                    <Route path='/patient' element={<Patient/>}/>
+                    <Route path="/patient/edit/:id" element={<PatientProfile />} />
+                    <Route path='/details' element={<StaffDetails/>}/>
+                    <Route path='/settings' element={<Settings/>}/>
+                    <Route path='/request/:id' element={<RequestPage/>}/>
+                    <Route path='/profile' element={<StaffProfile/>}/>
+                    <Route path='/booking-appointments/:id' element={<AppointmentForm/>}/>
+                    <Route path='/send-notification' element={<SendingNotification/>}/>
+                    <Route path='/notifications' element={<NotificationPage/>}/>
+                    <Route path='/notification-body' element={<NotificationDetail/>}/>
+                    {/* <Route path='/webcam' element={<CustomWebcam/>}/> */}
                 </Route>
               </Route>
             </Routes>
+          </NotificationProvider>
           </OpenProvider>
         </BrowserRouter>
     </div>

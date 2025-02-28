@@ -2,8 +2,8 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useSelector } from "react-redux";
 import io from "socket.io-client";
+import { useNotification } from '../components/notificationSound'; // Import the context
 
-// Create singleton socket connection
 const socket = io("http://localhost:3000");
 
 export default function NotificationPage() {
@@ -11,17 +11,15 @@ export default function NotificationPage() {
     const [loading, setLoading] = useState(true);
     const navigate = useNavigate();
     const { currentUser } = useSelector((state) => state.user);
+    const { playNotificationSound } = useNotification(); // Use the context
 
     useEffect(() => {
-        // Fetch actual notifications from the database when component mounts
         const fetchNotifications = async () => {
             try {
                 setLoading(true);
                 const response = await fetch(`http://localhost:3000/notification/doctor-notifications/${currentUser._id}`);
                 const data = await response.json();
-                console.log(data)
                 if (data.success) {
-                    // Transform the data to match our UI expectations
                     const formattedNotifications = data.notifications.map(notification => ({
                         id: notification._id,
                         title: "New Patient Appointment",
@@ -46,17 +44,10 @@ export default function NotificationPage() {
 
         if (currentUser && currentUser._id) {
             fetchNotifications();
-            
-            // Register doctor for real-time notifications
             socket.emit("doctor_login", currentUser._id);
             
-            // Listen for new notifications
             socket.on("newNotification", (notification) => {
-                console.log("New notification received:", notification);
-                
-                // Only process notifications for this doctor
                 if (notification.doctor_ID === currentUser._id) {
-                    // Format the notification to match our UI structure
                     const formattedNotification = {
                         id: notification._id,
                         title: "New Patient Appointment",
@@ -65,36 +56,32 @@ export default function NotificationPage() {
                         Read: notification.Read || false,
                         patientId: notification.patient_ID,
                         receptionistId: notification.receptionist_ID,
-                        // Default images (replace with actual profile images when available)
                         receptionistImage: "/api/placeholder/48/48",
                         patientImage: "/api/placeholder/48/48"
                     };
                     
-                    // Add new notification to the top of the list
                     setNotifications(prev => [formattedNotification, ...prev]);
-                    
-                    // Play notification sound (optional)
-                    const audio = new Audio("/notification-sound.mp3");
-                    audio.play().catch(err => console.log("Error playing sound", err));
+
+                    // Only play sound if not on NotificationPage
+                    if (window.location.pathname !== '/notifications') {
+                        playNotificationSound();
+                    }
                 }
             });
         }
         
-        // Clean up socket listeners on component unmount
         return () => {
             socket.off("newNotification");
         };
-    }, [currentUser]);
+    }, [currentUser, playNotificationSound]);
 
     const handleNotificationClick = async (notification) => {
-        // Mark notification as read if it's not already
         if (!notification.Read) {
             try {
                 await fetch(`http://localhost:3000/notification/mark-as-read/${notification.id}`, {
                     method: "PUT"
                 });
                 
-                // Update local state to mark this notification as read
                 setNotifications(notifications.map(notif => 
                     notif.id === notification.id ? { ...notif, Read: true } : notif
                 ));
@@ -103,7 +90,6 @@ export default function NotificationPage() {
             }
         }
         
-        // Navigate to patient details or appointment page
         navigate(`/patient/${notification.patientId}`);
     };
 
@@ -124,12 +110,6 @@ export default function NotificationPage() {
         return "Less than a minute ago";
     };
 
-    // Function to fetch profile images (you can implement this based on your API)
-    const fetchProfileImages = async (notificationsList) => {
-        // This is a placeholder - implement actual image fetching based on your API
-        return notificationsList;
-    };
-
     if (loading) {
         return (
             <div className="p-10 flex justify-center items-center h-64">
@@ -141,7 +121,6 @@ export default function NotificationPage() {
     return (
         <div className="p-10">
             <h1 className="text-2xl font-bold mb-5">Notifications</h1>
-            
             {notifications.length === 0 ? (
                 <div className="text-center p-10 text-gray-500">
                     <p>No notifications yet</p>
