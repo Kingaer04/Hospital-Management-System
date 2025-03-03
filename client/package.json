@@ -42,6 +42,7 @@
     "react-webcam": "^7.2.0",
     "recharts": "^2.15.0",
     "redux-persist": "^6.0.0",
+    "socket.io-client": "^4.8.1",
     "tailwind-merge": "^2.5.4",
     "tailwindcss-animate": "^1.0.7",
     "tesseract.js": "^6.0.0"
@@ -59,6 +60,6 @@
     "globals": "^15.9.0",
     "postcss": "^8.4.47",
     "tailwindcss": "^3.4.11",
-    "vite": "^5.4.1"
+    "vite": "^6.2.0"
   }
 }
