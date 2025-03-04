@@ -16,9 +16,10 @@ import NotificationsIcon from '@mui/icons-material/Notifications';
 import MoreIcon from '@mui/icons-material/MoreVert';
 import ExpandMore from '@mui/icons-material/ExpandMore';
 import ExpandLess from '@mui/icons-material/ExpandLess';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import SignOutModal from './SignOutModal';
 import { useSelector } from 'react-redux';
+import { useEffect } from 'react';
 
 const Search = styled('div')(({ theme }) => ({
   position: 'relative',
@@ -50,7 +51,6 @@ const StyledInputBase = styled(InputBase)(({ theme }) => ({
   color: 'inherit',
   '& .MuiInputBase-input': {
     padding: theme.spacing(1, 1, 1, 0),
-    // vertical padding + font size from searchIcon
     paddingLeft: `calc(1em + ${theme.spacing(4)})`,
     transition: theme.transitions.create('width'),
     width: '100%',
@@ -62,19 +62,22 @@ const StyledInputBase = styled(InputBase)(({ theme }) => ({
 
 export default function MainNavBar() {
   const navigate = useNavigate();
+  const { doctorId } = useParams();
   const [anchorEl, setAnchorEl] = React.useState(null);
   const [mobileMoreAnchorEl, setMobileMoreAnchorEl] = React.useState(null);
   const [menuOpen, setMenuOpen] = React.useState(false);
   const [signOutModalOpen, setSignOutModalOpen] = React.useState(false);
-  const {currentAdmin} = useSelector((state) => state.admin);
-  const {currentUser} = useSelector((state) => state.user);
-  
+  const { currentAdmin } = useSelector((state) => state.admin);
+  const { currentUser } = useSelector((state) => state.user);
+  const [unRead, setUnRead] = React.useState([]);
+  const [unreadCount, setUnreadCount] = React.useState(0);
+
   const handleSignOutClick = () => {
     setSignOutModalOpen(true);
   };
 
   const toggleMenu = (event) => {
-    setAnchorEl(event.currentTarget); // Set the anchor element to the button
+    setAnchorEl(event.currentTarget);
     setMenuOpen((prev) => !prev);
   };
 
@@ -98,6 +101,31 @@ export default function MainNavBar() {
     setMobileMoreAnchorEl(event.currentTarget);
   };
 
+  useEffect(() => {
+    const fetchUnreadMessages = async () => {
+      try {
+        const res = await fetch(`http://localhost:3000/notification/get-unread-notifications/${currentUser._id}`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+        const data = await res.json();
+        console.log(data);
+        setUnRead(data);
+      } catch (error) {
+        console.log('Error fetching unread messages: ', error);
+      }
+    };
+
+    fetchUnreadMessages();
+  }, [currentUser._id]);
+
+  useEffect(() => {
+    setUnreadCount(unRead.length);
+    console.log(unRead);
+  }, [unRead]);
+
   const menuId = 'primary-search-account-menu';
   const renderMenu = (
     <Menu
@@ -117,11 +145,11 @@ export default function MainNavBar() {
     >
       <MenuItem onClick={() => {
         handleMenuClose();
-        navigate('/settings'); // Use React Router navigation
+        navigate('/settings');
       }}>Profile</MenuItem>
       <MenuItem onClick={() => {
         handleMenuClose();
-        handleSignOutClick(); // Call the sign out modal
+        handleSignOutClick();
       }}>LogOut</MenuItem>
     </Menu>
   );
@@ -154,10 +182,10 @@ export default function MainNavBar() {
       <MenuItem>
         <IconButton
           size="large"
-          aria-label="show 17 new notifications"
+          aria-label="show new notifications"
           color="inherit"
         >
-          <Badge badgeContent={17} color="error">
+          <Badge badgeContent={unreadCount} color="error">
             <NotificationsIcon />
           </Badge>
         </IconButton>
@@ -179,87 +207,87 @@ export default function MainNavBar() {
   );
 
   return (
-      <AppBar position="static" sx={{ backgroundColor: 'transparent', boxShadow: "none", paddingRight: "15px", zIndex: 1 }}>
-        <Toolbar>
-          <Search>
-            <SearchIconWrapper>
-              <SearchIcon />
-            </SearchIconWrapper>
-            <StyledInputBase
-              placeholder="Search…"
-              inputProps={{ 'aria-label': 'search' }}
-            />
-          </Search>
-          <Box sx={{ flexGrow: 1 }} />
-          <Box sx={{ display: { xs: 'none', md: 'flex' }, justifyContent: 'flex-start' }}>
-            <IconButton size="large" aria-label="show 4 new mails" color="inherit">
-              <Badge badgeContent={4} color="error">
-                <MailIcon />
+    <AppBar position="static" sx={{ backgroundColor: 'transparent', boxShadow: "none", paddingRight: "15px", zIndex: 1 }}>
+      <Toolbar>
+        <Search>
+          <SearchIconWrapper>
+            <SearchIcon />
+          </SearchIconWrapper>
+          <StyledInputBase
+            placeholder="Search…"
+            inputProps={{ 'aria-label': 'search' }}
+          />
+        </Search>
+        <Box sx={{ flexGrow: 1 }} />
+        <Box sx={{ display: { xs: 'none', md: 'flex' }, justifyContent: 'flex-start' }}>
+          <IconButton size="large" aria-label="show 4 new mails" color="inherit">
+            <Badge badgeContent={4} color="error">
+              <MailIcon />
+            </Badge>
+          </IconButton>
+          <Link to="/notifications" style={{ textDecoration: 'none' }}>
+            <IconButton
+              size="large"
+              aria-label="show new notifications"
+              color="inherit"
+            >
+              <Badge badgeContent={unreadCount} color="error">
+                <NotificationsIcon />
               </Badge>
             </IconButton>
-            <Link to="/notifications" style={{ textDecoration: 'none' }}>
-              <IconButton
-                size="large"
-                aria-label="show 17 new notifications"
-                color="inherit"
-              >
-                <Badge badgeContent={17} color="error">
-                  <NotificationsIcon />
-                </Badge>
-              </IconButton>
-            </Link>
-            <IconButton
-              size="large"
-              edge="end"
-              aria-label="account of current user"
-              aria-haspopup="true"
-              onClick={toggleMenu}
-              color="inherit"
-              sx={{
-                display: 'flex',
-                alignItems: 'center',
-                height: '48px', // Adjust height to match icon and text
-                '&:hover': {
-                  backgroundColor: 'rgba(255, 255, 255, 0.1)', // Adjust hover color
-                  borderRadius: '0px', // Remove oval effect
-                },
-              }}
-            >
-              <AccountCircle sx={{ height: '30px', width: 'auto' }} />
-              <Box sx={{ marginLeft: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'flex-start', height: 50 }}>
-                <Typography variant="body2" sx={{ fontSize: "10px", fontWeight: "bold", textTransform: 'uppercase', marginLeft: 0 }}>
-                  {(() => {
-                    const name = currentAdmin?.hospital_Representative || currentUser?.name;
-                    if (name) {
-                      const words = name.split(' ');
-                      return (words[0].toLowerCase() === 'dr' || words[0].toLowerCase() === 'dr.') ? words[1] : words[0];
-                    }
-                    return '';
-                  })()}
-                </Typography>
-                <Typography variant="body2" color="text.secondary" sx={{ marginLeft: 0, fontSize: "10px" }}>
-                  {currentAdmin?.role || currentUser?.role}
-                </Typography>
-              </Box>
-              {menuOpen ? <ExpandLess sx={{ marginLeft: 1 }} /> : <ExpandMore sx={{ marginLeft: 1 }} />}
-            </IconButton>
-          </Box>
-          <Box sx={{ display: { xs: 'flex', md: 'none' } }}>
-            <IconButton
-              size="large"
-              aria-label="show more"
-              aria-controls={mobileMenuId}
-              aria-haspopup="true"
-              onClick={handleMobileMenuOpen}
-              color="inherit"
-            >
-              <MoreIcon />
-            </IconButton>
-          </Box>
-        </Toolbar>
-        {renderMobileMenu}
-        {renderMenu}
-        <SignOutModal open={signOutModalOpen} onClose={() => setSignOutModalOpen(false)} />
-      </AppBar>
+          </Link>
+          <IconButton
+            size="large"
+            edge="end"
+            aria-label="account of current user"
+            aria-haspopup="true"
+            onClick={toggleMenu}
+            color="inherit"
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              height: '48px',
+              '&:hover': {
+                backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                borderRadius: '0px',
+              },
+            }}
+          >
+            <AccountCircle sx={{ height: '30px', width: 'auto' }} />
+            <Box sx={{ marginLeft: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'flex-start', height: 50 }}>
+              <Typography variant="body2" sx={{ fontSize: "10px", fontWeight: "bold", textTransform: 'uppercase', marginLeft: 0 }}>
+                {(() => {
+                  const name = currentAdmin?.hospital_Representative || currentUser?.name;
+                  if (name) {
+                    const words = name.split(' ');
+                    return (words[0].toLowerCase() === 'dr' || words[0].toLowerCase() === 'dr.') ? words[1] : words[0];
+                  }
+                  return '';
+                })()}
+              </Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ marginLeft: 0, fontSize: "10px" }}>
+                {currentAdmin?.role || currentUser?.role}
+              </Typography>
+            </Box>
+            {menuOpen ? <ExpandLess sx={{ marginLeft: 1 }} /> : <ExpandMore sx={{ marginLeft: 1 }} />}
+          </IconButton>
+        </Box>
+        <Box sx={{ display: { xs: 'flex', md: 'none' } }}>
+          <IconButton
+            size="large"
+            aria-label="show more"
+            aria-controls={mobileMenuId}
+            aria-haspopup="true"
+            onClick={handleMobileMenuOpen}
+            color="inherit"
+          >
+            <MoreIcon />
+          </IconButton>
+        </Box>
+      </Toolbar>
+      {renderMobileMenu}
+      {renderMenu}
+      <SignOutModal open={signOutModalOpen} onClose={() => setSignOutModalOpen(false)} />
+    </AppBar>
   );
 }

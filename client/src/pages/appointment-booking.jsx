@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Box, Button, TextField, Typography, Grid, Avatar, Divider, FormControl, InputLabel, Select, MenuItem } from '@mui/material';
 import { useSelector } from 'react-redux';
-import SendingNotification from '../components/SendingNotification';
+import SendingNotification from '../components/sendingNotification';
 
 const AppointmentFormPage = () => {
     const navigate = useNavigate();

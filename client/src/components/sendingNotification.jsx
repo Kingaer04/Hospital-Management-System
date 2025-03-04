@@ -46,7 +46,7 @@ const SendingNotification = ({ doctorId, patientId, patientName, patientImage, r
         sendNotification();
     }, [doctorId, patientId, patientName, patientImage, receptionistId, receptionistImage, reason]);
 
-    return null; // This component doesn't render anything
+    return null; 
 };
 
 export default SendingNotification;

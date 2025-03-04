@@ -68,6 +68,16 @@ const NotificationController = {
             });
         }
     },
+
+    getUnReadNotifications: async (req, res, next) => {
+        const { doctorId } = req.params;
+        try{
+            const getUnread = await NotificationData.find({ doctor_ID: doctorId, Read: false })
+            res.status(200).json(getUnread)
+        } catch (error) {
+            next(error)
+        }
+    },
     
     // Get all notifications for a specific doctor
     getDoctorNotifications: async (req, res) => {

@@ -7,5 +7,6 @@ const router = express.Router();
 module.exports = (io) => {
     router.post('/send-notification', (req, res) => NotificationController.sendNotification(req, res, io));
     router.get('/doctor-notifications/:doctorId', NotificationController.getDoctorNotifications)
+    router.get('/get-unread-notifications/:doctorId', NotificationController.getUnReadNotifications);
     return router; // Return the configured router
 };
