@@ -18,7 +18,7 @@ import StaffSignIn from './pages/staffSignIn.jsx'
 import DoctorHome from './pages/doctorHome.jsx'
 import PatientProfile from './pages/patientProfile.jsx'
 import AppointmentForm from './pages/appointment-booking.jsx'
-import SendingNotification from './components/SendingNotification.jsx'
+import SendingNotification from './components/sendingNotification.jsx'
 import NotificationPage from './pages/notificationPage.jsx'
 import NotificationDetail from './pages/notificationBody.jsx'
 import {NotificationProvider} from './components/notificationSound.jsx'
@@ -53,7 +53,7 @@ export default function App() {
                     <Route path='/booking-appointments/:id' element={<AppointmentForm/>}/>
                     <Route path='/send-notification' element={<SendingNotification/>}/>
                     <Route path='/notifications' element={<NotificationPage/>}/>
-                    <Route path='/notification-body' element={<NotificationDetail/>}/>
+                    <Route path='/notification-body/:id' element={<NotificationDetail/>}/>
                     {/* <Route path='/webcam' element={<CustomWebcam/>}/> */}
                 </Route>
               </Route>

@@ -1,4 +1,5 @@
 const { NotificationData } = require("../Models/NotificationModel");
+const mongoose = require('mongoose');
 
 const NotificationController = {
     sendNotification: async (req, res, io) => {
@@ -48,12 +49,6 @@ const NotificationController = {
             // Emit to specific doctor's room - this is more efficient than broadcasting to everyone
             io.to(`doctor_${doctor_ID}`).emit('newNotification', notificationPayload);
             
-            // Also emit a general notification for anyone listening (optional)
-            // io.emit('globalNotification', {
-            //     doctorId: doctor_ID,
-            //     message: 'New appointment booked'
-            // });
-            
             return res.status(201).json({ 
                 success: true, 
                 message: 'Notification sent successfully!',
@@ -71,7 +66,7 @@ const NotificationController = {
 
     getUnReadNotifications: async (req, res, next) => {
         const { doctorId } = req.params;
-        try{
+        try {
             const getUnread = await NotificationData.find({ doctor_ID: doctorId, Read: false })
             res.status(200).json(getUnread)
         } catch (error) {
@@ -79,7 +74,6 @@ const NotificationController = {
         }
     },
     
-    // Get all notifications for a specific doctor
     getDoctorNotifications: async (req, res) => {
         const { doctorId } = req.params;
         
@@ -102,7 +96,6 @@ const NotificationController = {
         }
     },
     
-    // Mark a notification as read
     markAsRead: async (req, res) => {
         const { notificationId } = req.params;
         
@@ -133,7 +126,92 @@ const NotificationController = {
                 error: error.message
             });
         }
-    }
+    },
+
+    getNotificationData: async (req, res) => {
+        const { notificationId } = req.params;
+
+        try {
+            // Check if models are already registered
+            let StaffData, PatientData;
+
+            // Try to get existing models
+            try {
+                StaffData = mongoose.model('StaffData');
+            } catch (error) {
+                // If model not registered, import and register
+                const staffModule = await import('../../api/Models/StaffModel.js');
+                StaffData = staffModule.default || staffModule.StaffData;
+                
+                // Re-register the model if it's not already registered
+                if (!mongoose.models.StaffData) {
+                    mongoose.model('StaffData', StaffData.schema);
+                }
+            }
+
+            // Repeat the same process for PatientData
+            try {
+                PatientData = mongoose.model('PatientData');
+            } catch (error) {
+                const patientModule = await import('../../api/Models/PatientModel.js');
+                PatientData = patientModule.default || patientModule.PatientData;
+                
+                if (!mongoose.models.PatientData) {
+                    mongoose.model('PatientData', PatientData.schema);
+                }
+            }
+
+            // Find the notification and populate the receptionist details
+            const notification = await NotificationData.findById(notificationId)
+                .populate({
+                    path: 'receptionist_ID',
+                    model: 'StaffData',
+                    select: 'name role avatar' // Select specific fields from the receptionist
+                })
+                .populate({
+                    path: 'patient_ID',
+                    model: 'PatientData',
+                    select: 'first_name last_name email phone avatar' // Select specific fields from the patient
+                });
+    
+            if (!notification) {
+                return res.status(404).json({
+                    success: false,
+                    message: 'Notification not found'
+                });
+            }
+
+            console.log(notification);
+
+            // Transform the notification to match the frontend expected structure
+            const transformedNotification = {
+                title: notification.title || 'Notification',
+                body: notification.body || notification.message,
+                timestamp: notification.createdAt,
+                receptionist: {
+                    name: notification.receptionist_ID.name,
+                    role: notification.receptionist_ID.role,
+                    image: notification.receptionist_ID.avatar || notification.receptionistImage
+                },
+                patient: {
+                    name: `${notification.patient_ID.first_name} ${notification.patient_ID.last_name}`,
+                    email: notification.patient_ID.email,
+                    phone: notification.patient_ID.phone,
+                    image: notification.patient_ID.avatar || notification.patientImage
+                }
+            };
+    
+            return res.status(200).json(transformedNotification);
+    
+        } catch (error) {
+            console.error('Error fetching notification:', error);
+            return res.status(500).json({
+                success: false,
+                message: 'Error fetching notification',
+                error: error.message
+            });
+        }
+    },
 };
 
 module.exports = { NotificationController };

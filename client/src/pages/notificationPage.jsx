@@ -56,8 +56,9 @@ export default function NotificationPage() {
                         Read: notification.Read || false,
                         patientId: notification.patient_ID,
                         receptionistId: notification.receptionist_ID,
-                        receptionistImage: "/api/placeholder/48/48",
-                        patientImage: "/api/placeholder/48/48"
+                        receptionistImage: notification.receptionistImage,
+                        patientImage: notification.patientImage,
+                        patientName: notification.patientName
                     };
                     
                     setNotifications(prev => [formattedNotification, ...prev]);
@@ -79,7 +80,7 @@ export default function NotificationPage() {
         if (!notification.Read) {
             try {
                 await fetch(`http://localhost:3000/notification/mark-as-read/${notification.id}`, {
-                    method: "PUT"
+                    method: "POST"
                 });
                 
                 setNotifications(notifications.map(notif => 
@@ -90,7 +91,7 @@ export default function NotificationPage() {
             }
         }
         
-        navigate(`/patient/${notification.patientId}`);
+        navigate(`/notification-body/${notification.id}`);
     };
 
     const timeAgo = (timestamp) => {
