@@ -166,12 +166,12 @@ const NotificationController = {
                 .populate({
                     path: 'receptionist_ID',
                     model: 'StaffData',
-                    select: 'name role avatar' // Select specific fields from the receptionist
+                    select: '_id name role avatar' // Select specific fields from the receptionist
                 })
                 .populate({
                     path: 'patient_ID',
                     model: 'PatientData',
-                    select: 'first_name last_name email phone avatar' // Select specific fields from the patient
+                    select: '_id first_name last_name email phone avatar' // Select specific fields from the patient
                 });
     
             if (!notification) {
@@ -189,11 +189,13 @@ const NotificationController = {
                 body: notification.body || notification.message,
                 timestamp: notification.createdAt,
                 receptionist: {
+                    id: notification.receptionist_ID._id,
                     name: notification.receptionist_ID.name,
                     role: notification.receptionist_ID.role,
                     image: notification.receptionist_ID.avatar || notification.receptionistImage
                 },
                 patient: {
+                    id: notification.patient_ID._id,
                     name: `${notification.patient_ID.first_name} ${notification.patient_ID.last_name}`,
                     email: notification.patient_ID.email,
                     phone: notification.patient_ID.phone,

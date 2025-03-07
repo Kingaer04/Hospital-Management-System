@@ -28,7 +28,15 @@ export default defineConfig({
       '/fingerprint-api': {
         target: 'http://localhost:5077',
         secure: false,
-      }
+      },
+      '/medicalRecords': {
+        target: 'http://localhost:5500',
+        secure: false,
+      },
+      // '/notifcation': {
+      //   target: 'http://localhost:3000',
+      //   secure: false,
+      // },
     }
   }
 })

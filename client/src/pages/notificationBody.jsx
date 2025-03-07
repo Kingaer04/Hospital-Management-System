@@ -23,12 +23,12 @@ export default function NotificationDetail() {
                 console.error("Error fetching notification:", error);
             }
         }
-
+        // console.log(notification.patient.id)
         fetchNotificationData();
     }, []);
 
     const handlePatientClick = () => {
-        navigate("/patients");
+        navigate(`/medical-record/${notification.patient.id}`);
     };
 
     if (!notification) {

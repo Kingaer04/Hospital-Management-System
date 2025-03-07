@@ -22,6 +22,7 @@ import SendingNotification from './components/sendingNotification.jsx'
 import NotificationPage from './pages/notificationPage.jsx'
 import NotificationDetail from './pages/notificationBody.jsx'
 import {NotificationProvider} from './components/notificationSound.jsx'
+import MedicalRecord from './pages/medical-record.jsx'
 // import CustomWebcam from './components/CustomWebcam.jsx' will check the driver of my camera
 
 
@@ -54,6 +55,7 @@ export default function App() {
                     <Route path='/send-notification' element={<SendingNotification/>}/>
                     <Route path='/notifications' element={<NotificationPage/>}/>
                     <Route path='/notification-body/:id' element={<NotificationDetail/>}/>
+                    <Route path='/medical-record/:patientId' element={<MedicalRecord/>}/>
                     {/* <Route path='/webcam' element={<CustomWebcam/>}/> */}
                 </Route>
               </Route>
