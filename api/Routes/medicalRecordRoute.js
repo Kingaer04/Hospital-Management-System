@@ -14,7 +14,7 @@ router.post('/:medicalRecordId/consultation', adminController.verifyToken, Medic
 router.post('/:medicalRecordId/consultation/:consultationId', adminController.verifyToken, MedicalRecordController.updateConsultation);
 
 // Get a medical record
-router.get('/:medicalRecordId', adminController.verifyToken, MedicalRecordController.getMedicalRecord);
+router.get('/medicalRecords/:patientId', adminController.verifyToken, MedicalRecordController.getMedicalRecord);
 
 // Grant hospital access to a medical record
 router.post('/:medicalRecordId/grant-access/:hospitalId', MedicalRecordController.grantHospitalAccess );

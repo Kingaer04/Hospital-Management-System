@@ -8,10 +8,6 @@ const MedicalRecord = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [notification, setNotification] = useState({ open: false, message: '', severity: 'success' });
-
-  useEffect(() => {
-    console.log(patientId)
-  }, [])
   
   const [patient, setPatient] = useState({
     personalInfo: {
@@ -48,34 +44,6 @@ const MedicalRecord = () => {
   const [editingConsultationIndex, setEditingConsultationIndex] = useState(null);
   const [submitting, setSubmitting] = useState(false);
 
-  const API_URL = '/api';
-
-  // Helper function for API requests - no token required
-  const fetchAPI = async (endpoint, method = 'GET', body = null) => {
-    const headers = {
-      'Content-Type': 'application/json'
-    };
-    
-    const options = {
-      method,
-      headers,
-      credentials: 'include'
-    };
-    
-    if (body && (method === 'POST' || method === 'PUT')) {
-      options.body = JSON.stringify(body);
-    }
-    
-    console.log(`Making ${method} request to ${API_URL}${endpoint}`);
-    const response = await fetch(`${API_URL}${endpoint}`, options);
-    
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.message || `API request failed with status ${response.status}`);
-    }
-    
-    return response.json();
-  };
 
   // Fetch patient's medical record data by patient ID
   useEffect(() => {
@@ -83,22 +51,15 @@ const MedicalRecord = () => {
       try {
         setLoading(true);
         
-        // Check if patient ID exists
-        if (!patientId) {
-          setError('No patient ID provided');
-          setNotification({
-            open: true,
-            message: 'No patient ID provided',
-            severity: 'error'
-          });
-          setLoading(false);
-          return;
-        }
-        
-        console.log(`Fetching medical records for patient ID: ${patientId}`);
-        // Updated endpoint to search by patient ID
-        const data = await fetchAPI(`/patients/${patientId}/medicalRecord`);
-        console.log('Data received:', data);
+        const res = await fetch (`/Records//medicalRecords/${patientId}`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          }
+        });
+        const data = await res.json();
+        console.log("Data: ", data);
+        setLoading(false);
         
         // Transform backend data to match frontend structure
         const transformedData = {

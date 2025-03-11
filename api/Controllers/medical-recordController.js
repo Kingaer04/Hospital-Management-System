@@ -145,14 +145,14 @@ export const MedicalRecordController = {
   // Get medical record with access control
   getMedicalRecord: async (req, res, next) => {
     try {
-      const { medicalRecordId } = req.params;
-
-      const doctor = await StaffData.findById(req.user.doctorId);
+      const { patientId } = req.params;
+      console.log(req.user)
+      const doctor = await StaffData.findById(req.user.id);
       if (!doctor) {
         return next(createHttpError(403, 'Doctor not found'));
       }
 
-      const medicalRecord = await MedicalRecord.findById(medicalRecordId)
+      const medicalRecord = await MedicalRecord.findById(patientId)
         .populate('consultations.doctorId', 'name')
         .populate('consultations.hospitalId', 'name');
 

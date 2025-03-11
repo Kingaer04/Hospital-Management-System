@@ -111,7 +111,6 @@ export default function MainNavBar() {
           },
         });
         const data = await res.json();
-        console.log(data);
         setUnRead(data);
       } catch (error) {
         console.log('Error fetching unread messages: ', error);
@@ -123,7 +122,6 @@ export default function MainNavBar() {
 
   useEffect(() => {
     setUnreadCount(unRead.length);
-    console.log(unRead);
   }, [unRead]);
 
   const menuId = 'primary-search-account-menu';
