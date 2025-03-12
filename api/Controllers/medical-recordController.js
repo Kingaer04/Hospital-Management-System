@@ -157,12 +157,12 @@ export const MedicalRecordController = {
         .populate('consultations.hospitalId', 'name');
 
       if (!medicalRecord) {
-        return next(createHttpError(404, 'Medical record not found'));
+        return res.status(404).json('Medical record not found');
       }
 
       // Check hospital access
       if (!medicalRecord.hasHospitalAccess(doctor.hospitalId)) {
-        return next(createHttpError(403, 'No access to this medical record'));
+        return res.status(403).status('No access to this medical record');
       }
 
       res.status(200).json(medicalRecord);
