@@ -4,11 +4,10 @@ import { Container, Box, Typography, Paper, TextField, Button, Dialog, DialogTit
 import { User as UserIcon, HeartPulse as HeartPulseIcon, FileText as FileTextIcon, Edit as EditIcon, Save as SaveIcon, PlusCircle as PlusCircleIcon } from 'lucide-react';
 
 const MedicalRecord = () => {
-  const { patientId } = useParams(); // Get patient ID from URL
+  const { patientId } = useParams(); 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [notification, setNotification] = useState({ open: false, message: '', severity: 'success' });
-  
   const [patient, setPatient] = useState({
     personalInfo: {
       name: '',
@@ -28,7 +27,6 @@ const MedicalRecord = () => {
     allergies: [],
     consultations: []
   });
-
   const [isNewConsultationOpen, setIsNewConsultationOpen] = useState(false);
   const [isEditConsultationOpen, setIsEditConsultationOpen] = useState(false);
   const [currentConsultation, setCurrentConsultation] = useState({
@@ -45,74 +43,63 @@ const MedicalRecord = () => {
   const [submitting, setSubmitting] = useState(false);
 
 
-  // Fetch patient's medical record data by patient ID
-  useEffect(() => {
-    const fetchPatientMedicalRecord = async () => {
-      try {
-        setLoading(true);
-        
-        const res = await fetch (`/Records//medicalRecords/${patientId}`, {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-          }
-        });
-        const data = await res.json();
-        console.log("Data: ", data);
-        setLoading(false);
-        
-        // Transform backend data to match frontend structure
-        const transformedData = {
-          personalInfo: data.personalInfo || {},
-          vitalSigns: data.consultations?.length > 0 
-            ? data.consultations[data.consultations.length - 1].vitalSigns 
-            : {},
-          allergies: data.allergies || [],
-          consultations: data.consultations?.map(consultation => ({
-            id: consultation._id,
-            date: new Date(consultation.createdAt).toISOString().split('T')[0],
-            time: new Date(consultation.createdAt).toLocaleTimeString(),
-            doctorName: consultation.doctorId?.name || 'Unknown Doctor',
-            hospital: consultation.hospitalId?.name || 'Unknown Hospital',
-            diagnosis: consultation.diagnosis || '',
-            doctorNotes: consultation.doctorNotes || '',
-            treatment: consultation.treatment || '',
-            vitalSigns: consultation.vitalSigns || {}
-          })) || []
-        };
-        
-        setPatient(transformedData);
-      } catch (err) {
-        console.error('Error fetching record:', err);
-        setError(err.message || 'Failed to load medical record');
-        setNotification({
-          open: true,
-          message: 'Failed to load medical record: ' + (err.message || 'Unknown error'),
-          severity: 'error'
-        });
-      } finally {
-        setLoading(false);
+// Fetch patient's medical record data by patient ID
+useEffect(() => {
+  const fetchPatientMedicalRecord = async () => {
+    try {
+      setLoading(true);
+      const res = await fetch(`/records/medicalRecords/${patientId}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      if (res.status === 409) {
+        setError(null)
+      } else if (!res.ok) {
+        throw new Error('Failed to load medical record');
       }
-    };
+      const data = await res.json();
+      console.log("Data: ", data);
+      setLoading(false);
+      
+      // Transform backend data to match frontend structure
+      const transformedData = {
+        personalInfo: data.personalInfo || {},
+        vitalSigns: data.consultations?.length > 0 
+          ? data.consultations[data.consultations.length - 1].vitalSigns 
+          : {},
+        allergies: data.allergies || [],
+        consultations: data.consultations?.map(consultation => ({
+          id: consultation._id,
+          date: new Date(consultation.createdAt).toISOString().split('T')[0],
+          time: new Date(consultation.createdAt).toLocaleTimeString(),
+          doctorName: consultation.doctorId?.name || 'Unknown Doctor',
+          hospital: consultation.hospitalId?.name || 'Unknown Hospital',
+          diagnosis: consultation.diagnosis || '',
+          doctorNotes: consultation.doctorNotes || '',
+          treatment: consultation.treatment || '',
+          vitalSigns: consultation.vitalSigns || {}
+        })) || []
+      };
+      
+      setPatient(transformedData);
+    } catch (err) {
+      console.error('Error fetching record:', err);
+      setError(err.message || 'Failed to load medical record');
+      setNotification({
+        open: true,
+        message: 'Failed to load medical record: ' + (err.message || 'Unknown error'),
+        severity: 'error'
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    fetchPatientMedicalRecord();
-    
-    // Add a timeout to prevent infinite loading
-    const timeoutId = setTimeout(() => {
-      if (loading) {
-        console.warn('Loading timeout reached');
-        setLoading(false);
-        setError('Request timed out. Please try again.');
-        setNotification({
-          open: true,
-          message: 'Request timed out. Please try again.',
-          severity: 'error'
-        });
-      }
-    }, 15000); // 15 seconds timeout
-    
-    return () => clearTimeout(timeoutId);
-  }, [patientId]);
+  fetchPatientMedicalRecord();
+
+}, [patientId]);
 
   const handleOpenNewConsultation = () => {
     setCurrentConsultation({

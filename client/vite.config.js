@@ -25,9 +25,9 @@ export default defineConfig({
         target: 'http://localhost:5500',
         secure: false
       },
-      '/Records': {
+      '/records': {
         target: 'http://localhost:5500',
-        secure: false,
+        secure: false
       },
       '/fingerprint-api': {
         target: 'http://localhost:5077',

@@ -142,29 +142,25 @@ export const MedicalRecordController = {
     }
   },
 
-  // Get medical record with access control
   getMedicalRecord: async (req, res, next) => {
     try {
       const { patientId } = req.params;
-      console.log(req.user)
       const doctor = await StaffData.findById(req.user.id);
+      
       if (!doctor) {
-        return next(createHttpError(403, 'Doctor not found'));
+        return res.status(403).json('Doctor not found');
       }
-
+      
       const medicalRecord = await MedicalRecord.findById(patientId)
         .populate('consultations.doctorId', 'name')
         .populate('consultations.hospitalId', 'name');
-
+      
       if (!medicalRecord) {
-        return res.status(404).json('Medical record not found');
+        return res.status(409).json('Medical record not found');
       }
-
-      // Check hospital access
-      if (!medicalRecord.hasHospitalAccess(doctor.hospitalId)) {
-        return res.status(403).status('No access to this medical record');
-      }
-
+      
+      // Hospital access check removed
+      
       res.status(200).json(medicalRecord);
     } catch (error) {
       next(error);
