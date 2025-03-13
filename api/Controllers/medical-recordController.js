@@ -7,24 +7,20 @@ export const MedicalRecordController = {
   // Create a new medical record
   createMedicalRecord: async (req, res, next) => {
     try {
-      const { 
-        patientId, 
-        personalInfo, 
-        allergies, 
-        primaryHospitalId 
+      const {
+        patientId,
+        personalInfo,
+        allergies,
+        primaryHospitalId,
+        vitalSigns  // Add this line to extract vital signs
       } = req.body;
-
-      // Verify patient and hospital exist
+  
       const doctor = await StaffData.findById(req.user.id);
       if (!doctor) {
         return next(createHttpError(403, 'Doctor not found'));
       }
-
-      // const hospital = await HospitalAdminAccount.findById(primaryHospitalId);
-      // if (!hospital) {
-      //   return next(createHttpError(404, 'Hospital not found'));
-      // }
-
+  
+      // Create medical record with the consultation
       const medicalRecord = new MedicalRecord({
         patientId,
         personalInfo,
@@ -32,9 +28,9 @@ export const MedicalRecordController = {
         createdBy: req.user.id,
         updatedBy: req.user.id
       });
-
+  
       await medicalRecord.save();
-
+  
       res.status(201).json({
         message: 'Medical record created successfully',
         medicalRecord
