@@ -159,11 +159,12 @@ const AddPatient = ({ isOpen, onClose }) => {
     const handleFileUpload = (base64Image) => {
         const data = new FormData();
         data.append('file', base64Image);
-        data.append('upload_preset', uploadPreset);
+        data.append('cloud_name', 'dyc0ssabt');
+        data.append('upload_preset', 'Hospital_management_profile');
 
         const xhr = new XMLHttpRequest();
 
-        xhr.open('POST', cloudinaryUrl, true);
+        xhr.open('POST', 'https://api.cloudinary.com/v1_1/dyc0ssabt/image/upload', true);
 
         xhr.upload.addEventListener('progress', (event) => {
             if (event.lengthComputable) {

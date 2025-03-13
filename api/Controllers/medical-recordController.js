@@ -15,23 +15,22 @@ export const MedicalRecordController = {
       } = req.body;
 
       // Verify patient and hospital exist
-      const doctor = await StaffData.findById(req.user.doctorId);
+      const doctor = await StaffData.findById(req.user.id);
       if (!doctor) {
         return next(createHttpError(403, 'Doctor not found'));
       }
 
-      const hospital = await HospitalAdminAccount.findById(primaryHospitalId);
-      if (!hospital) {
-        return next(createHttpError(404, 'Hospital not found'));
-      }
+      // const hospital = await HospitalAdminAccount.findById(primaryHospitalId);
+      // if (!hospital) {
+      //   return next(createHttpError(404, 'Hospital not found'));
+      // }
 
       const medicalRecord = new MedicalRecord({
         patientId,
         personalInfo,
         allergies,
-        primaryHospitalId,
-        createdBy: req.user._id,
-        updatedBy: req.user._id
+        createdBy: req.user.id,
+        updatedBy: req.user.id
       });
 
       await medicalRecord.save();
@@ -48,50 +47,45 @@ export const MedicalRecordController = {
   // Add a new consultation to a medical record
   addConsultation: async (req, res, next) => {
     try {
-      const { medicalRecordId } = req.params;
-      const { 
-        diagnosis, 
-        doctorNotes, 
-        treatment, 
-        vitalSigns 
-      } = req.body;
-
-      // Verify doctor and hospital
-      const doctor = await StaffData.findById(req.user.doctorId);
+      const { patientId } = req.params;
+      const { diagnosis, doctorNotes, treatment, vitalSigns } = req.body;
+  
+      // Validate input
+      if (!diagnosis || !doctorNotes || !treatment) {
+        return res.status(400).json('All fields are required');
+      }
+  
+      const doctor = await StaffData.findById(req.user.id);
       if (!doctor) {
-        return next(createHttpError(403, 'Doctor not found'));
+        return res.status(403).json('Doctor not found');
       }
-
-      const medicalRecord = await MedicalRecord.findById(medicalRecordId);
+  
+      const medicalRecord = await MedicalRecord.findOne({ patientId });
       if (!medicalRecord) {
-        return next(createHttpError(404, 'Medical record not found'));
+        return res.status(404).json('Medical record not found');
       }
-
-      // Check hospital access
-      if (!medicalRecord.hasHospitalAccess(doctor.hospitalId)) {
-        return next(createHttpError(403, 'No access to this medical record'));
-      }
-
+  
       const newConsultation = {
-        doctorId: req.user.doctorId,
-        hospitalId: doctor.hospitalId,
+        doctorId: req.user.id,
+        hospitalId: doctor.hospital_ID,
         diagnosis,
         doctorNotes,
         treatment,
         vitalSigns,
-        createdBy: req.user._id
+        createdBy: req.user.id
       };
-
+  
       medicalRecord.consultations.push(newConsultation);
-      medicalRecord.updatedBy = req.user._id;
-
+      medicalRecord.updatedBy = req.user.id;
+  
       await medicalRecord.save();
-
+      
       res.status(200).json({
         message: 'Consultation added successfully',
         consultation: newConsultation
       });
     } catch (error) {
+      console.error("Error adding consultation:", error);
       next(error);
     }
   },
@@ -151,15 +145,14 @@ export const MedicalRecordController = {
         return res.status(403).json('Doctor not found');
       }
       
-      const medicalRecord = await MedicalRecord.findById(patientId)
+      // Changed from findById to findOne with patientId as the search parameter
+      const medicalRecord = await MedicalRecord.findOne({ patientId })
         .populate('consultations.doctorId', 'name')
         .populate('consultations.hospitalId', 'name');
       
       if (!medicalRecord) {
         return res.status(409).json('Medical record not found');
       }
-      
-      // Hospital access check removed
       
       res.status(200).json(medicalRecord);
     } catch (error) {

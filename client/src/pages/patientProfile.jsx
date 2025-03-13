@@ -92,7 +92,7 @@ export default function PatientProfile() {
 
         try {
             const updatedProfile = { ...patientData, avatar: profileImage };
-            const response = await fetch(`/receptionist/updatePatientProfile/${currentUser.hospital_ID}/${id}`, { 
+            const response = await fetch(`/recep-patient/updatePatientProfile/${currentUser.hospital_ID}/${id}`, { 
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

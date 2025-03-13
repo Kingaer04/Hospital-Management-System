@@ -8,10 +8,10 @@ const router = express.Router();
 router.post('/create', adminController.verifyToken, MedicalRecordController.createMedicalRecord)
 
 // Add a consultation to a medical record
-router.post('/:medicalRecordId/consultation', adminController.verifyToken, MedicalRecordController.addConsultation);
+router.post('/:patientId/consultation', adminController.verifyToken, MedicalRecordController.addConsultation);
 
 // Update an existing consultation
-router.post('/:medicalRecordId/consultation/:consultationId', adminController.verifyToken, MedicalRecordController.updateConsultation);
+router.post('/:patientId/consultation/:consultationId', adminController.verifyToken, MedicalRecordController.updateConsultation);
 
 // Get a medical record
 router.get('/medicalRecords/:patientId', adminController.verifyToken, MedicalRecordController.getMedicalRecord);

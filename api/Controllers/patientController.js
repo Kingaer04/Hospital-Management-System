@@ -31,6 +31,7 @@ function getPatientParams(body) {
 export const patientController = {
     verifyToken: (req, res, next) => {
         const token = req.cookies.token;
+        console.log(token)
 
         if (!token) return res.status(401).json({ message: 'Unauthorized' });
     
@@ -41,6 +42,7 @@ export const patientController = {
             }
     
             req.user = user;
+            console.log(req.user)
             // console.log(req.user)
             next();
         });
@@ -103,6 +105,7 @@ export const patientController = {
 
     updatePatient: async (req, res, next) => {
         try {
+            console.log(req.user)
             if (req.user.hospitalId !== req.params.hospital_ID) return res.status(401).json({ error: 'Unauthorized! you can only update patient that is registered in your hospital' });
             const updatedUser = await PatientData.findByIdAndUpdate(req.params.id, {
                 $set: getPatientParams(req.body)

@@ -1,13 +1,38 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
-import { Container, Box, Typography, Paper, TextField, Button, Dialog, DialogTitle, DialogContent, DialogActions, Grid, Snackbar, Alert, CircularProgress } from '@mui/material';
+import { Container, Box, Typography, Paper, TextField, Button, Dialog, DialogTitle, DialogContent, DialogActions, Grid, Snackbar, Alert, CircularProgress, FormControl, InputLabel, Select, MenuItem } from '@mui/material';
 import { User as UserIcon, HeartPulse as HeartPulseIcon, FileText as FileTextIcon, Edit as EditIcon, Save as SaveIcon, PlusCircle as PlusCircleIcon } from 'lucide-react';
+import { useSelector } from 'react-redux';
 
 const MedicalRecord = () => {
+  const {currentUser} = useSelector(state => state.user);
   const { patientId } = useParams(); 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [notification, setNotification] = useState({ open: false, message: '', severity: 'success' });
+  const [recordExists, setRecordExists] = useState(true);
+  const [hospitals, setHospitals] = useState([]);
+  const [isNewRecordModalOpen, setIsNewRecordModalOpen] = useState(false);
+  const [newRecord, setNewRecord] = useState({
+    patientId: patientId,
+    personalInfo: {
+      name: '',
+      age: '',
+      gender: '',
+      bloodGroup: '',
+      contactNumber: ''
+    },
+    allergies: '',
+    primaryHospitalId: '',
+    vitalSigns: {
+      bloodPressure: '',
+      sugarLevel: '',
+      heartRate: '',
+      temperature: '',
+      weight: '',
+      height: ''
+    }
+  });
   const [patient, setPatient] = useState({
     personalInfo: {
       name: '',
@@ -42,64 +67,232 @@ const MedicalRecord = () => {
   const [editingConsultationIndex, setEditingConsultationIndex] = useState(null);
   const [submitting, setSubmitting] = useState(false);
 
+  // Fetch patient data
+  useEffect(() => {
+    const fetchPatientData = async () => {
+      try {
+        const res = await fetch(`/recep-patient/patientData/${patientId}`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+        
+        const data = await res.json();
+        
+        // Calculate age from DoB
+        const calculateAge = (dob) => {
+          if (!dob) return '';
+          const birthDate = new Date(dob);
+          const today = new Date();
+          let age = today.getFullYear() - birthDate.getFullYear();
+          const monthDiff = today.getMonth() - birthDate.getMonth();
+          
+          // Adjust age if birthday hasn't occurred yet this year
+          if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+            age--;
+          }
+          
+          return age.toString();
+        };
+        
+        // Get age from DoB
+        const age = calculateAge(data.patient.DoB);
+        
+        setPatient({
+          personalInfo: {
+            name: `${data.patient.first_name} ${data.patient.last_name}` || '',
+            age: age,
+            gender: data.patient.gender || '',
+            contactNumber: data.patient.phone || ''
+          },
+        });
+        
+        // Also update the newRecord state with the same personal info
+        setNewRecord(prev => ({
+          ...prev,
+          personalInfo: {
+            name: `${data.patient.first_name} ${data.patient.last_name}` || '',
+            age: age,
+            gender: data.patient.gender || '',
+            contactNumber: data.patient.phone || ''
+          },
+        }));
+        
+      } catch (error) {
+        console.log('Error fetching patient data:', error);
+      }
+    };
+    
+    fetchPatientData();
+  }, [patientId]);
 
-// Fetch patient's medical record data by patient ID
-useEffect(() => {
-  const fetchPatientMedicalRecord = async () => {
+  // Fetch hospitals for dropdown
+  useEffect(() => {
+    const fetchHospitals = async () => {
+      try {
+        const res = await fetch('/api/hospitals', {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+        if (!res.ok) {
+          throw new Error('Failed to load hospitals');
+        }
+        const data = await res.json();
+        setHospitals(data);
+      } catch (err) {
+        console.error('Error fetching hospitals:', err);
+        setNotification({
+          open: true,
+          message: 'Failed to load hospitals: ' + (err.message || 'Unknown error'),
+          severity: 'error'
+        });
+      }
+    };
+
+    fetchHospitals();
+  }, []);
+
+  // Fetch patient's medical record data by patient ID
+  useEffect(() => {
+    const fetchPatientMedicalRecord = async () => {
+      try {
+        setLoading(true);
+        const res = await fetch(`/records/medicalRecords/${patientId}`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+        
+        if (res.status === 409) {
+          setRecordExists(false);
+          setError(null);
+          setLoading(false);
+          return;
+        } else if (!res.ok) {
+          throw new Error('Failed to load medical record');
+        }
+        
+        const data = await res.json();
+        console.log("Data: ", data);
+        
+        // Transform backend data to match frontend structure
+        const transformedData = {
+          personalInfo: data.personalInfo || {},
+          vitalSigns: data.consultations?.length > 0 
+            ? data.consultations[data.consultations.length - 1].vitalSigns 
+            : {},
+          allergies: data.allergies || [],
+          consultations: data.consultations?.map(consultation => ({
+            id: consultation._id,
+            date: new Date(consultation.createdAt).toISOString().split('T')[0],
+            time: new Date(consultation.createdAt).toLocaleTimeString(),
+            doctorName: consultation.doctorId?.name || 'Unknown Doctor',
+            hospital: consultation.hospitalId?.name || 'Unknown Hospital',
+            diagnosis: consultation.diagnosis || '',
+            doctorNotes: consultation.doctorNotes || '',
+            treatment: consultation.treatment || '',
+            vitalSigns: consultation.vitalSigns || {}
+          })) || []
+        };
+        
+        setPatient(transformedData);
+        setRecordExists(true);
+      } catch (err) {
+        console.error('Error fetching record:', err);
+        setError(err.message || 'Failed to load medical record');
+        setNotification({
+          open: true,
+          message: 'Failed to load medical record: ' + (err.message || 'Unknown error'),
+          severity: 'error'
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchPatientMedicalRecord();
+
+  }, [patientId]);
+
+  const handleOpenNewRecordModal = () => {
+    setIsNewRecordModalOpen(true);
+  };
+
+  const handleCloseNewRecordModal = () => {
+    setIsNewRecordModalOpen(false);
+  };
+
+  const handleCreateMedicalRecord = async () => {
     try {
-      setLoading(true);
-      const res = await fetch(`/records/medicalRecords/${patientId}`, {
-        method: 'GET',
+      setSubmitting(true);
+      
+      // Transform data to match backend structure
+      const recordData = {
+        patientId: newRecord.patientId,
+        personalInfo: newRecord.personalInfo,
+        allergies: newRecord.allergies.split(',').map(allergy => allergy.trim()),
+        primaryHospitalId: newRecord.primaryHospitalId
+      };
+      
+      // Create new medical record
+      const res = await fetch('/records/create', {
+        method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
+        body: JSON.stringify(recordData)
       });
-      if (res.status === 409) {
-        setError(null)
-      } else if (!res.ok) {
-        throw new Error('Failed to load medical record');
+      
+      if (!res.ok) {
+        throw new Error('Failed to create medical record');
       }
+      
       const data = await res.json();
-      console.log("Data: ", data);
-      setLoading(false);
       
-      // Transform backend data to match frontend structure
-      const transformedData = {
-        personalInfo: data.personalInfo || {},
-        vitalSigns: data.consultations?.length > 0 
-          ? data.consultations[data.consultations.length - 1].vitalSigns 
-          : {},
-        allergies: data.allergies || [],
-        consultations: data.consultations?.map(consultation => ({
-          id: consultation._id,
-          date: new Date(consultation.createdAt).toISOString().split('T')[0],
-          time: new Date(consultation.createdAt).toLocaleTimeString(),
-          doctorName: consultation.doctorId?.name || 'Unknown Doctor',
-          hospital: consultation.hospitalId?.name || 'Unknown Hospital',
-          diagnosis: consultation.diagnosis || '',
-          doctorNotes: consultation.doctorNotes || '',
-          treatment: consultation.treatment || '',
-          vitalSigns: consultation.vitalSigns || {}
-        })) || []
-      };
+      // If successful, add vital signs as first consultation
+      if (data.medicalRecord) {
+        const consultationData = {
+          diagnosis: 'Initial Assessment',
+          doctorNotes: 'Initial vital signs recorded',
+          treatment: 'None',
+          vitalSigns: newRecord.vitalSigns
+        };
+        
+        await fetch(`/records/${patientId}/consultation`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(consultationData)
+        });
+      }
       
-      setPatient(transformedData);
-    } catch (err) {
-      console.error('Error fetching record:', err);
-      setError(err.message || 'Failed to load medical record');
       setNotification({
         open: true,
-        message: 'Failed to load medical record: ' + (err.message || 'Unknown error'),
+        message: 'Medical record created successfully',
+        severity: 'success'
+      });
+      
+      // Refresh page to show new record
+      setTimeout(() => {
+        window.location.reload();
+      }, 1500);
+      
+    } catch (err) {
+      setNotification({
+        open: true,
+        message: 'Failed to create medical record: ' + (err.message || 'Unknown error'),
         severity: 'error'
       });
     } finally {
-      setLoading(false);
+      setSubmitting(false);
+      setIsNewRecordModalOpen(false);
     }
   };
-
-  fetchPatientMedicalRecord();
-
-}, [patientId]);
 
   const handleOpenNewConsultation = () => {
     setCurrentConsultation({
@@ -128,19 +321,27 @@ useEffect(() => {
       };
       
       // Updated endpoint to use patient ID
-      const result = await fetchAPI(
-        `/patients/${patientId}/consultation`, 
-        'POST',
-        consultationData
-      );
+      const response = await fetch(`/records/${patientId}/consultation`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(consultationData)
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to add consultation');
+      }
+      
+      const result = await response.json();
       
       // Update local state with the returned consultation
       const newConsultation = {
         id: result.consultation._id,
         date: new Date().toISOString().split('T')[0],
         time: new Date().toLocaleTimeString(),
-        doctorName: 'Current Doctor', // This would ideally come from the user context
-        hospital: 'Current Hospital', // This would ideally come from the user context
+        doctorName: currentUser?.name || 'Current Doctor', // This would ideally come from the user context
+        hospital: currentUser?.hospitalName || 'Current Hospital', // This would ideally come from the user context
         diagnosis: result.consultation.diagnosis,
         doctorNotes: result.consultation.doctorNotes,
         treatment: result.consultation.treatment,
@@ -191,11 +392,17 @@ useEffect(() => {
       };
       
       // Updated endpoint to use patient ID
-      await fetchAPI(
-        `/patients/${patientId}/consultation/${consultation.id}`, 
-        'PUT', // Changed from POST to PUT for update
-        consultationData
-      );
+      const response = await fetch(`/patients/${patientId}/consultation/${consultation.id}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(consultationData)
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to update consultation');
+      }
       
       const updatedConsultations = [...patient.consultations];
       updatedConsultations[editingConsultationIndex] = currentConsultation;
@@ -234,10 +441,19 @@ useEffect(() => {
   const handleGrantHospitalAccess = async (hospitalId) => {
     try {
       // Updated endpoint to use patient ID
-      await fetchAPI(
+      const response = await fetch(
         `/patients/${patientId}/grant-access/${hospitalId}`,
-        'POST'
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        }
       );
+      
+      if (!response.ok) {
+        throw new Error('Failed to grant hospital access');
+      }
       
       setNotification({
         open: true,
@@ -255,6 +471,257 @@ useEffect(() => {
 
   const handleCloseNotification = () => {
     setNotification({ ...notification, open: false });
+  };
+
+  const renderNewRecordModal = () => {
+    return (
+      <Dialog 
+        open={isNewRecordModalOpen} 
+        onClose={handleCloseNewRecordModal}
+        maxWidth="md"
+        fullWidth
+      >
+        <DialogTitle sx={{ backgroundColor: '#00A272', color: 'white' }}>
+          Create New Medical Record
+        </DialogTitle>
+        <DialogContent>
+          <Grid container spacing={3} sx={{ mt: 1 }}>
+            {/* Personal Information */}
+            <Grid item xs={12} md={6}>
+              <Typography variant="h6" sx={{ color: '#00A272', mb: 2 }}>
+                Personal Information
+              </Typography>
+              <Grid container spacing={2}>
+                <Grid item xs={12}>
+                  <TextField
+                    fullWidth
+                    label="Name"
+                    value={newRecord.personalInfo.name}
+                    onChange={(e) => setNewRecord(prev => ({
+                      ...prev, 
+                      personalInfo: {
+                        ...prev.personalInfo,
+                        name: e.target.value
+                      }
+                    }))}
+                    disabled
+                  />
+                </Grid>
+                <Grid item xs={6}>
+                  <TextField
+                    fullWidth
+                    label="Age"
+                    type="number"
+                    value={newRecord.personalInfo.age}
+                    onChange={(e) => setNewRecord(prev => ({
+                      ...prev, 
+                      personalInfo: {
+                        ...prev.personalInfo,
+                        age: e.target.value
+                      }
+                    }))}
+                    disabled
+                  />
+                </Grid>
+                <Grid item xs={6}>
+                  <FormControl fullWidth>
+                    <InputLabel>Gender</InputLabel>
+                    <Select
+                      value={newRecord.personalInfo.gender}
+                      label="Gender"
+                      onChange={(e) => setNewRecord(prev => ({
+                        ...prev, 
+                        personalInfo: {
+                          ...prev.personalInfo,
+                          gender: e.target.value
+                        }
+                      }))}
+                      disabled
+                    >
+                      <MenuItem value="Male">Male</MenuItem>
+                      <MenuItem value="Female">Female</MenuItem>
+                    </Select>
+                  </FormControl>
+                </Grid>
+                <Grid item xs={6}>
+                  <TextField
+                    fullWidth
+                    label="Blood Group"
+                    value={newRecord.personalInfo.bloodGroup}
+                    onChange={(e) => setNewRecord(prev => ({
+                      ...prev, 
+                      personalInfo: {
+                        ...prev.personalInfo,
+                        bloodGroup: e.target.value
+                      }
+                    }))}
+                  />
+                </Grid>
+                <Grid item xs={6}>
+                  <TextField
+                    fullWidth
+                    label="Contact Number"
+                    value={newRecord.personalInfo.contactNumber}
+                    onChange={(e) => setNewRecord(prev => ({
+                      ...prev, 
+                      personalInfo: {
+                        ...prev.personalInfo,
+                        contactNumber: e.target.value
+                      }
+                    }))}
+                  />
+                </Grid>
+                <Grid item xs={12}>
+                  <TextField
+                    fullWidth
+                    label="Allergies (comma separated)"
+                    value={newRecord.allergies}
+                    onChange={(e) => setNewRecord(prev => ({
+                      ...prev, 
+                      allergies: e.target.value
+                    }))}
+                  />
+                </Grid>
+                <Grid item xs={12}>
+                  <FormControl fullWidth>
+                    <InputLabel>Primary Hospital</InputLabel>
+                    <Select
+                      value={newRecord.primaryHospitalId}
+                      label="Primary Hospital"
+                      onChange={(e) => setNewRecord(prev => ({
+                        ...prev, 
+                        primaryHospitalId: e.target.value
+                      }))}
+                    >
+                      {hospitals.map(hospital => (
+                        <MenuItem key={hospital._id} value={hospital._id}>
+                          {hospital.name}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                </Grid>
+              </Grid>
+            </Grid>
+
+            {/* Vital Signs */}
+            <Grid item xs={12} md={6}>
+              <Typography variant="h6" sx={{ color: '#00A272', mb: 2 }}>
+                Vital Signs
+              </Typography>
+              <Grid container spacing={2}>
+                <Grid item xs={6}>
+                  <TextField
+                    fullWidth
+                    label="Blood Pressure"
+                    placeholder="120/80 mmHg"
+                    value={newRecord.vitalSigns.bloodPressure}
+                    onChange={(e) => setNewRecord(prev => ({
+                      ...prev,
+                      vitalSigns: {
+                        ...prev.vitalSigns,
+                        bloodPressure: e.target.value
+                      }
+                    }))}
+                  />
+                </Grid>
+                <Grid item xs={6}>
+                  <TextField
+                    fullWidth
+                    label="Sugar Level"
+                    placeholder="mg/dL"
+                    value={newRecord.vitalSigns.sugarLevel}
+                    onChange={(e) => setNewRecord(prev => ({
+                      ...prev,
+                      vitalSigns: {
+                        ...prev.vitalSigns,
+                        sugarLevel: e.target.value
+                      }
+                    }))}
+                  />
+                </Grid>
+                <Grid item xs={6}>
+                  <TextField
+                    fullWidth
+                    label="Heart Rate"
+                    placeholder="bpm"
+                    value={newRecord.vitalSigns.heartRate}
+                    onChange={(e) => setNewRecord(prev => ({
+                      ...prev,
+                      vitalSigns: {
+                        ...prev.vitalSigns,
+                        heartRate: e.target.value
+                      }
+                    }))}
+                  />
+                </Grid>
+                <Grid item xs={6}>
+                  <TextField
+                    fullWidth
+                    label="Temperature"
+                    placeholder="°C"
+                    value={newRecord.vitalSigns.temperature}
+                    onChange={(e) => setNewRecord(prev => ({
+                      ...prev,
+                      vitalSigns: {
+                        ...prev.vitalSigns,
+                        temperature: e.target.value
+                      }
+                    }))}
+                  />
+                </Grid>
+                <Grid item xs={6}>
+                  <TextField
+                    fullWidth
+                    label="Weight"
+                    placeholder="kg"
+                    value={newRecord.vitalSigns.weight}
+                    onChange={(e) => setNewRecord(prev => ({
+                      ...prev,
+                      vitalSigns: {
+                        ...prev.vitalSigns,
+                        weight: e.target.value
+                      }
+                    }))}
+                  />
+                </Grid>
+                <Grid item xs={6}>
+                  <TextField
+                    fullWidth
+                    label="Height"
+                    placeholder="cm"
+                    value={newRecord.vitalSigns.height}
+                    onChange={(e) => setNewRecord(prev => ({
+                      ...prev,
+                      vitalSigns: {
+                        ...prev.vitalSigns,
+                        height: e.target.value
+                      }
+                    }))}
+                  />
+                </Grid>
+              </Grid>
+            </Grid>
+          </Grid>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseNewRecordModal}>
+            Cancel
+          </Button>
+          <Button 
+            onClick={handleCreateMedicalRecord}
+            variant="contained"
+            sx={{ 
+              backgroundColor: '#00A272', 
+              '&:hover': { backgroundColor: '#008060' } 
+            }}
+            disabled={submitting}
+          >
+            {submitting ? <CircularProgress size={24} color="inherit" /> : 'Create Record'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+    );
   };
 
   const renderConsultationModal = (isEditing) => {
@@ -324,7 +791,7 @@ useEffect(() => {
               </Typography>
               <Grid container spacing={2}>
                 {Object.entries(currentConsultation.vitalSigns || {}).map(([key, value]) => (
-                  <Grid item xs={12} key={key}>
+                  <Grid item xs={12} sm={6} key={key}>
                     <TextField
                       fullWidth
                       label={key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}
@@ -368,6 +835,33 @@ useEffect(() => {
       <Container sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '80vh' }}>
         <CircularProgress />
         <Typography variant="h6" sx={{ ml: 2 }}>Loading patient data...</Typography>
+      </Container>
+    );
+  }
+
+  if (!recordExists) {
+    return (
+      <Container maxWidth="lg" sx={{ py: 4 }}>
+        <Paper elevation={3} sx={{ p: 4, textAlign: 'center' }}>
+          <Typography variant="h5" sx={{ mb: 3, color: '#00A272' }}>
+            No existing medical record found
+          </Typography>
+          <Typography variant="body1" sx={{ mb: 4 }}>
+            Click the button below to create a new medical record for this patient.
+          </Typography>
+          <Button 
+            variant="contained" 
+            startIcon={<PlusCircleIcon />}
+            sx={{ 
+              backgroundColor: '#00A272', 
+              '&:hover': { backgroundColor: '#008060' } 
+            }}
+            onClick={handleOpenNewRecordModal}
+          >
+            Create Medical Record
+          </Button>
+          {renderNewRecordModal()}
+        </Paper>
       </Container>
     );
   }
@@ -498,86 +992,89 @@ useEffect(() => {
         </Box>
 
         {/* Consultations Section */}
-        <Box>
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-            <Typography variant="h6" sx={{ color: '#00A272' }}>
-              Consultation History
-            </Typography>
-            <Button 
-              variant="contained" 
-              startIcon={<PlusCircleIcon />}
-              sx={{ 
-                backgroundColor: '#00A272', 
-                '&:hover': { backgroundColor: '#008060' } 
-              }}
-              onClick={handleOpenNewConsultation}
-            >
-              New Consultation
-            </Button>
-          </Box>
-
-          {patient.consultations.length === 0 ? (
-            <Typography variant="body1" sx={{ textAlign: 'center', color: '#777' }}>
-              No consultations yet
-            </Typography>
-          ) : (
-            patient.consultations.map((consultation, index) => (
-              <Paper 
-                key={consultation.id || index} 
-                elevation={2} 
-                sx={{ 
-                  mb: 2, 
-                  p: 2, 
-                  borderLeft: `4px solid #00A272` 
-                }}
+<Box>
+  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+    <Typography variant="h6" sx={{ color: '#00A272' }}>
+      Consultation History
+    </Typography>
+    <Button 
+      variant="contained" 
+      startIcon={<PlusCircleIcon />}
+      onClick={handleOpenNewConsultation}
+      sx={{ 
+        backgroundColor: '#00A272', 
+        '&:hover': { backgroundColor: '#008060' } 
+      }}
+    >
+      Add New Consultation
+    </Button>
+  </Box>
+  
+  {patient.consultations.length === 0 ? (
+    <Typography variant="body1" sx={{ textAlign: 'center', color: '#777', py: 3 }}>
+      No consultations recorded yet
+    </Typography>
+  ) : (
+    <Box sx={{ maxHeight: '500px', overflowY: 'auto' }}>
+      {patient.consultations.map((consultation, index) => (
+        <Paper 
+          key={index} 
+          elevation={2} 
+          sx={{ 
+            p: 2, 
+            mb: 2, 
+            borderLeft: '4px solid #00A272',
+            transition: 'all 0.2s',
+            '&:hover': { transform: 'translateY(-2px)', boxShadow: 3 }
+          }}
+        >
+          <Grid container spacing={2}>
+            <Grid item xs={12} sm={6}>
+              <Typography variant="subtitle1" fontWeight="bold">{consultation.diagnosis}</Typography>
+              <Typography variant="subtitle2" color="text.secondary">
+                {consultation.date} at {consultation.time}
+              </Typography>
+            </Grid>
+            <Grid item xs={12} sm={6} sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+              <Box>
+                <Typography variant="body2">
+                  <strong>Doctor:</strong> {consultation.doctorName}
+                </Typography>
+                <Typography variant="body2">
+                  <strong>Hospital:</strong> {consultation.hospital}
+                </Typography>
+              </Box>
+              <Button 
+                size="small" 
+                startIcon={<EditIcon size={16} />}
+                onClick={() => handleOpenEditConsultation(consultation, index)}
+                sx={{ color: '#00A272' }}
               >
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-                  <Typography variant="subtitle1" sx={{ color: '#00A272' }}>
-                    {consultation.date} at {consultation.time}
-                  </Typography>
-                  <Button 
-                    variant="outlined" 
-                    size="small"
-                    startIcon={<EditIcon />}
-                    onClick={() => handleOpenEditConsultation(consultation, index)}
-                  >
-                    Edit
-                  </Button>
-                </Box>
-                <Grid container spacing={2}>
-                  <Grid item xs={12} md={6}>
-                    <Typography variant="body2">
-                      <strong>Doctor:</strong> {consultation.doctorName}
-                    </Typography>
-                    <Typography variant="body2">
-                      <strong>Hospital:</strong> {consultation.hospital}
-                    </Typography>
-                    <Typography variant="body2">
-                      <strong>Diagnosis:</strong> {consultation.diagnosis}
-                    </Typography>
-                  </Grid>
-                  <Grid item xs={12} md={6}>
-                    <Typography variant="body2">
-                      <strong>Doctor's Notes:</strong> {consultation.doctorNotes}
-                    </Typography>
-                    <Typography variant="body2">
-                      <strong>Treatment:</strong> {consultation.treatment}
-                    </Typography>
-                  </Grid>
-                </Grid>
-              </Paper>
-            ))
-          )}
-        </Box>
+                Edit
+              </Button>
+            </Grid>
+            <Grid item xs={12}>
+              <Typography variant="body2" sx={{ mb: 1 }}>
+                <strong>Doctor Notes:</strong> {consultation.doctorNotes}
+              </Typography>
+              <Typography variant="body2">
+                <strong>Treatment:</strong> {consultation.treatment}
+              </Typography>
+            </Grid>
+          </Grid>
+        </Paper>
+      ))}
+    </Box>
+  )}
+</Box>
 
-        {/* New Consultation Modal */}
-        {renderConsultationModal(false)}
-
-        {/* Edit Consultation Modal */}
-        {renderConsultationModal(true)}
-      </Paper>
-    </Container>
-  );
+{/* Render modals */}
+{renderNewRecordModal()}
+{renderConsultationModal(false)}
+{renderConsultationModal(true)}
+</Paper>
+</Container>
+);
 };
 
 export default MedicalRecord;
