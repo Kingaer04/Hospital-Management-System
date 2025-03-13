@@ -131,7 +131,7 @@ const MedicalRecord = () => {
   useEffect(() => {
     const fetchHospitals = async () => {
       try {
-        const res = await fetch('/api/hospitals', {
+        const res = await fetch(`/recep-patient/fetchHospital/${currentUser._id}`, {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
@@ -141,7 +141,7 @@ const MedicalRecord = () => {
           throw new Error('Failed to load hospitals');
         }
         const data = await res.json();
-        setHospitals(data);
+        setHospitals(data.hospital_Name);
       } catch (err) {
         console.error('Error fetching hospitals:', err);
         setNotification({
@@ -235,7 +235,7 @@ const MedicalRecord = () => {
         patientId: newRecord.patientId,
         personalInfo: newRecord.personalInfo,
         allergies: newRecord.allergies.split(',').map(allergy => allergy.trim()),
-        primaryHospitalId: newRecord.primaryHospitalId
+        doctorId: currentUser._id
       };
       
       // Create new medical record
@@ -584,23 +584,16 @@ const MedicalRecord = () => {
                   />
                 </Grid>
                 <Grid item xs={12}>
-                  <FormControl fullWidth>
-                    <InputLabel>Primary Hospital</InputLabel>
-                    <Select
-                      value={newRecord.primaryHospitalId}
-                      label="Primary Hospital"
-                      onChange={(e) => setNewRecord(prev => ({
-                        ...prev, 
-                        primaryHospitalId: e.target.value
-                      }))}
-                    >
-                      {hospitals.map(hospital => (
-                        <MenuItem key={hospital._id} value={hospital._id}>
-                          {hospital.name}
-                        </MenuItem>
-                      ))}
-                    </Select>
-                  </FormControl>
+                  <TextField
+                    fullWidth
+                    label="Primary Hospital"
+                    value={hospitals}
+                    onChange={(e) => setNewRecord(prev => ({
+                      ...prev, 
+                      primaryHospital: e.target.value
+                    }))}
+                    disabled
+                  />
                 </Grid>
               </Grid>
             </Grid>

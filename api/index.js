@@ -20,7 +20,7 @@ app.use(session({
     cookie: {
         httpOnly: true,  // Ensure the cookie is httpOnly for security
         secure: process.env.NODE_ENV === 'production',  // Use secure cookies in production
-        maxAge: 30000  // 30 seconds
+        maxAge: 1000000  // Set the cookie's max age to 1000 seconds
     }
 }));
 app.use(passport.initialize())

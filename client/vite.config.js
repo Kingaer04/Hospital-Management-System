@@ -25,6 +25,10 @@ export default defineConfig({
         target: 'http://localhost:5500',
         secure: false
       },
+      'doctor-fetch': {
+        target: 'http://localhost:5500',
+        secure: false
+      },
       '/records': {
         target: 'http://localhost:5500',
         secure: false

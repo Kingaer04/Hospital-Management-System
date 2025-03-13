@@ -1,6 +1,7 @@
 import express from 'express'
 import { patientController } from '../Controllers/patientController.js';
 import { receptionistController } from '../Controllers/receptionistController.js';
+import { doctorController } from '../Controllers/doctorController.js';
 
 const router = express.Router();
 
@@ -13,5 +14,6 @@ router.post('/book-appointment/:id', patientController.bookingAppointment)
 router.get('/doctorData/:hospital_ID', receptionistController.getDoctors)
 router.get('/appointmentData/:hospital_ID', receptionistController.getAllAppointment)
 router.get('/fetchFingerprintData/:id', patientController.fetchFingerprintData)
+router.get('/fetchHospital/:doctorId', doctorController.getHospital);
 
 export default router;

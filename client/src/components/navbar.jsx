@@ -19,7 +19,7 @@ import ExpandLess from '@mui/icons-material/ExpandLess';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import SignOutModal from './SignOutModal';
 import { useSelector } from 'react-redux';
-import { useEffect } from 'react';
+import { useEffect, useCallback } from 'react';
 
 const Search = styled('div')(({ theme }) => ({
   position: 'relative',
@@ -71,6 +71,62 @@ export default function MainNavBar() {
   const { currentUser } = useSelector((state) => state.user);
   const [unRead, setUnRead] = React.useState([]);
   const [unreadCount, setUnreadCount] = React.useState(0);
+  const [lastFetchTime, setLastFetchTime] = React.useState(0);
+
+  const fetchUnreadMessages = useCallback(async () => {
+    if (!currentUser?._id) return;
+    
+    try {
+      const res = await fetch(`http://localhost:3000/notification/get-unread-notifications/${currentUser._id}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      const data = await res.json();
+      setUnRead(data);
+      setUnreadCount(data.length);
+      setLastFetchTime(Date.now());
+    } catch (error) {
+      console.log('Error fetching unread messages: ', error);
+    }
+  }, [currentUser?._id]);
+
+  // Fetch notifications immediately when the component mounts or user changes
+  useEffect(() => {
+    if (currentUser?._id) {
+      fetchUnreadMessages();
+    }
+  }, [currentUser?._id, fetchUnreadMessages]);
+
+  // Set up frequent polling (every 5 seconds)
+  useEffect(() => {
+    const intervalId = setInterval(fetchUnreadMessages, 10000);
+    return () => clearInterval(intervalId);
+  }, [fetchUnreadMessages]);
+
+  // Fetch when the window gains focus
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        // Only fetch if the last fetch was more than 2 seconds ago
+        if (Date.now() - lastFetchTime > 2000) {
+          fetchUnreadMessages();
+        }
+      }
+    };
+
+    // Refresh when the tab becomes active again
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    // Refresh when user returns to the app
+    window.addEventListener('focus', handleVisibilityChange);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('focus', handleVisibilityChange);
+    };
+  }, [fetchUnreadMessages, lastFetchTime]);
 
   const handleSignOutClick = () => {
     setSignOutModalOpen(true);
@@ -100,29 +156,6 @@ export default function MainNavBar() {
   const handleMobileMenuOpen = (event) => {
     setMobileMoreAnchorEl(event.currentTarget);
   };
-
-  useEffect(() => {
-    const fetchUnreadMessages = async () => {
-      try {
-        const res = await fetch(`http://localhost:3000/notification/get-unread-notifications/${currentUser._id}`, {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-        });
-        const data = await res.json();
-        setUnRead(data);
-      } catch (error) {
-        console.log('Error fetching unread messages: ', error);
-      }
-    };
-
-    fetchUnreadMessages();
-  }, [currentUser._id]);
-
-  useEffect(() => {
-    setUnreadCount(unRead.length);
-  }, [unRead]);
 
   const menuId = 'primary-search-account-menu';
   const renderMenu = (
@@ -178,15 +211,17 @@ export default function MainNavBar() {
         <p>Messages</p>
       </MenuItem>
       <MenuItem>
-        <IconButton
-          size="large"
-          aria-label="show new notifications"
-          color="inherit"
-        >
-          <Badge badgeContent={unreadCount} color="error">
-            <NotificationsIcon />
-          </Badge>
-        </IconButton>
+        <Link to="/notifications" style={{ textDecoration: 'none' }}>
+          <IconButton
+            size="large"
+            aria-label="show new notifications"
+            color="inherit"
+          >
+            <Badge badgeContent={unreadCount} color="error">
+              <NotificationsIcon />
+            </Badge>
+          </IconButton>  
+        </Link>
         <p>Notifications</p>
       </MenuItem>
       <MenuItem onClick={handleProfileMenuOpen}>
@@ -228,6 +263,7 @@ export default function MainNavBar() {
               size="large"
               aria-label="show new notifications"
               color="inherit"
+              onClick={fetchUnreadMessages} // Refresh notifications when icon is clicked
             >
               <Badge badgeContent={unreadCount} color="error">
                 <NotificationsIcon />

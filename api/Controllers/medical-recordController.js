@@ -2,6 +2,7 @@ import MedicalRecord from '../Models/Medical-RecordModel.js';
 import StaffData from '../Models/StaffModel.js';
 import HospitalAdminAccount from '../Models/AdminModel.js';
 import createHttpError from 'http-errors';
+import { console } from 'inspector';
 
 export const MedicalRecordController = {
   // Create a new medical record
@@ -11,20 +12,29 @@ export const MedicalRecordController = {
         patientId,
         personalInfo,
         allergies,
-        primaryHospitalId,
+        doctorId,
         vitalSigns  // Add this line to extract vital signs
       } = req.body;
   
       const doctor = await StaffData.findById(req.user.id);
       if (!doctor) {
-        return next(createHttpError(403, 'Doctor not found'));
+        return res.status(403).json('Doctor not found');
       }
+
+      // Get the doctor whose hospital will be used as primaryHospital
+      const referenceDoctor = await StaffData.findById(doctorId);
+      if (!referenceDoctor) {
+        return res.status(400).json('Reference doctor not found');
+      }
+
+      const primaryHospitalId = referenceDoctor.hospital_ID;
   
       // Create medical record with the consultation
       const medicalRecord = new MedicalRecord({
         patientId,
         personalInfo,
         allergies,
+        primaryHospitalId,
         createdBy: req.user.id,
         updatedBy: req.user.id
       });
