@@ -381,8 +381,9 @@ const MedicalRecord = () => {
     try {
       setSubmitting(true);
       
-      const consultation = patient.consultations[editingConsultationIndex];
-      
+      // Get the consultation ID directly from the consultation object in your state
+      const consultationId = patient.consultations[editingConsultationIndex].id;
+    
       // Transform data to match backend structure
       const consultationData = {
         diagnosis: currentConsultation.diagnosis,
@@ -392,7 +393,7 @@ const MedicalRecord = () => {
       };
       
       // Updated endpoint to use patient ID
-      const response = await fetch(`/patients/${patientId}/consultation/${consultation.id}`, {
+      const response = await fetch(`/records/${patientId}/consultation/${consultationId}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'

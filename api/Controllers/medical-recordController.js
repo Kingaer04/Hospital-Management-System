@@ -89,28 +89,24 @@ export const MedicalRecordController = {
   // Update an existing consultation
   updateConsultation: async (req, res, next) => {
     try {
-      const { medicalRecordId, consultationId } = req.params;
+      const { patientId, consultationId } = req.params;
       const updateData = req.body;
 
-      const medicalRecord = await MedicalRecord.findById(medicalRecordId);
+      const medicalRecord = await MedicalRecord.findOne({ patientId });
       if (!medicalRecord) {
-        return next(createHttpError(404, 'Medical record not found'));
+        return res.status(404).json('Medical record not found');
       }
 
       // Verify doctor and hospital access
-      const doctor = await StaffData.findById(req.user.doctorId);
+      const doctor = await StaffData.findById(req.user.id);
       if (!doctor) {
-        return next(createHttpError(403, 'Doctor not found'));
-      }
-
-      if (!medicalRecord.hasHospitalAccess(doctor.hospitalId)) {
-        return next(createHttpError(403, 'No access to this medical record'));
+        return res.status(403).json('Doctor not found');
       }
 
       // Find and update consultation
       const consultation = medicalRecord.consultations.id(consultationId);
       if (!consultation) {
-        return next(createHttpError(404, 'Consultation not found'));
+        return res.status(404).json('Consultation not found');
       }
 
       // Update consultation fields
@@ -118,8 +114,8 @@ export const MedicalRecordController = {
         consultation[key] = updateData[key];
       });
 
-      consultation.updatedBy = req.user._id;
-      medicalRecord.updatedBy = req.user._id;
+      consultation.updatedBy = req.user.id;
+      medicalRecord.updatedBy = req.user.id;
 
       await medicalRecord.save();
 
