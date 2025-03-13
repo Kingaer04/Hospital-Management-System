@@ -23,7 +23,7 @@ const MedicalRecord = () => {
       contactNumber: ''
     },
     allergies: '',
-    primaryHospitalId: '',
+    hospitalId: '',
     vitalSigns: {
       bloodPressure: '',
       sugarLevel: '',
@@ -191,7 +191,7 @@ const MedicalRecord = () => {
             date: new Date(consultation.createdAt).toISOString().split('T')[0],
             time: new Date(consultation.createdAt).toLocaleTimeString(),
             doctorName: consultation.doctorId?.name || 'Unknown Doctor',
-            hospital: consultation.hospitalId?.name || 'Unknown Hospital',
+            hospital: consultation.hospitalId?.hospital_Name || 'Unknown Hospital',
             diagnosis: consultation.diagnosis || '',
             doctorNotes: consultation.doctorNotes || '',
             treatment: consultation.treatment || '',
@@ -259,7 +259,8 @@ const MedicalRecord = () => {
           diagnosis: 'Initial Assessment',
           doctorNotes: 'Initial vital signs recorded',
           treatment: 'None',
-          vitalSigns: newRecord.vitalSigns
+          vitalSigns: newRecord.vitalSigns,
+          hospitalId: newRecord.hospitalId
         };
         
         await fetch(`/records/${patientId}/consultation`, {
@@ -340,13 +341,15 @@ const MedicalRecord = () => {
         id: result.consultation._id,
         date: new Date().toISOString().split('T')[0],
         time: new Date().toLocaleTimeString(),
-        doctorName: currentUser?.name || 'Current Doctor', // This would ideally come from the user context
-        hospital: currentUser?.hospitalName || 'Current Hospital', // This would ideally come from the user context
+        doctorName: currentUser?.name,
+        hospital: hospitals,
         diagnosis: result.consultation.diagnosis,
         doctorNotes: result.consultation.doctorNotes,
         treatment: result.consultation.treatment,
         vitalSigns: result.consultation.vitalSigns
       };
+
+      console.log("New Consultation: ", newConsultation);
       
       setPatient(prev => ({
         ...prev,
@@ -590,7 +593,7 @@ const MedicalRecord = () => {
                     value={hospitals}
                     onChange={(e) => setNewRecord(prev => ({
                       ...prev, 
-                      primaryHospital: e.target.value
+                      hospitalId: e.target.value
                     }))}
                     disabled
                   />

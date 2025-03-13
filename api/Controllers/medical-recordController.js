@@ -150,7 +150,7 @@ export const MedicalRecordController = {
       // Changed from findById to findOne with patientId as the search parameter
       const medicalRecord = await MedicalRecord.findOne({ patientId })
         .populate('consultations.doctorId', 'name')
-        .populate('consultations.hospitalId', 'name');
+        .populate('consultations.hospitalId', 'hospital_Name');
       
       if (!medicalRecord) {
         return res.status(409).json('Medical record not found');
