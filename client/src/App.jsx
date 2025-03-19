@@ -24,6 +24,7 @@ import NotificationDetail from './pages/notificationBody.jsx'
 import {NotificationProvider} from './components/notificationSound.jsx'
 import MedicalRecord from './pages/medical-record.jsx'
 import HospitalCheckout from './pages/checkout.jsx'
+import HospitalPaymentIntegration from './pages/hospitalPayment.jsx'
 // import CustomWebcam from './components/CustomWebcam.jsx' will check the driver of my camera
 
 
@@ -58,6 +59,7 @@ export default function App() {
                     <Route path='/notification-body/:id' element={<NotificationDetail/>}/>
                     <Route path='/medical-record/:patientId' element={<MedicalRecord/>}/>
                     <Route path='/checkout' element={<HospitalCheckout/>}/>
+                    <Route path='/payment-integration' element={<HospitalPaymentIntegration/>}/>
                     {/* <Route path='/webcam' element={<CustomWebcam/>}/> */}
                 </Route>
               </Route>

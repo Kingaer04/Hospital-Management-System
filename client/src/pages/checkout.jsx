@@ -1,15 +1,17 @@
 import React, { useState } from 'react';
 
-const HospitalCheckout = () => {
+const HospitalCheckout = ({ onComplete, initialPatientData }) => {
   const [patient, setPatient] = useState({
-    name: 'John Doe',
-    id: 'PT-12345',
-    isRegistered: true,
-    admissionDate: '2025-03-10',
+    name: initialPatientData?.name || 'John Doe',
+    id: initialPatientData?.id || 'PT-12345',
+    email: initialPatientData?.email || '',
+    isRegistered: initialPatientData?.isRegistered !== undefined ? initialPatientData.isRegistered : true,
+    admissionDate: initialPatientData?.admissionDate || '2025-03-10',
   });
 
   const [billing, setBilling] = useState({
     fixedPrice: false,
+    fixedPriceAmount: 0,
     bedDays: 0,
     bedHours: 0,
     admissionFee: true,
@@ -58,7 +60,7 @@ const HospitalCheckout = () => {
   };
 
   const calculateTotal = () => {
-    if (billing.fixedPrice) return 0;
+    if (billing.fixedPrice) return Number(billing.fixedPriceAmount);
     
     let total = 0;
     
@@ -103,6 +105,98 @@ const HospitalCheckout = () => {
     }
     
     return total;
+  };
+
+  const handleProceedToPayment = () => {
+    const total = calculateTotal();
+    
+    // Create billing summary
+    const billingDetails = {
+      patient,
+      billing: {
+        ...billing,
+        isFixedPrice: billing.fixedPrice,
+        fixedPriceAmount: billing.fixedPriceAmount,
+      },
+      total,
+      items: [],
+      invoiceNumber: `INV-${patient.id}-${Date.now()}`,
+      createdAt: new Date().toISOString()
+    };
+
+    // Add billing items
+    if (!billing.fixedPrice) {
+      if (billing.admissionFee) {
+        billingDetails.items.push({
+          name: 'Admission Fee',
+          price: priceList.admissionFee
+        });
+      }
+      
+      if (billing.consultationFee) {
+        billingDetails.items.push({
+          name: 'Consultation Fee',
+          price: priceList.consultationFee
+        });
+      }
+      
+      if (billing.bedDays > 0 || billing.bedHours > 0) {
+        billingDetails.items.push({
+          name: 'Bed Charges',
+          price: (billing.bedDays * priceList.bedPerDay) + (billing.bedHours * priceList.bedPerHour)
+        });
+      }
+      
+      if (billing.surgeryFee && billing.selectedSurgery) {
+        const surgeryName = billing.selectedSurgery === 'other' 
+          ? (billing.otherSurgery || 'Other Surgery') 
+          : `${billing.selectedSurgery.charAt(0).toUpperCase() + billing.selectedSurgery.slice(1)} Surgery`;
+        
+        const surgeryPrice = billing.selectedSurgery === 'other'
+          ? billing.otherSurgeryPrice
+          : priceList.surgeries[billing.selectedSurgery];
+        
+        billingDetails.items.push({
+          name: surgeryName,
+          price: surgeryPrice
+        });
+      }
+      
+      if (billing.medications.length > 0) {
+        billing.medications.forEach(med => {
+          billingDetails.items.push({
+            name: `Medication: ${med.name}`,
+            price: med.price
+          });
+        });
+      }
+      
+      if (billing.wardType !== 'normal') {
+        billingDetails.items.push({
+          name: `Ward Upgrade (${billing.wardType})`,
+          price: priceList.wardTypes[billing.wardType]
+        });
+      }
+      
+      if (!patient.isRegistered) {
+        billingDetails.items.push({
+          name: 'Unregistered Patient Fee',
+          price: priceList.unregisteredFee
+        });
+      }
+    } else {
+      billingDetails.items.push({
+        name: 'Fixed Price Payment',
+        price: billing.fixedPriceAmount
+      });
+    }
+    
+    // Pass the billing details to the parent component
+    onComplete(billingDetails);
+  };
+
+  const handlePrintInvoice = () => {
+    window.print();
   };
 
   return (
@@ -318,6 +412,44 @@ const HospitalCheckout = () => {
                   </div>
                 </div>
               </div>
+              
+              {/* Patient Information */}
+              <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                <h2 className="text-lg font-semibold text-gray-800 mb-4">Patient Information</h2>
+                <div className="space-y-4">
+                  <div>
+                    <label htmlFor="patientName" className="block text-gray-700 mb-1">Patient Name</label>
+                    <input
+                      type="text"
+                      id="patientName"
+                      value={patient.name}
+                      onChange={(e) => setPatient({...patient, name: e.target.value})}
+                      className="form-input w-full rounded-md border-gray-300 focus:border-emerald-500 focus:ring focus:ring-emerald-200"
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="patientId" className="block text-gray-700 mb-1">Patient ID</label>
+                    <input
+                      type="text"
+                      id="patientId"
+                      value={patient.id}
+                      onChange={(e) => setPatient({...patient, id: e.target.value})}
+                      className="form-input w-full rounded-md border-gray-300 focus:border-emerald-500 focus:ring focus:ring-emerald-200"
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="patientEmail" className="block text-gray-700 mb-1">Patient Email</label>
+                    <input
+                      type="email"
+                      id="patientEmail"
+                      value={patient.email}
+                      onChange={(e) => setPatient({...patient, email: e.target.value})}
+                      className="form-input w-full rounded-md border-gray-300 focus:border-emerald-500 focus:ring focus:ring-emerald-200"
+                      placeholder="patient@example.com"
+                    />
+                  </div>
+                </div>
+              </div>
             </div>
 
             {/* Right Column - Medications & Summary */}
@@ -325,159 +457,110 @@ const HospitalCheckout = () => {
               {/* Medications */}
               <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
                 <h2 className="text-lg font-semibold text-gray-800 mb-4">Medications</h2>
-                
                 <div className={billing.fixedPrice ? "opacity-50 pointer-events-none" : ""}>
                   <div className="flex space-x-2 mb-4">
+                    <input
+                    type="text"
+                    placeholder="Medication name"
+                    value={billing.newMedication.name}
+                    onChange={(e) => setBilling({
+                    ...billing, 
+                    newMedication: {...billing.newMedication, name: e.target.value}
+                    })}
+                    className="form-input flex-1 rounded-md border-gray-300 focus:border-emerald-500 focus:ring focus:ring-emerald-200"
+                  />
                   <input
-  type="text"
-  placeholder="Medication name"
-  value={billing.newMedication.name}
-  onChange={(e) => setBilling({
-    ...billing,
-    newMedication: {...billing.newMedication, name: e.target.value}
-  })}
-  className="form-input flex-1 rounded-md border-gray-300 focus:border-emerald-500 focus:ring focus:ring-emerald-200"
-/>
-<input
-  type="number"
-  placeholder="Price"
-  value={billing.newMedication.price}
-  onChange={(e) => setBilling({
-    ...billing,
-    newMedication: {...billing.newMedication, price: parseFloat(e.target.value) || 0}
-  })}
-  className="form-input w-24 rounded-md border-gray-300 focus:border-emerald-500 focus:ring focus:ring-emerald-200"
-/>
-<button
-  onClick={handleMedicationAdd}
-  className="px-4 py-2 bg-emerald-600 text-white rounded-md hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500"
->
-  Add
-</button>
-  </div>
-
-{/* Medication List */}
-<div className="max-h-60 overflow-y-auto">
-  {billing.medications.length > 0 ? (
-    <ul className="divide-y divide-gray-200">
-      {billing.medications.map((medication, index) => (
-        <li key={index} className="py-2 flex justify-between items-center">
-          <span>{medication.name}</span>
-          <div className="flex items-center">
-            <span className="mr-3">${medication.price.toFixed(2)}</span>
-            <button
-              onClick={() => handleMedicationRemove(index)}
-              className="text-red-500 hover:text-red-700"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-              </svg>
-            </button>
-          </div>
-        </li>
-      ))}
-    </ul>
-  ) : (
-    <p className="text-gray-500 text-center py-4">No medications added</p>
-  )}
-</div>
-  </div>
-</div>
-  </div>
-
-  {/* Billing Summary */}
-  <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
-<h2 className="text-lg font-semibold text-gray-800 mb-4">Billing Summary</h2>
-
-{billing.fixedPrice ? (
-  <div className="mb-4">
-<label className="block text-gray-700 mb-2">Fixed Price Amount</label>
-<input
-  type="number"
-  min="0"
-  placeholder="Enter total amount"
-  className="form-input w-full rounded-md border-gray-300 focus:border-emerald-500 focus:ring focus:ring-emerald-200"
-/>
-  </div>
-) : (
-  <div className="space-y-2 mb-4">
-{billing.admissionFee && (
-  <div className="flex justify-between">
-    <span className="text-gray-600">Admission Fee</span>
-    <span className="font-medium">${priceList.admissionFee.toFixed(2)}</span>
-  </div>
-)}
-{billing.consultationFee && (
-  <div className="flex justify-between">
-    <span className="text-gray-600">Consultation Fee</span>
-    <span className="font-medium">${priceList.consultationFee.toFixed(2)}</span>
-  </div>
-)}
-{(billing.bedDays > 0 || billing.bedHours > 0) && (
-  <div className="flex justify-between">
-    <span className="text-gray-600">Bed Charges</span>
-    <span className="font-medium">
-      ${((billing.bedDays * priceList.bedPerDay) + (billing.bedHours * priceList.bedPerHour)).toFixed(2)}
-    </span>
-  </div>
-)}
-{billing.surgeryFee && billing.selectedSurgery && (
-  <div className="flex justify-between">
-    <span className="text-gray-600">
-      {billing.selectedSurgery === 'other' ? billing.otherSurgery || 'Other Surgery' : 
-        billing.selectedSurgery.charAt(0).toUpperCase() + billing.selectedSurgery.slice(1) + ' Surgery'}
-    </span>
-    <span className="font-medium">
-      ${billing.selectedSurgery === 'other' ? 
-        billing.otherSurgeryPrice.toFixed(2) : 
-        priceList.surgeries[billing.selectedSurgery].toFixed(2)}
-    </span>
-  </div>
-)}
-{billing.medications.length > 0 && (
-  <div className="flex justify-between">
-    <span className="text-gray-600">Medications</span>
-    <span className="font-medium">
-      ${billing.medications.reduce((sum, med) => sum + Number(med.price), 0).toFixed(2)}
-    </span>
-  </div>
-)}
-{billing.wardType !== 'normal' && (
-  <div className="flex justify-between">
-    <span className="text-gray-600">Ward Upgrade</span>
-    <span className="font-medium">${priceList.wardTypes[billing.wardType].toFixed(2)}</span>
-  </div>
-)}
-{!patient.isRegistered && (
-  <div className="flex justify-between">
-    <span className="text-gray-600">Unregistered Patient Fee</span>
-    <span className="font-medium">${priceList.unregisteredFee.toFixed(2)}</span>
-  </div>
-)}
-<div className="border-t border-gray-200 pt-2 mt-2">
-  <div className="flex justify-between font-semibold">
-    <span>Total</span>
-    <span className="text-emerald-700">${calculateTotal().toFixed(2)}</span>
-  </div>
-</div>
-  </div>
-)}
-
-{/* Payment Buttons */}
-<div className="space-y-3">
-  <button className="w-full py-2 bg-emerald-600 text-white rounded-md hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500">
-    Proceed to Payment
-  </button>
-  <button className="w-full py-2 border border-emerald-600 text-emerald-600 rounded-md hover:bg-emerald-50 focus:outline-none focus:ring-2 focus:ring-emerald-500">
-    Print Invoice
-  </button>
-</div>
+                    type="number"
+                    placeholder="Price"
+                    value={billing.newMedication.price}
+                    onChange={(e) => setBilling({
+                    ...billing, 
+                    newMedication: {...billing.newMedication, price: parseFloat(e.target.value) || 0}
+                    })}
+                    className="form-input w-24 rounded-md border-gray-300 focus:border-emerald-500 focus:ring focus:ring-emerald-200"
+                  />
+                  <button
+                    onClick={handleMedicationAdd}
+                    className="bg-emerald-500 text-white px-4 py-2 rounded-md hover:bg-emerald-600 transition duration-150"
+                  >
+                    Add
+                  </button>
+                </div> 
+                <div className="max-h-60 overflow-y-auto">
+                  {billing.medications.length > 0 ? (
+                    <ul className="divide-y divide-gray-200">
+                      {billing.medications.map((med, index) => (
+                        <li key={index} className="py-2 flex justify-between items-center">
+                          <span className="text-gray-700">{med.name}</span>
+                          <div className="flex items-center">
+                            <span className="font-medium">${med.price.toFixed(2)}</span>
+                            <button 
+                            onClick={() => handleMedicationRemove(index)}
+                            className="ml-2 text-red-500 hover:text-red-700"
+                            >
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                            </button>
+                          </div>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p className="text-gray-500 text-center py-4">No medications added</p>
+                  )}
+                </div>
+              </div>
+            </div>
+            {/* Fixed Price Input */}
+            {billing.fixedPrice && (
+              <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                <h2 className="text-lg font-semibold text-gray-800 mb-4">Fixed Price Amount</h2>
+                <input
+                  type="number"
+                  value={billing.fixedPriceAmount}
+                  onChange={(e) => setBilling({...billing, fixedPriceAmount: parseFloat(e.target.value) || 0})}
+                  className="form-input w-full rounded-md border-gray-300 focus:border-emerald-500 focus:ring focus:ring-emerald-200"
+                  placeholder="Enter total amount"
+                />
+              </div>
+            )}
+            {/* Summary */}
+            <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+              <h2 className="text-lg font-semibold text-gray-800 mb-4">Billing Summary</h2>
+              <div className="space-y-2 mb-4">
+                <div className="flex justify-between">
+                  <span className="text-gray-700">Total Amount:</span>
+                  <span className="font-bold text-lg">${calculateTotal().toFixed(2)}</span>
+                </div>
+              </div>
+              <div className="flex space-x-4">
+                <button
+                  onClick={handleProceedToPayment}
+                  className="w-2/3 bg-emerald-500 text-white px-4 py-3 rounded-md hover:bg-emerald-600 transition duration-150 flex items-center justify-center"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
+                  </svg>
+                  Proceed to Payment
+                </button>
+                <button
+                  onClick={handlePrintInvoice}
+                  className="w-1/3 bg-gray-200 text-gray-700 px-4 py-3 rounded-md hover:bg-gray-300 transition duration-150 flex items-center justify-center"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+                  </svg>
+                  Print
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       </div>
     </div>
-  
-    </div>
-  )}
+  </div>
+  );
+};
 
 export default HospitalCheckout;
