@@ -1,9 +1,11 @@
 // backend/controllers/paystackController.js
 import axios from 'axios';
 import crypto from 'crypto';
+import HospitalAdminAccount from "../Models/AdminModel.js";
+import Invoice from '../Models/InvoiceModel.js';
 
 // Configuration
-const PAYSTACK_SECRET_KEY = "sk_test_3be4760349383fc0ef0a83c3def9c5e03c2d3d96";
+const PAYSTACK_SECRET_KEY = process.env.PAYSTACK_SECRET_KEY || "sk_test_3be4760349383fc0ef0a83c3def9c5e03c2d3d96";
 const PAYSTACK_BASE_URL = 'https://api.paystack.co';
 
 // Initialize Paystack API
@@ -44,15 +46,17 @@ export const createHospitalSubaccount = async (req, res) => {
 export const generatePaymentLink = async (req, res) => {
   try {
     const {
-      amount, // in kobo (e.g., 50000 for ₦500)
+      amount, // in naira
       email,
       invoiceNumber,
       patientName,
       hospitalId
     } = req.body;
+
+    console.log(hospitalId)
     
     // Get hospital details from your database
-    const hospital = await db.hospitals.findById(hospitalId);
+    const hospital = await HospitalAdminAccount.findById(hospitalId);
     
     if (!hospital) {
       return res.status(404).json({
@@ -64,9 +68,12 @@ export const generatePaymentLink = async (req, res) => {
     // Generate unique reference
     const reference = `INV-${invoiceNumber}-${Date.now()}`;
     
+    // Convert amount to kobo (smallest currency unit)
+    const amountInKobo = Math.round(amount * 100);
+    
     // Initialize transaction
     const response = await paystackAPI.post('/transaction/initialize', {
-      amount: amount * 100, // Convert to kobo if not already
+      amount: amountInKobo,
       email,
       reference,
       subaccount: hospital.subaccountCode,
@@ -80,15 +87,21 @@ export const generatePaymentLink = async (req, res) => {
     });
     
     // Save invoice details to database
-    await db.invoices.create({
+    await Invoice.create({
       invoiceNumber,
       patientName,
       patientEmail: email,
-      amount: amount * 100,
+      amount: amountInKobo,
       hospitalId,
       reference,
       paymentStatus: 'pending',
-      paymentLink: response.data.data.authorization_url
+      paymentLink: response.data.data.authorization_url,
+      metadata: {
+        invoice_number: invoiceNumber,
+        patient_name: patientName,
+        hospital_name: hospital.name,
+        hospital_id: hospitalId
+      }
     });
     
     res.status(200).json({
@@ -116,15 +129,14 @@ export const verifyPayment = async (req, res) => {
     
     if (status === 'success') {
       // Update invoice status in your database
-      await db.invoices.updateOne(
+      await Invoice.findOneAndUpdate(
         { reference },
         { 
-          $set: { 
-            paymentStatus: 'paid',
-            paidAmount: amount / 100,
-            paidAt: new Date()
-          }
-        }
+          paymentStatus: 'paid',
+          paidAmount: amount / 100,
+          paidAt: new Date()
+        },
+        { new: true }
       );
       
       res.status(200).json({
@@ -150,39 +162,43 @@ export const verifyPayment = async (req, res) => {
 
 // Webhook handler
 export const handleWebhook = async (req, res) => {
-  // Verify webhook signature
-  const hash = crypto.createHmac('sha512', PAYSTACK_SECRET_KEY)
-    .update(JSON.stringify(req.body))
-    .digest('hex');
-  
-  if (hash !== req.headers['x-paystack-signature']) {
-    return res.status(400).send('Invalid signature');
-  }
-
-  // Handle the event
-  const event = req.body;
-  
-  if (event.event === 'charge.success') {
-    const { reference, amount, metadata } = event.data;
+  try {
+    // Verify webhook signature
+    const hash = crypto.createHmac('sha512', PAYSTACK_SECRET_KEY)
+      .update(JSON.stringify(req.body))
+      .digest('hex');
     
-    // Update payment status in your database
-    await db.invoices.updateOne(
-      { reference },
-      { 
-        $set: { 
+    if (hash !== req.headers['x-paystack-signature']) {
+      return res.status(400).send('Invalid signature');
+    }
+
+    // Handle the event
+    const event = req.body;
+    
+    if (event.event === 'charge.success') {
+      const { reference, amount, metadata } = event.data;
+      
+      // Update payment status in your database
+      await Invoice.findOneAndUpdate(
+        { reference },
+        { 
           paymentStatus: 'paid',
           paidAmount: amount / 100,
           paidAt: new Date()
-        }
-      }
-    );
+        },
+        { new: true }
+      );
+      
+      // You could also trigger additional actions here:
+      // - Sending confirmation email to patient
+      // - Notifying hospital about successful payment
+      // - Generating receipt
+    }
     
-    // You could also trigger additional actions here:
-    // - Sending confirmation email to patient
-    // - Notifying hospital about successful payment
-    // - Generating receipt
+    // Always respond with 200 to acknowledge receipt
+    return res.status(200).send('Webhook received');
+  } catch (error) {
+    console.error('Error processing webhook:', error);
+    return res.status(500).send('Error processing webhook');
   }
-  
-  // Always respond with 200 to acknowledge receipt
-  return res.status(200).send('Webhook received');
 };

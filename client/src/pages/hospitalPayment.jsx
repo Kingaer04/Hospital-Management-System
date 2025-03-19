@@ -1,9 +1,49 @@
 import React, { useState, useEffect } from 'react';
-import { generatePaymentLink, verifyPayment } from '../../../api/services/paystackService';
 import HospitalCheckout from './checkout';
 import { useLocation } from 'react-router-dom';
+import { useSelector } from 'react-redux';
 
-const HospitalPaymentIntegration = ({ hospitalId, patientData }) => {
+// API service functions using fetch
+const paystackService = {
+  generatePaymentLink: async (invoiceData) => {
+    try {
+      const response = await fetch('/recep-patient/invoices/payment-link', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(invoiceData),
+      });
+      
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      console.error('Error generating payment link:', error);
+      return {
+        success: false,
+        error: error.message || 'Failed to generate payment link'
+      };
+    }
+  },
+  
+  verifyPayment: async (reference) => {
+    try {
+      const response = await fetch(`/recep-patient/payments/verify/${reference}`);
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      console.error('Error verifying payment:', error);
+      return {
+        success: false,
+        error: error.message || 'Failed to verify payment'
+      };
+    }
+  }
+};
+
+const HospitalPaymentIntegration = ({ patientData }) => {
+  const {currentUser} = useSelector((state) => state.user);
+  const hospitalId = currentUser.hospital_ID;
   const [paymentStep, setPaymentStep] = useState('checkout');
   const [checkoutData, setCheckoutData] = useState(null);
   const [paymentLink, setPaymentLink] = useState('');
@@ -27,14 +67,14 @@ const HospitalPaymentIntegration = ({ hospitalId, patientData }) => {
       // Format the invoice data as expected by your backend
       const invoiceData = {
         amount: checkoutData.total,
-        email: checkoutData.patient.email || prompt("Please enter patient's email address:"),
+        email: "danielanifowoshe04@gmail.com" || prompt("Please enter patient's email address:"),
         invoiceNumber: `INV-${checkoutData.patient.id}-${Date.now()}`,
         patientName: checkoutData.patient.name,
         hospitalId: hospitalId
       };
   
-      // Call the service function imported from paystackService.js
-      const result = await generatePaymentLink(invoiceData);
+      // Call the service function
+      const result = await paystackService.generatePaymentLink(invoiceData);
       
       // Handle the successful response
       if (result.success) {
@@ -54,7 +94,7 @@ const HospitalPaymentIntegration = ({ hospitalId, patientData }) => {
   // Function to handle email sending
   const handleSendEmail = () => {
     if (!checkoutData.patient.email) {
-      const email = prompt("Please enter patient's email address:");
+      const email = "danielanifowoshe04@gmail.com";
       if (email) {
         setCheckoutData(prevData => ({
           ...prevData,
@@ -71,7 +111,7 @@ const HospitalPaymentIntegration = ({ hospitalId, patientData }) => {
     const subject = `Hospital Invoice #${checkoutData.invoiceNumber || ''}`;
     const body = `Dear ${checkoutData.patient.name},\n\nPlease use the following link to complete your payment: ${paymentLink}\n\nThank you for choosing our hospital.\n\nBest regards,\nHospital Administration`;
     
-    window.open(`mailto:${checkoutData.patient.email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`);
+    window.open(`mailto:danielanifowoshe04@gmail.com?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`);
   };
 
   // Function to copy payment link to clipboard
@@ -94,7 +134,7 @@ const HospitalPaymentIntegration = ({ hospitalId, patientData }) => {
   const verifyPaymentStatus = async (reference) => {
     try {
       setIsLoading(true);
-      const result = await verifyPayment(reference);
+      const result = await paystackService.verifyPayment(reference);
       if (result.success) {
         handlePaymentSuccess();
       } else {

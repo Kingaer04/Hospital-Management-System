@@ -3,6 +3,7 @@
     "axios": "^1.8.3",
     "cookie-parser": "^1.4.6",
     "cors": "^2.8.5",
+    "crypto": "^1.0.1",
     "dotenv": "^16.4.5",
     "excel-date-to-js": "^1.1.5",
     "express": "^4.21.0",

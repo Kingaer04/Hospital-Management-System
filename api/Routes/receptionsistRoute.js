@@ -2,6 +2,7 @@ import express from 'express'
 import { patientController } from '../Controllers/patientController.js';
 import { receptionistController } from '../Controllers/receptionistController.js';
 import { doctorController } from '../Controllers/doctorController.js';
+import { createHospitalSubaccount, generatePaymentLink, verifyPayment, handleWebhook } from '../services/paystackService.js'
 
 const router = express.Router();
 
@@ -15,5 +16,17 @@ router.get('/doctorData/:hospital_ID', receptionistController.getDoctors)
 router.get('/appointmentData/:hospital_ID', receptionistController.getAllAppointment)
 router.get('/fetchFingerprintData/:id', patientController.fetchFingerprintData)
 router.get('/fetchHospital/:doctorId', doctorController.getHospital);
+
+// Paystack route
+
+// Hospital routes (protected)
+router.post('/hospitals/subaccount', createHospitalSubaccount);
+
+// Invoice routes (protected)
+router.post('/invoices/payment-link', generatePaymentLink);
+router.get('/payments/verify/:reference', verifyPayment);
+
+// Webhook route (public)
+router.post('/webhook', handleWebhook);
 
 export default router;
