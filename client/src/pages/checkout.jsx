@@ -154,7 +154,7 @@ useEffect(() => {
       },
       total,
       items: [],
-      invoiceNumber: `INV-${patient.id}-${Date.now()}`,
+      invoiceNumber: `INV-${patient._id}-${Date.now()}`,
       createdAt: new Date().toISOString()
     };
 
@@ -454,19 +454,9 @@ useEffect(() => {
                     <input
                       type="text"
                       id="patientName"
-                      value={patient.name}
-                      onChange={(e) => setPatient({...patient, name: e.target.value})}
+                      value={`${patient.first_name} ${patient.last_name}`} // Corrected line
                       className="form-input w-full rounded-md border-gray-300 focus:border-emerald-500 focus:ring focus:ring-emerald-200"
-                    />
-                  </div>
-                  <div>
-                    <label htmlFor="patientId" className="block text-gray-700 mb-1">Patient ID</label>
-                    <input
-                      type="text"
-                      id="patientId"
-                      value={patient.id}
-                      onChange={(e) => setPatient({...patient, id: e.target.value})}
-                      className="form-input w-full rounded-md border-gray-300 focus:border-emerald-500 focus:ring focus:ring-emerald-200"
+                      disabled
                     />
                   </div>
                   <div>
@@ -478,6 +468,7 @@ useEffect(() => {
                       onChange={(e) => setPatient({...patient, email: e.target.value})}
                       className="form-input w-full rounded-md border-gray-300 focus:border-emerald-500 focus:ring focus:ring-emerald-200"
                       placeholder="patient@example.com"
+                      disabled
                     />
                   </div>
                 </div>

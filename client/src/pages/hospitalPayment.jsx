@@ -4,7 +4,6 @@ import { useLocation } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import emailService from '../../services/emailService';
 
-// API service functions using fetch
 const paystackService = {
   generatePaymentLink: async (invoiceData) => {
     try {
@@ -78,6 +77,10 @@ const HospitalPaymentIntegration = ({ patientData }) => {
   const [cashAmount, setCashAmount] = useState('');
   const location = useLocation();
 
+  useEffect(() => {
+    console.log(checkoutData);
+  }, [checkoutData, currentUser])
+
   // Function to handle the checkout submission
   const handleCheckoutComplete = async (billingData) => {
     setCheckoutData(billingData);
@@ -93,10 +96,10 @@ const HospitalPaymentIntegration = ({ patientData }) => {
       // Format the invoice data as expected by your backend
       const invoiceData = {
         amount: checkoutData.total,
-        email: checkoutData.patient.email || "defaultemail@example.com",
-        invoiceNumber: `INV-${checkoutData.patient.id}-${Date.now()}`,
-        patientName: checkoutData.patient.name,
-        patientId: checkoutData.patient.id,
+        email: checkoutData.patient.email,
+        invoiceNumber: `INV-${checkoutData.patient._id}-${Date.now()}`,
+        patientName: `${checkoutData.patient.frst_name} ${checkoutData.patient.last_name}`,
+        patientId: checkoutData.patient._id,
         hospitalId: hospitalId
       };
   
@@ -134,13 +137,13 @@ const HospitalPaymentIntegration = ({ patientData }) => {
       // Format the payment data
       const paymentData = {
         amount: parseFloat(cashAmount),
-        invoiceNumber: `INV-${checkoutData.patient.id}-${Date.now()}`,
-        patientId: checkoutData.patient.id,
-        patientName: checkoutData.patient.name,
-        patientEmail: checkoutData.patient.email || "defaultemail@example.com",
+        invoiceNumber: `INV-${checkoutData.patient._id}-${Date.now()}`,
+        patientId: checkoutData.patient._id,
+        patientName: `${checkoutData.patient.frst_name} ${checkoutData.patient.last_name}`,
+        patientEmail: checkoutData.patient.email,
         hospitalId: hospitalId,
         paymentMethod: 'cash',
-        recordedBy: currentUser.id
+        recordedBy: currentUser._id
       };
       
       // Call the service function
@@ -170,9 +173,9 @@ const HospitalPaymentIntegration = ({ patientData }) => {
     setError(null);
     
     try {
-      const patientEmail = checkoutData.patient.email || "defaultemail@example.com";
-      const subject = `Hospital Invoice #${checkoutData.invoiceNumber || ''}`;
-      const body = `Dear ${checkoutData.patient.name},\n\nPlease use the following link to complete your payment: ${paymentLink}\n\nThank you for choosing our hospital.\n\nBest regards,\nHospital Administration`;
+      const patientEmail = 'danielanifowoshe04@gmail.com';
+      const subject = `Hospital Invoice #${checkoutData.invoiceNumber}`;
+      const body = `Dear ${checkoutData.patient.first_name} ${checkoutData.patient.last_name},\n\nPlease use the following link to complete your payment: ${paymentLink}\n\nThank you for choosing our hospital.\n\nBest regards,\nHospital Administration`;
       
       const result = await emailService.sendEmail(patientEmail, subject, body);
       
@@ -260,8 +263,7 @@ const HospitalPaymentIntegration = ({ patientData }) => {
               <div className="mb-6">
                 <h2 className="text-lg font-semibold mb-4">Billing Summary</h2>
                 <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
-                  <p><span className="font-medium">Patient:</span> {checkoutData.patient.name}</p>
-                  <p><span className="font-medium">Patient ID:</span> {checkoutData.patient.id}</p>
+                  <p><span className="font-medium">Patient:</span> {checkoutData.patient.first_name} {checkoutData.patient.last_name}</p>
                   <p><span className="font-medium">Total Amount:</span> ${checkoutData.total.toFixed(2)}</p>
                 </div>
               </div>

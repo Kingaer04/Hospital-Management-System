@@ -108,6 +108,8 @@ export const generatePaymentLink = async (req, res) => {
       patientId
     } = req.body;
     
+    console.log(req.body);
+
     // Get hospital details from your database
     const hospital = await HospitalAdminAccount.findById(hospitalId);
     
