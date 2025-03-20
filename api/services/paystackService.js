@@ -3,6 +3,7 @@ import axios from 'axios';
 import crypto from 'crypto';
 import HospitalAdminAccount from "../Models/AdminModel.js";
 import Invoice from '../Models/InvoiceModel.js';
+import Payment from '../Models/PaymentModel.js'; // Assuming you have a Payment model
 
 // Configuration
 const PAYSTACK_SECRET_KEY = process.env.PAYSTACK_SECRET_KEY || "sk_test_3be4760349383fc0ef0a83c3def9c5e03c2d3d96";
@@ -42,6 +43,59 @@ export const createHospitalSubaccount = async (req, res) => {
   }
 };
 
+// Create invoice - common function for both payment methods
+const createInvoice = async (invoiceData) => {
+  const {
+    invoiceNumber,
+    patientName,
+    patientId,
+    patientEmail,
+    amount,
+    hospitalId,
+    reference,
+    paymentStatus,
+    paymentMethod,
+    paymentLink,
+    hospital
+  } = invoiceData;
+  
+  // Convert amount to kobo (smallest currency unit)
+  const amountInKobo = Math.round(amount * 100);
+  
+  // Create invoice object
+  const invoiceToCreate = {
+    invoiceNumber,
+    patientName,
+    patientId,
+    patientEmail,
+    amount: amountInKobo,
+    hospitalId,
+    reference,
+    paymentStatus,
+    paymentMethod,
+    metadata: {
+      invoice_number: invoiceNumber,
+      patient_name: patientName,
+      hospital_name: hospital.name,
+      hospital_id: hospitalId
+    }
+  };
+  
+  // Add payment link if present (for online payments)
+  if (paymentLink) {
+    invoiceToCreate.paymentLink = paymentLink;
+  }
+  
+  // Add paid info if already paid (for cash payments)
+  if (paymentStatus === 'paid') {
+    invoiceToCreate.paidAmount = amount;
+    invoiceToCreate.paidAt = new Date();
+  }
+  
+  // Save invoice to database
+  return await Invoice.create(invoiceToCreate);
+};
+
 // Generate payment link
 export const generatePaymentLink = async (req, res) => {
   try {
@@ -50,10 +104,9 @@ export const generatePaymentLink = async (req, res) => {
       email,
       invoiceNumber,
       patientName,
-      hospitalId
+      hospitalId,
+      patientId
     } = req.body;
-
-    console.log(hospitalId)
     
     // Get hospital details from your database
     const hospital = await HospitalAdminAccount.findById(hospitalId);
@@ -81,39 +134,112 @@ export const generatePaymentLink = async (req, res) => {
         invoice_number: invoiceNumber,
         patient_name: patientName,
         hospital_name: hospital.name,
-        hospital_id: hospitalId
+        hospital_id: hospitalId,
+        patient_id: patientId
       },
       callback_url: `${process.env.FRONTEND_URL}/payment/callback`
     });
     
-    // Save invoice details to database
-    await Invoice.create({
+    // Create invoice in database
+    const invoice = await createInvoice({
       invoiceNumber,
       patientName,
+      patientId,
       patientEmail: email,
-      amount: amountInKobo,
+      amount,
       hospitalId,
       reference,
       paymentStatus: 'pending',
+      paymentMethod: 'online',
       paymentLink: response.data.data.authorization_url,
-      metadata: {
-        invoice_number: invoiceNumber,
-        patient_name: patientName,
-        hospital_name: hospital.name,
-        hospital_id: hospitalId
-      }
+      hospital
     });
     
     res.status(200).json({
       success: true,
       paymentLink: response.data.data.authorization_url,
-      reference
+      reference,
+      invoiceId: invoice._id
     });
   } catch (error) {
     console.error('Error generating payment link:', error.response?.data || error.message);
     res.status(500).json({
       success: false,
       error: error.response?.data?.message || error.message
+    });
+  }
+};
+
+// Record cash payment
+export const recordCashPayment = async (req, res) => {
+  try {
+    const {
+      amount,
+      invoiceNumber,
+      patientId,
+      patientName,
+      hospitalId,
+      recordedBy,
+      patientEmail
+    } = req.body;
+
+    // Get hospital details from your database
+    const hospital = await HospitalAdminAccount.findById(hospitalId);
+    
+    if (!hospital) {
+      return res.status(404).json({
+        success: false,
+        error: 'Hospital not found'
+      });
+    }
+    
+    // Generate unique reference
+    const reference = `CASH-${invoiceNumber}-${Date.now()}`;
+    
+    // Create invoice in database using the common function
+    const invoice = await createInvoice({
+      invoiceNumber,
+      patientName,
+      patientId,
+      patientEmail,
+      amount,
+      hospitalId,
+      reference,
+      paymentStatus: 'paid',
+      paymentMethod: 'cash',
+      hospital
+    });
+    
+    // Record payment
+    const payment = await Payment.create({
+      invoiceId: invoice._id,
+      reference,
+      amount: Math.round(amount * 100), // Convert to kobo
+      paymentMethod: 'cash',
+      recordedBy,
+      hospitalId,
+      patientId,
+      patientName,
+      status: 'successful',
+      metadata: {
+        invoice_number: invoiceNumber,
+        hospital_name: hospital.name
+      }
+    });
+    
+    res.status(200).json({
+      success: true,
+      message: 'Cash payment recorded successfully',
+      data: {
+        invoice,
+        payment
+      }
+    });
+  } catch (error) {
+    console.error('Error recording cash payment:', error.message);
+    res.status(500).json({
+      success: false,
+      error: error.message
     });
   }
 };

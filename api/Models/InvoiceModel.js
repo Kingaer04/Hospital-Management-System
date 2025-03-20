@@ -1,27 +1,25 @@
+// backend/Models/InvoiceModel.js
 import mongoose from 'mongoose';
 
-const invoiceSchema = new mongoose.Schema({
+const InvoiceSchema = new mongoose.Schema({
   invoiceNumber: {
     type: String,
     required: true,
-    unique: true,
-    trim: true
+    unique: true
   },
   patientName: {
     type: String,
-    required: true,
-    trim: true
+    required: true
+  },
+  patientId: {
+    type: String
   },
   patientEmail: {
-    type: String,
-    required: true,
-    trim: true,
-    lowercase: true
+    type: String
   },
   amount: {
     type: Number,
-    required: true,
-    min: 0
+    required: true
   },
   hospitalId: {
     type: mongoose.Schema.Types.ObjectId,
@@ -31,32 +29,46 @@ const invoiceSchema = new mongoose.Schema({
   reference: {
     type: String,
     required: true,
-    unique: true,
-    trim: true
+    unique: true
   },
   paymentStatus: {
     type: String,
-    enum: ['pending', 'paid', 'failed', 'canceled'],
+    enum: ['pending', 'paid', 'failed', 'cancelled'],
     default: 'pending'
   },
-  paymentLink: {
+  paymentMethod: {
     type: String,
-    trim: true
+    enum: ['online', 'cash', 'transfer', 'other'],
+    default: 'online'
+  },
+  paymentLink: {
+    type: String
   },
   paidAmount: {
-    type: Number,
-    min: 0
+    type: Number
   },
   paidAt: {
     type: Date
   },
   metadata: {
-    type: mongoose.Schema.Types.Mixed
+    type: Object
+  },
+  createdAt: {
+    type: Date,
+    default: Date.now
+  },
+  updatedAt: {
+    type: Date,
+    default: Date.now
   }
-}, {
-  timestamps: true
 });
 
-const Invoice = mongoose.model('Invoice', invoiceSchema);
+// Update the updatedAt field before saving
+InvoiceSchema.pre('save', function(next) {
+  this.updatedAt = Date.now();
+  next();
+});
+
+const Invoice = mongoose.model('Invoice', InvoiceSchema);
 
 export default Invoice;

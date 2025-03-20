@@ -2,7 +2,7 @@ import express from 'express'
 import { patientController } from '../Controllers/patientController.js';
 import { receptionistController } from '../Controllers/receptionistController.js';
 import { doctorController } from '../Controllers/doctorController.js';
-import { createHospitalSubaccount, generatePaymentLink, verifyPayment, handleWebhook } from '../services/paystackService.js'
+import { createHospitalSubaccount, generatePaymentLink, verifyPayment, handleWebhook, recordCashPayment } from '../services/paystackService.js'
 import { sendEmailToPatient } from '../Controllers/emailController.js';
 
 const router = express.Router();
@@ -22,6 +22,7 @@ router.get('/fetchHospital/:doctorId', doctorController.getHospital);
 router.post('/hospitals/subaccount', createHospitalSubaccount);
 router.post('/invoices/payment-link', generatePaymentLink);
 router.get('/payments/verify/:reference', verifyPayment);
+router.post('/payments/record-cash', recordCashPayment);
 router.post('/webhook', handleWebhook);
 
 // Email routes

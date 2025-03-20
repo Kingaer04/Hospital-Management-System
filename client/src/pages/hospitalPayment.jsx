@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import HospitalCheckout from './checkout';
 import { useLocation } from 'react-router-dom';
 import { useSelector } from 'react-redux';
-import emailService from '../../services/emailService'
+import emailService from '../../services/emailService';
 
 // API service functions using fetch
 const paystackService = {
@@ -39,6 +39,27 @@ const paystackService = {
         error: error.message || 'Failed to verify payment'
       };
     }
+  },
+  
+  recordCashPayment: async (paymentData) => {
+    try {
+      const response = await fetch('/recep-patient/payments/record-cash', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(paymentData),
+      });
+      
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      console.error('Error recording cash payment:', error);
+      return {
+        success: false,
+        error: error.message || 'Failed to record cash payment'
+      };
+    }
   }
 };
 
@@ -53,6 +74,8 @@ const HospitalPaymentIntegration = ({ patientData }) => {
   const [error, setError] = useState(null);
   const [emailSending, setEmailSending] = useState(false);
   const [emailSent, setEmailSent] = useState(false);
+  const [paymentMethod, setPaymentMethod] = useState('online');
+  const [cashAmount, setCashAmount] = useState('');
   const location = useLocation();
 
   // Function to handle the checkout submission
@@ -70,9 +93,10 @@ const HospitalPaymentIntegration = ({ patientData }) => {
       // Format the invoice data as expected by your backend
       const invoiceData = {
         amount: checkoutData.total,
-        email: checkoutData.patient.email || "danielanifowoshe04@gmail.com",
+        email: checkoutData.patient.email || "defaultemail@example.com",
         invoiceNumber: `INV-${checkoutData.patient.id}-${Date.now()}`,
         patientName: checkoutData.patient.name,
+        patientId: checkoutData.patient.id,
         hospitalId: hospitalId
       };
   
@@ -94,13 +118,59 @@ const HospitalPaymentIntegration = ({ patientData }) => {
     }
   };
 
+  // Function to handle cash payment
+  const handleCashPayment = async () => {
+    setIsLoading(true);
+    setError(null);
+    
+    try {
+      // Validate cash amount
+      if (!cashAmount || parseFloat(cashAmount) < checkoutData.total) {
+        setError('The amount entered must be equal to or greater than the total amount');
+        setIsLoading(false);
+        return;
+      }
+      
+      // Format the payment data
+      const paymentData = {
+        amount: parseFloat(cashAmount),
+        invoiceNumber: `INV-${checkoutData.patient.id}-${Date.now()}`,
+        patientId: checkoutData.patient.id,
+        patientName: checkoutData.patient.name,
+        patientEmail: checkoutData.patient.email || "defaultemail@example.com",
+        hospitalId: hospitalId,
+        paymentMethod: 'cash',
+        recordedBy: currentUser.id
+      };
+      
+      // Call the service function
+      const result = await paystackService.recordCashPayment(paymentData);
+      
+      if (result.success) {
+        handlePaymentSuccess();
+      } else {
+        setError(result.error || 'Failed to record cash payment');
+      }
+    } catch (err) {
+      setError(err.message || 'Failed to record cash payment');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Function to handle payment method selection
+  const handlePaymentMethodChange = (method) => {
+    setPaymentMethod(method);
+    setError(null);
+  };
+
   // Function to handle email sending using the new email service
   const handleSendEmail = async () => {
     setEmailSending(true);
     setError(null);
     
     try {
-      const patientEmail = checkoutData.patient.email || "danielanifowoshe04@gmail.com";
+      const patientEmail = checkoutData.patient.email || "defaultemail@example.com";
       const subject = `Hospital Invoice #${checkoutData.invoiceNumber || ''}`;
       const body = `Dear ${checkoutData.patient.name},\n\nPlease use the following link to complete your payment: ${paymentLink}\n\nThank you for choosing our hospital.\n\nBest regards,\nHospital Administration`;
       
@@ -196,6 +266,73 @@ const HospitalPaymentIntegration = ({ patientData }) => {
                 </div>
               </div>
               
+              <div className="mb-6">
+                <h2 className="text-lg font-semibold mb-4">Payment Method</h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div 
+                    className={`p-4 border rounded-lg cursor-pointer ${paymentMethod === 'online' ? 'border-2 border-emerald-600' : 'border-gray-200'}`}
+                    onClick={() => handlePaymentMethodChange('online')}
+                  >
+                    <div className="flex items-center">
+                      <div className="mr-3">
+                        <input 
+                          type="radio" 
+                          name="paymentMethod" 
+                          checked={paymentMethod === 'online'} 
+                          onChange={() => handlePaymentMethodChange('online')}
+                          className="form-radio h-4 w-4 text-emerald-600 focus:ring-emerald-500"
+                        />
+                      </div>
+                      <div>
+                        <h3 className="font-medium">Online Payment</h3>
+                        <p className="text-sm text-gray-500">Generate a payment link for the patient to pay online</p>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div 
+                    className={`p-4 border rounded-lg cursor-pointer ${paymentMethod === 'cash' ? 'border-2 border-emerald-600' : 'border-gray-200'}`}
+                    onClick={() => handlePaymentMethodChange('cash')}
+                  >
+                    <div className="flex items-center">
+                      <div className="mr-3">
+                        <input 
+                          type="radio" 
+                          name="paymentMethod" 
+                          checked={paymentMethod === 'cash'} 
+                          onChange={() => handlePaymentMethodChange('cash')}
+                          className="form-radio h-4 w-4 text-emerald-600 focus:ring-emerald-500"
+                        />
+                      </div>
+                      <div>
+                        <h3 className="font-medium">Cash Payment</h3>
+                        <p className="text-sm text-gray-500">Process a cash payment received from the patient</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              {paymentMethod === 'cash' && (
+                <div className="mb-6">
+                  <h2 className="text-lg font-semibold mb-4">Cash Payment Details</h2>
+                  <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                    <div className="mb-4">
+                      <label className="block text-gray-700 mb-2">Amount Received</label>
+                      <input 
+                        type="number" 
+                        value={cashAmount} 
+                        onChange={(e) => setCashAmount(e.target.value)}
+                        className="form-input w-full rounded-md border-gray-300 focus:border-emerald-500 focus:ring focus:ring-emerald-200"
+                        placeholder="Enter amount received"
+                        min={checkoutData.total}
+                        step="0.01"
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+              
               {error && (
                 <div className="bg-red-50 border border-red-200 text-red-700 p-4 rounded-lg mb-6">
                   {error}
@@ -209,13 +346,23 @@ const HospitalPaymentIntegration = ({ patientData }) => {
                 >
                   Back to Checkout
                 </button>
-                <button 
-                  onClick={handleGeneratePaymentLink}
-                  disabled={isLoading}
-                  className="flex-1 px-4 py-2 bg-emerald-600 text-white rounded-md hover:bg-emerald-700 disabled:opacity-50"
-                >
-                  {isLoading ? 'Generating Payment Link...' : 'Proceed to Payment'}
-                </button>
+                {paymentMethod === 'online' ? (
+                  <button 
+                    onClick={handleGeneratePaymentLink}
+                    disabled={isLoading}
+                    className="flex-1 px-4 py-2 bg-emerald-600 text-white rounded-md hover:bg-emerald-700 disabled:opacity-50"
+                  >
+                    {isLoading ? 'Generating Payment Link...' : 'Generate Payment Link'}
+                  </button>
+                ) : (
+                  <button 
+                    onClick={handleCashPayment}
+                    disabled={isLoading || !cashAmount}
+                    className="flex-1 px-4 py-2 bg-emerald-600 text-white rounded-md hover:bg-emerald-700 disabled:opacity-50"
+                  >
+                    {isLoading ? 'Processing...' : 'Process Cash Payment'}
+                  </button>
+                )}
               </div>
             </div>
           </div>
@@ -282,7 +429,7 @@ const HospitalPaymentIntegration = ({ patientData }) => {
                 <button 
                   onClick={checkPaymentStatus}
                   disabled={isLoading}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
+                  className="px-4 py-2 bg-emerald-600 text-white rounded-md hover:bg-emerald-700 disabled:opacity-50"
                 >
                   {isLoading ? 'Checking...' : 'Check Payment Status'}
                 </button>
@@ -309,7 +456,7 @@ const HospitalPaymentIntegration = ({ patientData }) => {
             
             <div className="p-6 text-center">
               <div className="mb-6">
-                <svg className="mx-auto h-16 w-16 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <svg className="mx-auto h-16 w-16 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
                 </svg>
                 <h2 className="text-xl font-semibold mt-4">Payment Completed Successfully</h2>
