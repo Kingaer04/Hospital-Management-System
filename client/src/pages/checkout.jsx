@@ -1,13 +1,47 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
+import { useParams } from 'react-router-dom';
+import { useSelector } from 'react-redux';
 
 const HospitalCheckout = ({ onComplete, initialPatientData }) => {
+  const {currentUser} = useSelector((state) => state.user);
+  const { patientId } = useParams();
   const [patient, setPatient] = useState({
-    name: initialPatientData?.name || 'John Doe',
-    id: initialPatientData?.id || 'PT-12345',
-    email: initialPatientData?.email || '',
-    isRegistered: initialPatientData?.isRegistered !== undefined ? initialPatientData.isRegistered : true,
+    first_name: '',
+    last_name: '',
+    email: '',
+    isRegistered: false,
     admissionDate: initialPatientData?.admissionDate || '2025-03-10',
-  });
+});
+
+useEffect(() => {
+    const fetchPatientData = async () => {
+      try {
+        const res = await fetch(`/recep-patient/patientData/${patientId}`, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+        });
+
+        const data = await res.json();
+        console.log(data, 'data');
+        if (data.error) {
+            console.log(data.error, 'error');
+        } 
+        else {
+          const isRegistered = data.patient.hospital_ID === currentUser.hospital_ID;
+          setPatient({
+              ...data.patient,
+              isRegistered: isRegistered,
+          });
+        }
+      } catch (error) {
+          console.log('error', error);
+      }
+    };
+
+    fetchPatientData();
+}, [patientId]);
 
   const [billing, setBilling] = useState({
     fixedPrice: false,
@@ -210,9 +244,7 @@ const HospitalCheckout = ({ onComplete, initialPatientData }) => {
               <p className="text-emerald-100">Billing and Payment</p>
             </div>
             <div className="text-right">
-              <p className="font-bold">{patient.name}</p>
-              <p className="text-emerald-100">ID: {patient.id}</p>
-              <p className="text-emerald-100">Admission: {patient.admissionDate}</p>
+              <p className="font-bold">{patient.first_name} {patient.last_name}</p>
             </div>
           </div>
         </div>

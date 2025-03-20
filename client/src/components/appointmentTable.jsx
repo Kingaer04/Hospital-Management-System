@@ -50,6 +50,12 @@ const AppointmentTable = () => {
     fetchData();
   }, [hospital_ID]);
 
+  useEffect(() => {
+    if (selectedAppointment) {
+      console.log(selectedAppointment); // Log selectedAppointment whenever it changes
+    }
+  }, [selectedAppointment]);
+
   const handleDelete = async (id) => {
     if (window.confirm("Are you sure you want to delete this appointment?")) {
       try {
@@ -211,7 +217,7 @@ const AppointmentTable = () => {
                   </div>
                 )}
 
-                <Link to={`/checkout/${selectedAppointment._id}`} className="mt-2 inline-block bg-green-500 text-white py-1 px-3 rounded">
+                <Link to={`/payment-integration/${selectedAppointment.patientId._id}`} className="mt-2 inline-block bg-green-500 text-white py-1 px-3 rounded">
                   Check Out
                 </Link>
               </div>
