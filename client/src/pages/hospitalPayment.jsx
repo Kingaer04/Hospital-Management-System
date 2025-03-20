@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import HospitalCheckout from './checkout';
 import { useLocation } from 'react-router-dom';
 import { useSelector } from 'react-redux';
+import emailService from '../../services/emailService'
 
 // API service functions using fetch
 const paystackService = {
@@ -50,6 +51,8 @@ const HospitalPaymentIntegration = ({ patientData }) => {
   const [paymentReference, setPaymentReference] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [emailSending, setEmailSending] = useState(false);
+  const [emailSent, setEmailSent] = useState(false);
   const location = useLocation();
 
   // Function to handle the checkout submission
@@ -67,7 +70,7 @@ const HospitalPaymentIntegration = ({ patientData }) => {
       // Format the invoice data as expected by your backend
       const invoiceData = {
         amount: checkoutData.total,
-        email: "danielanifowoshe04@gmail.com" || prompt("Please enter patient's email address:"),
+        email: checkoutData.patient.email || "danielanifowoshe04@gmail.com",
         invoiceNumber: `INV-${checkoutData.patient.id}-${Date.now()}`,
         patientName: checkoutData.patient.name,
         hospitalId: hospitalId
@@ -91,27 +94,29 @@ const HospitalPaymentIntegration = ({ patientData }) => {
     }
   };
 
-  // Function to handle email sending
-  const handleSendEmail = () => {
-    if (!checkoutData.patient.email) {
-      const email = "danielanifowoshe04@gmail.com";
-      if (email) {
-        setCheckoutData(prevData => ({
-          ...prevData,
-          patient: {
-            ...prevData.patient,
-            email
-          }
-        }));
-      } else {
-        return; // User cancelled email input
-      }
-    }
-
-    const subject = `Hospital Invoice #${checkoutData.invoiceNumber || ''}`;
-    const body = `Dear ${checkoutData.patient.name},\n\nPlease use the following link to complete your payment: ${paymentLink}\n\nThank you for choosing our hospital.\n\nBest regards,\nHospital Administration`;
+  // Function to handle email sending using the new email service
+  const handleSendEmail = async () => {
+    setEmailSending(true);
+    setError(null);
     
-    window.open(`mailto:danielanifowoshe04@gmail.com?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`);
+    try {
+      const patientEmail = checkoutData.patient.email || "danielanifowoshe04@gmail.com";
+      const subject = `Hospital Invoice #${checkoutData.invoiceNumber || ''}`;
+      const body = `Dear ${checkoutData.patient.name},\n\nPlease use the following link to complete your payment: ${paymentLink}\n\nThank you for choosing our hospital.\n\nBest regards,\nHospital Administration`;
+      
+      const result = await emailService.sendEmail(patientEmail, subject, body);
+      
+      if (result.success) {
+        setEmailSent(true);
+        setTimeout(() => setEmailSent(false), 3000); // Reset after 3 seconds
+      } else {
+        setError(`Failed to send email: ${result.error}`);
+      }
+    } catch (err) {
+      setError(`Error sending email: ${err.message}`);
+    } finally {
+      setEmailSending(false);
+    }
   };
 
   // Function to copy payment link to clipboard
@@ -254,18 +259,32 @@ const HospitalPaymentIntegration = ({ patientData }) => {
                 </div>
               </div>
               
+              {error && (
+                <div className="bg-red-50 border border-red-200 text-red-700 p-4 rounded-lg mb-6">
+                  {error}
+                </div>
+              )}
+              
+              {emailSent && (
+                <div className="bg-green-50 border border-green-200 text-green-700 p-4 rounded-lg mb-6">
+                  Email sent successfully!
+                </div>
+              )}
+              
               <div className="flex flex-col space-y-4 sm:flex-row sm:space-y-0 sm:space-x-4">
                 <button 
                   onClick={handleSendEmail}
-                  className="px-4 py-2 bg-emerald-600 text-white rounded-md hover:bg-emerald-700"
+                  disabled={emailSending}
+                  className="px-4 py-2 bg-emerald-600 text-white rounded-md hover:bg-emerald-700 disabled:opacity-50"
                 >
-                  Send Email to Patient
+                  {emailSending ? 'Sending...' : 'Send Email to Patient'}
                 </button>
                 <button 
                   onClick={checkPaymentStatus}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                  disabled={isLoading}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
                 >
-                  Check Payment Status
+                  {isLoading ? 'Checking...' : 'Check Payment Status'}
                 </button>
                 <button 
                   onClick={goBackToCheckout}
