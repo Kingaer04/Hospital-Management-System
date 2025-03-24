@@ -191,38 +191,41 @@ const AppointmentTable = () => {
       {/* Modal for Appointment Details */}
       <Modal open={!!selectedAppointment} onClose={handleCloseModal}>
         <Box sx={{ padding: 2, width: 400, margin: 'auto', marginTop: '20%', bgcolor: 'white', borderRadius: 2 }}>
-          {selectedAppointment && (
-            <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
-              <div className="bg-white rounded-lg shadow-lg p-6 w-11/12 sm:w-1/2 relative">
-                <button onClick={handleCloseModal} className="absolute top-2 right-2">
-                  <CloseIcon sx={{ color: '#00A272' }} />
-                </button>
-                <img src={selectedAppointment.patientId.avatar} alt={`${selectedAppointment.patientId.first_name} ${selectedAppointment.patientId.last_name}`} className="w-24 h-24 rounded-full my-4 mx-auto border-2 border-[#00A272] object-cover" />
-                <p className='text-gray-700'>Name: <span className='font-semibold'>{selectedAppointment.patientId.first_name} {selectedAppointment.patientId.last_name}</span></p>
-                <p className='text-gray-700'>Email: <span className="font-semibold">{selectedAppointment.patientId.email}</span></p>
-                <p className='text-gray-700'>Phone: <span className="font-semibold">{selectedAppointment.patientId.phone}</span></p>
-                <p className='text-gray-700'>Reason: <span className="font-semibold">{selectedAppointment.reason}</span></p>
-                <p className='text-gray-700'>Status: <span className="font-semibold">{selectedAppointment.status === "true" ? 'Registered' : 'Not Registered'}</span></p>
-                <p className='text-gray-700'>Consultant Name: <span className="font-semibold">{selectedAppointment.doctorId.name}</span></p>
-                <p className='text-gray-700'>Consultant Email: <span className="font-semibold">{selectedAppointment.doctorId.email}</span></p>
-                
-                {currentAdmin?.role === 'Admin' && (
-                  <div className="flex justify-end mt-4">
-                    <button 
-                      onClick={() => handleDelete(selectedAppointment._id)} 
-                      className="bg-red-600 text-white py-1 px-3 rounded hover:bg-red-700"
-                    >
-                      Delete Appointment
-                    </button>
-                  </div>
-                )}
+            {selectedAppointment && (
+                <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
+                    <div className="bg-white rounded-lg shadow-lg p-6 w-11/12 sm:w-1/2 relative">
+                        <button onClick={handleCloseModal} className="absolute top-2 right-2">
+                            <CloseIcon sx={{ color: '#00A272' }} />
+                        </button>
+                        <img src={selectedAppointment.patientId.avatar} alt={`${selectedAppointment.patientId.first_name} ${selectedAppointment.patientId.last_name}`} className="w-24 h-24 rounded-full my-4 mx-auto border-2 border-[#00A272] object-cover" />
+                        <p className='text-gray-700'>Name: <span className='font-semibold'>{selectedAppointment.patientId.first_name} {selectedAppointment.patientId.last_name}</span></p>
+                        <p className='text-gray-700'>Email: <span className="font-semibold">{selectedAppointment.patientId.email}</span></p>
+                        <p className='text-gray-700'>Phone: <span className="font-semibold">{selectedAppointment.patientId.phone}</span></p>
+                        <p className='text-gray-700'>Reason: <span className="font-semibold">{selectedAppointment.reason}</span></p>
+                        <p className='text-gray-700'>Status: <span className="font-semibold">{selectedAppointment.status === "true" ? 'Registered' : 'Not Registered'}</span></p>
+                        <p className='text-gray-700'>Consultant Name: <span className="font-semibold">{selectedAppointment.doctorId.name}</span></p>
+                        <p className='text-gray-700'>Consultant Email: <span className="font-semibold">{selectedAppointment.doctorId.email}</span></p>
+                        
+                        {currentAdmin?.role === 'Admin' && (
+                            <div className="flex justify-end mt-4">
+                                <button 
+                                    onClick={() => handleDelete(selectedAppointment._id)} 
+                                    className="bg-red-600 text-white py-1 px-3 rounded hover:bg-red-700"
+                                >
+                                    Delete Appointment
+                                </button>
+                            </div>
+                        )}
 
-                <Link to={`/payment-integration/${selectedAppointment.patientId._id}/${selectedAppointment._id}`} className="mt-2 inline-block bg-green-500 text-white py-1 px-3 rounded">
-                  Check Out
-                </Link>
-              </div>
-            </div>
-          )}
+                        {/* Conditional rendering of the Check Out button */}
+                        {selectedAppointment.checkOut == null || isNaN(new Date(selectedAppointment.checkOut).getTime()) ? (
+                            <Link to={`/payment-integration/${selectedAppointment.patientId._id}/${selectedAppointment._id}`} className="mt-2 inline-block bg-green-500 text-white py-1 px-3 rounded">
+                                Check Out
+                            </Link>
+                        ) : null}
+                    </div>
+                </div>
+            )}
         </Box>
       </Modal>
     </div>
