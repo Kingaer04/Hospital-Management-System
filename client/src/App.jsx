@@ -59,7 +59,7 @@ export default function App() {
                     <Route path='/notification-body/:id' element={<NotificationDetail/>}/>
                     <Route path='/medical-record/:patientId' element={<MedicalRecord/>}/>
                     <Route path='/checkout' element={<HospitalCheckout/>}/>
-                    <Route path='/payment-integration/:patientId' element={<HospitalPaymentIntegration/>}/>
+                    <Route path='/payment-integration/:patientId/:appointmentId' element={<HospitalPaymentIntegration/>}/>
                     {/* <Route path='/webcam' element={<CustomWebcam/>}/> */}
                 </Route>
               </Route>

@@ -3,6 +3,7 @@ import HospitalCheckout from './checkout';
 import { useLocation } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import emailService from '../../services/emailService';
+import { useParams } from 'react-router-dom';
 
 const paystackService = {
   generatePaymentLink: async (invoiceData) => {
@@ -63,6 +64,7 @@ const paystackService = {
 };
 
 const HospitalPaymentIntegration = ({ patientData }) => {
+  const {appointmentId} = useParams();
   const {currentUser} = useSelector((state) => state.user);
   const hospitalId = currentUser.hospital_ID;
   const [paymentStep, setPaymentStep] = useState('checkout');
@@ -77,9 +79,36 @@ const HospitalPaymentIntegration = ({ patientData }) => {
   const [cashAmount, setCashAmount] = useState('');
   const location = useLocation();
 
-  useEffect(() => {
-    console.log(checkoutData);
-  }, [checkoutData, currentUser])
+  const appointmentService = {
+    updateAppointmentStatus: async (appointmentId, checkOut) => {
+      try {
+        const response = await fetch(`/recep-patient/appointments/update-checkOut/${appointmentId}`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ checkOut }),
+          credentials: 'include',
+        });
+        
+        if (!response.ok) {
+          throw new Error('Network response was not ok');
+        }
+        
+        const data = await response.json();
+        return {
+          success: true,
+          appointment: data
+        };
+      } catch (error) {
+        console.error('Error updating appointment status:', error);
+        return {
+          success: false,
+          error: error.message || 'Failed to update appointment status'
+        };
+      }
+    }
+  };
 
   // Function to handle the checkout submission
   const handleCheckoutComplete = async (billingData) => {
@@ -205,7 +234,25 @@ const HospitalPaymentIntegration = ({ patientData }) => {
   };
 
   // Function to handle successful payment
-  const handlePaymentSuccess = () => {
+  // Updated handlePaymentSuccess function
+  const handlePaymentSuccess = async () => {
+    try {
+      if (appointmentId) {
+        const updateResult = await appointmentService.updateAppointmentStatus(appointmentId, 'paid');
+        
+        if (updateResult.success) {
+          console.log('Successfully updated appointment status to paid');
+        } else {
+          console.warn('Failed to update appointment status:', updateResult.error);
+        }
+      } else {
+        console.warn('No appointment ID provided in checkout data');
+      }
+    } catch (err) {
+      console.error('Error updating appointment status:', err);
+    }
+    
+    // Continue with successful payment flow
     setPaymentStep('success');
   };
 

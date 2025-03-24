@@ -217,7 +217,7 @@ const AppointmentTable = () => {
                   </div>
                 )}
 
-                <Link to={`/payment-integration/${selectedAppointment.patientId._id}`} className="mt-2 inline-block bg-green-500 text-white py-1 px-3 rounded">
+                <Link to={`/payment-integration/${selectedAppointment.patientId._id}/${selectedAppointment._id}`} className="mt-2 inline-block bg-green-500 text-white py-1 px-3 rounded">
                   Check Out
                 </Link>
               </div>

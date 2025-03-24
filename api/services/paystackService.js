@@ -18,6 +18,7 @@ const paystackAPI = axios.create({
   }
 });
 
+
 // Create hospital subaccount
 export const createHospitalSubaccount = async (req, res) => {
   try {

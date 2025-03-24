@@ -28,5 +28,8 @@ router.post('/webhook', handleWebhook);
 // Email routes
 router.post('/send-email', sendEmailToPatient);
 
+// Checkout route
+router.post('/appointments/update-checkOut/:appointmentId', receptionistController.updateAppointmentCheckOut);
+
 
 export default router;
