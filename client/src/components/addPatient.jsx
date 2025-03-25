@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef} from 'react';
 import { useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
+import AddVitalsForm from './vitalForm';
 
 const TabButton = ({ label, isActive, onClick, disabled }) => (
     <button
@@ -15,6 +16,8 @@ const TabButton = ({ label, isActive, onClick, disabled }) => (
 const AddPatient = ({ isOpen, onClose }) => {
     const navigate = useNavigate()
     const defaultImage = '/Icons/default-image.jpeg'
+    const [showVitals, setShowVitals] = useState(false);
+    const [newPatientData, setNewPatientData] = useState(null)
     const {currentUser} = useSelector((state) => state.user)
     const [loading, setLoading] = useState(false)
     const [activeTab, setActiveTab] = useState('personal');
@@ -30,12 +33,14 @@ const AddPatient = ({ isOpen, onClose }) => {
     const [isPersonalFilled, setIsPersonalFilled] = useState(false);
     const [isNextOfKinFilled, setIsNextOfKinFilled] = useState(false);
     const [profileImage, setProfileImage] = useState(defaultImage);
+    const [lastPatientId, setLastPatientId] = useState(null)
     const [patientData, setPatientData] = useState({
         hospital_ID: currentUser.hospital_ID,
         first_name: '',
         last_name: '',
         email: '',
         gender: '',
+        patientID: '',
         patientDoB: '',
         phone: '',
         address: '',
@@ -51,6 +56,54 @@ const AddPatient = ({ isOpen, onClose }) => {
             gender: '',
         },
     });
+
+    useEffect(() => {
+        console.log(patientData)
+    }, [patientData]);
+
+     // Fetch the last patient ID when component mounts
+     useEffect(() => {
+        const fetchLastPatientId = async () => {
+            try {
+                const res = await fetch(`/recep-patient/lastPatientId/${currentUser.hospital_ID}`);
+                const data = await res.json();
+                setLastPatientId(data.lastPatientId);
+
+                // Generate the next patient ID
+                const nextPatientId = generateNextPatientId(data.lastPatientId);
+                setPatientData(prev => ({
+                    ...prev,
+                    patientID: nextPatientId
+                }));
+            } catch (error) {
+                console.error("Failed to fetch last patient ID:", error);
+                // Fallback to manual generation if fetch fails
+                const fallbackId = `NHM/${String(Date.now()).slice(-7)}`;
+                setPatientData(prev => ({
+                    ...prev,
+                    patientID: fallbackId
+                }));
+            }
+        };
+
+        fetchLastPatientId();
+    }, [currentUser.hospital_ID]);
+
+    // Helper function to generate next patient ID
+    const generateNextPatientId = (lastId) => {
+        if (!lastId) return 'NHM/0000001'; // Start from first patient
+
+        // Extract the numeric part
+        const match = lastId.match(/NHM\/(\d+)/);
+        if (!match) return 'NHM/0000001';
+
+        // Increment the numeric part
+        const currentNumber = parseInt(match[1], 10);
+        const nextNumber = currentNumber + 1;
+        
+        // Pad with zeros to maintain 7 digits
+        return `NHM/${String(nextNumber).padStart(7, '0')}`;
+    };
 
     // Cloudinary configuration
     const cloudinaryUrl = import.meta.env.VITE_CLOUDINARY_URL
@@ -231,8 +284,8 @@ const AddPatient = ({ isOpen, onClose }) => {
     }
 
     const checkNextOfKinFilled = () => {
-        const { name, phone, relationshipStatus } = patientData.nextOfKin;
-        return name && phone && relationshipStatus;
+        const { name, phone, relationshipStatus, email } = patientData.nextOfKin;
+        return name && phone && email && relationshipStatus;
     };
 
     const handleNext = () => {
@@ -316,9 +369,16 @@ const AddPatient = ({ isOpen, onClose }) => {
             })
 
             const data = await res.json()
-            navigate("/patient")
-            if (data.error) {
+            if(data.error) {
                 console.log("Error: ", data.error)
+            }
+            else {
+                setNewPatientData({
+                    ...data.patient,
+                    CreatedBy: currentUser._id
+                })
+
+                setShowVitals(true);
             }
         } catch(error) {
             console.log("Failed to update profile: " + error.message, 'error')
@@ -385,7 +445,7 @@ const AddPatient = ({ isOpen, onClose }) => {
                                     </div>
                                     <div>
                                         <label className="block text-sm font-medium text-gray-700">Patient ID</label>
-                                        <input type="text" className="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:border-[#00A272] focus:outline-none focus:ring-2 focus:ring-[#00A272] p-2" name='patientID' value={patientData.patientID} onChange={handleChange}/>
+                                        <input type="text" className="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:border-[#00A272] focus:outline-none focus:ring-2 focus:ring-[#00A272] p-2" name='patientID' value={patientData.patientID} onChange={handleChange} disabled/>
                                     </div>
                                     <div>
                                         <label className="block text-sm font-medium text-gray-700">Phone Number</label>
@@ -421,6 +481,10 @@ const AddPatient = ({ isOpen, onClose }) => {
                                     <div>
                                         <label className="block text-sm font-medium text-gray-700">Full Name</label>
                                         <input type="text" className="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:border-[#00A272] focus:outline-none focus:ring-2 focus:ring-[#00A272] p-2" name='nextOfKin.name' value={patientData.nextOfKin.name} onChange={handleChange}/>
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700">Email</label>
+                                        <input type="email" className="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:border-[#00A272] focus:outline-none focus:ring-2 focus:ring-[#00A272] p-2" name='nextOfKin.email' value={patientData.nextOfKin.email} onChange={handleChange}/>
                                     </div>
                                     <div>
                                         <label className="block text-sm font-medium text-gray-700">Gender</label>
@@ -543,6 +607,15 @@ const AddPatient = ({ isOpen, onClose }) => {
                         </div>
                     </div>
                 </div>
+            )}
+            {showVitals && patientData && (
+                <AddVitalsForm 
+                    patientData={patientData} 
+                    onClose={() => {
+                        setShowVitals(false);
+                        navigate("/patient");
+                    }} 
+                />
             )}
         </div>
     );

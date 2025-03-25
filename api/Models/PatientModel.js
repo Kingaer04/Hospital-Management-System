@@ -19,6 +19,10 @@ const PatientSchema = new mongoose.Schema({
         enum: ['Male', 'Female'],
         required: true
     },
+    patientID: {
+        type: String,
+        required: true
+    },
     address: {
         type: String,
         required: true
@@ -77,7 +81,7 @@ const PatientSchema = new mongoose.Schema({
         },
         relationshipStatus: {
             type: String,
-            enum: ['Father', 'Mother', 'Spouse', 'Sister',  'Brother', 'Sibling', 'Child', 'Friend', 'Other Relatives'],
+            enum: ['Father', 'Mother', 'Spouse', 'Sister',  'Brother', 'Sibling', 'Child', 'Friend', 'Others'],
             required: true
         }
     }

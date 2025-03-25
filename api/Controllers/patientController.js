@@ -8,6 +8,7 @@ function getPatientParams(body) {
         first_name: body.first_name,
         last_name: body.last_name,
         gender: body.gender,
+        patientID: body.patientID,
         address: body.address,
         phone: body.phone,
         email: body.email,
@@ -46,6 +47,20 @@ export const patientController = {
             // console.log(req.user)
             next();
         });
+    },
+
+    getLastPatientId: async (req, res) =>  {
+        try {
+            const lastPatient = await PatientData.findOne(
+                { hospital_ID: req.params.hosppitalId },
+                { patientID: 1 }
+            ).sort({ createdAt: -1 });
+
+            const lastPatientId = lastPatient ? lastPatient.patientID : null;
+            res.json({ lastPatientId })
+        } catch (error) {
+            res.status(500).json({ error: 'Failed to retrieve last patient ID' })
+        }
     },
 
     addPatient: async (req, res, next) => {

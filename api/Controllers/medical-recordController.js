@@ -7,27 +7,28 @@ import { console } from 'inspector';
 export const MedicalRecordController = {
   // Create a new medical record
   createMedicalRecord: async (req, res, next) => {
+    console.log(req.body)
     try {
       const {
         patientId,
         personalInfo,
         allergies,
-        doctorId,
+        receptionistId,
         vitalSigns  // Add this line to extract vital signs
       } = req.body;
   
-      const doctor = await StaffData.findById(req.user.id);
-      if (!doctor) {
+      const receptionist = await StaffData.findById(req.user.id);
+      if (!receptionist) {
         return res.status(403).json('Doctor not found');
       }
 
       // Get the doctor whose hospital will be used as primaryHospital
-      const referenceDoctor = await StaffData.findById(doctorId);
-      if (!referenceDoctor) {
+      const referenceReceptionist = await StaffData.findById(receptionistId);
+      if (!referenceReceptionist) {
         return res.status(400).json('Reference doctor not found');
       }
 
-      const primaryHospitalId = referenceDoctor.hospital_ID;
+      const primaryHospitalId = referenceReceptionist.hospital_ID;
   
       // Create medical record with the consultation
       const medicalRecord = new MedicalRecord({
