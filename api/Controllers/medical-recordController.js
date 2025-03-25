@@ -13,21 +13,25 @@ export const MedicalRecordController = {
         allergies,
         patientId,
         receptionistId,
-        vitalSigns  // Add this line to extract vital signs
+        vitalSigns  
       } = req.body;
-  
+
       const receptionist = await StaffData.findById(req.user.id);
       if (!receptionist) {
         return res.status(403).json('Doctor not found');
       }
 
-      // Get the doctor whose hospital will be used as primaryHospital
       const referenceReceptionist = await StaffData.findById(receptionistId);
       if (!referenceReceptionist) {
-        return res.status(400).json('Reference doctor not found');
+        return res.status(400).json('Reference receptionist not found');
       }
 
       const primaryHospitalId = referenceReceptionist.hospital_ID;
+
+      const existingRecord = await MedicalRecord.findOne({ patientId });
+      if (existingRecord) {
+        return res.status(409).json('Medical record already exists for this patient');
+      }
   
       // Create medical record with the consultation
       const medicalRecord = new MedicalRecord({
@@ -35,6 +39,15 @@ export const MedicalRecordController = {
         personalInfo,
         allergies,
         primaryHospitalId,
+        consultations: [{  
+          doctorId: null,
+          hospitalId: primaryHospitalId,
+          diagnosis: null,
+          doctorNotes: null,
+          treatment: null,
+          vitalSigns,
+          createdBy: req.user.id
+        }],
         createdBy: req.user.id,
         updatedBy: req.user.id
       });

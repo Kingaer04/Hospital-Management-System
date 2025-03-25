@@ -37,13 +37,11 @@ const ConsultationSchema = new mongoose.Schema({
   },
   doctorId: { 
     type: mongoose.Schema.Types.ObjectId, 
-    ref: 'StaffData', 
-    required: true 
+    ref: 'StaffData',
   },
   hospitalId: { 
     type: mongoose.Schema.Types.ObjectId, 
     ref: 'HospitalAdminAccount', 
-    required: true 
   },
   diagnosis: { 
     type: String, 

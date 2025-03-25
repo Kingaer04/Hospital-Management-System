@@ -77,7 +77,7 @@ const AddVitalsForm = ({ patientData, onClose }) => {
                 console.error("Error creating medical record:", data.error);
                 alert("Failed to create medical record: " + data.error);
             } else {
-                navigate("/patient");
+                navigate("/");
             }
         } catch (error) {
             console.error("Failed to create medical record:", error);
@@ -232,13 +232,6 @@ const AddVitalsForm = ({ patientData, onClose }) => {
                         </div>
                         
                         <div className="flex justify-end mt-6">
-                            <button 
-                                type="button" 
-                                onClick={onClose} 
-                                className="bg-gray-300 text-gray-700 py-2 px-6 rounded-md mr-4 hover:bg-gray-400 transition"
-                            >
-                                Skip
-                            </button>
                             <button 
                                 type="submit" 
                                 className="bg-[#00A272] text-white py-2 px-6 rounded-md hover:bg-[#008f64] transition-colors flex items-center"

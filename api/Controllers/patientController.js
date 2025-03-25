@@ -51,8 +51,9 @@ export const patientController = {
 
     getLastPatientId: async (req, res) =>  {
         try {
+            console.log(req.params.hospitalId)
             const lastPatient = await PatientData.findOne(
-                { hospital_ID: req.params.hosppitalId },
+                { hospital_ID: req.params.hospitalId },
                 { patientID: 1 }
             ).sort({ createdAt: -1 });
 

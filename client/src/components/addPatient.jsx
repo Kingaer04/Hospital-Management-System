@@ -67,6 +67,7 @@ const AddPatient = ({ isOpen, onClose }) => {
             try {
                 const res = await fetch(`/recep-patient/lastPatientId/${currentUser.hospital_ID}`);
                 const data = await res.json();
+                console.log("Current Patient ID:", data);
                 setLastPatientId(data.lastPatientId);
 
                 // Generate the next patient ID
@@ -91,7 +92,7 @@ const AddPatient = ({ isOpen, onClose }) => {
 
     // Helper function to generate next patient ID
     const generateNextPatientId = (lastId) => {
-        if (!lastId) return 'NHM/0000001'; // Start from first patient
+        if (!lastId) return 'NHM/0000001'; 
 
         // Extract the numeric part
         const match = lastId.match(/NHM\/(\d+)/);
