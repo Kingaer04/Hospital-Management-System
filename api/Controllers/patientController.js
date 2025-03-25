@@ -84,11 +84,12 @@ export const patientController = {
                 hospital: hospital_ID,
                 ...getPatientParams(req.body),
             });
-    
+            
             await newPatient.save();
 
             return res.status(201).json({
-                message: 'Patient added successfully'
+                message: 'Patient added successfully',
+                patientData: newPatient._doc
             })
         } catch (error) {
             res.status(400).json({ error: 'Failed to add patient', message: error.message });

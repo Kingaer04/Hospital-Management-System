@@ -369,14 +369,15 @@ const AddPatient = ({ isOpen, onClose }) => {
             })
 
             const data = await res.json()
+            console.log(data)
             if(data.error) {
                 console.log("Error: ", data.error)
             }
             else {
-                setNewPatientData({
-                    ...data.patient,
-                    CreatedBy: currentUser._id
-                })
+                setPatientData(prev => ({
+                    ...prev,
+                    _id: data.patientData._id
+                }));
 
                 setShowVitals(true);
             }

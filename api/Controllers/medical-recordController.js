@@ -7,12 +7,11 @@ import { console } from 'inspector';
 export const MedicalRecordController = {
   // Create a new medical record
   createMedicalRecord: async (req, res, next) => {
-    console.log(req.body)
     try {
       const {
-        patientId,
         personalInfo,
         allergies,
+        patientId,
         receptionistId,
         vitalSigns  // Add this line to extract vital signs
       } = req.body;

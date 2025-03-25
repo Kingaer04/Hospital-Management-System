@@ -77,7 +77,6 @@ const AddVitalsForm = ({ patientData, onClose }) => {
                 console.error("Error creating medical record:", data.error);
                 alert("Failed to create medical record: " + data.error);
             } else {
-                alert("Patient and medical record created successfully!");
                 navigate("/patient");
             }
         } catch (error) {
@@ -92,7 +91,7 @@ const AddVitalsForm = ({ patientData, onClose }) => {
 
     useEffect(() => {
         console.log(patientData)
-    }, [patientData])
+    }, [])
     
     return (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
