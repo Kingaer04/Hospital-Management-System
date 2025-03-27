@@ -4,7 +4,7 @@ import BookingAppointment from '../Models/BoookingAppointmentModel.js';
 export const receptionistController = {
     getDoctors: async (req, res) => {
         try {
-            const doctors = await StaffData.find({ hospital_ID: req.params.hospital_ID, role: 'Doctor' });
+            const doctors = await StaffData.find({ hospital_ID: req.params.hospital_ID, role: 'Doctor', availability_Status: true });
             res.status(200).json(doctors);
         } catch (error) {
             res.status(500).json({ message: error.message });

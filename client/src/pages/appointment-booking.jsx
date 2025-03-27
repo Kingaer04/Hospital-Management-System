@@ -6,7 +6,7 @@ import SendingNotification from '../components/sendingNotification';
 
 const AppointmentFormPage = () => {
     const navigate = useNavigate();
-    const { id } = useParams(); // Extract patient ID from URL
+    const { id } = useParams(); 
     const { currentUser } = useSelector((state) => state.user);
     const [doctors, setDoctors] = useState([]);
     const [selectedDoctor, setSelectedDoctor] = useState('');
