@@ -417,6 +417,7 @@ const MedicalRecord = () => {
     
       // Transform data to match backend structure
       const consultationData = {
+        doctorId: currentUser._id,
         diagnosis: currentConsultation.diagnosis,
         doctorNotes: currentConsultation.doctorNotes,
         treatment: currentConsultation.treatment,
