@@ -4,6 +4,7 @@ import { receptionistController } from '../Controllers/receptionistController.js
 import { doctorController } from '../Controllers/doctorController.js';
 import { createHospitalSubaccount, generatePaymentLink, verifyPayment, handleWebhook, recordCashPayment } from '../services/paystackService.js'
 import { sendEmailToPatient } from '../Controllers/emailController.js';
+import { staffController } from '../Controllers/staffController.js';
 
 const router = express.Router();
 
@@ -18,6 +19,7 @@ router.get('/appointmentData/:hospital_ID', receptionistController.getAllAppoint
 router.get('/fetchFingerprintData/:id', patientController.fetchFingerprintData);
 router.get('/lastPatientId/:hospitalId', patientController.getLastPatientId);
 router.get('/fetchHospital/:doctorId', doctorController.getHospital);
+router.post('/update-availability', staffController.updateAvailabilityStatus);
 
 // Paystack route
 router.post('/hospitals/subaccount', createHospitalSubaccount);

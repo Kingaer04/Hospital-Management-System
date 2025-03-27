@@ -1,8 +1,10 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Clock, User, Mail, Phone } from "lucide-react";
+import { useSelector } from "react-redux"
 
 export default function NotificationDetail() {
+    const { currentUser } = useSelector((state) => state.user)
     const navigate = useNavigate();
     const {id} = useParams();
     const [notification, setNotification] = useState(null);
@@ -27,8 +29,31 @@ export default function NotificationDetail() {
         fetchNotificationData();
     }, []);
 
-    const handlePatientClick = () => {
-        navigate(`/medical-record/${notification.patient.id}`);
+    const handlePatientClick = async () => {
+        try {
+            // Update availability status to false
+            const response = await fetch('/recep-patient/update-availability', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ 
+                    doctorId: currentUser._id,
+                    availability_Status: false 
+                })
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to update availability status');
+            }
+
+            // Navigate to patient's medical record
+            navigate(`/medical-record/${notification.patient.id}`);
+        } catch (error) {
+            console.error("Error updating availability status:", error);
+            // Optionally show an error notification to the user
+            alert('Could not update status. Please try again.');
+        }
     };
 
     if (!notification) {

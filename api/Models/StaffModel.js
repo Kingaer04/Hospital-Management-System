@@ -75,6 +75,10 @@ const staffSchema = new mongoose.Schema({
             enum: ['Father', 'Mother', 'Sibling', 'Friend', 'Other Relatives'],
             required: true
         }
+    },
+    availability_Status: {
+        type: Boolean,
+        default: true
     }
 }, {
     timestamps: true

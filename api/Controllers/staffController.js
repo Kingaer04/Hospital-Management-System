@@ -58,6 +58,52 @@ export const staffController = {
             res.status(200).json(updatedUser);
             } catch (error) {
             next(error);
-            }
-        },
+        }
+    },
+
+    updateAvailabilityStatus: async (req, res) => {
+      const { doctorId, availability_Status } = req.body;
+      
+      console.log('Received body:', req.body);
+      console.log('doctorId:', doctorId);
+      console.log('availability_status:', availability_Status);
+      console.log('Type of availability_status:', typeof availability_Status);
+  
+      if (!doctorId) {
+          res.status(400);
+          throw new Error('Doctor ID is required');
+      }
+  
+      try {
+          const staff = await StaffData.findByIdAndUpdate(
+              doctorId,
+              { 
+                  availability_Status: availability_Status !== undefined 
+                      ? availability_Status 
+                      : true 
+              },
+              { new: true }
+          );
+  
+          console.log('Updated staff:', staff);
+  
+          if (!staff) {
+              res.status(404);
+              throw new Error('Doctor not found');
+          }
+  
+          res.status(200).json({
+              message: 'Availability status updated successfully',
+              staff: {
+                  _id: staff._id,
+                  name: staff.name,
+                  availability_Status: staff.availability_Status
+              }
+          });
+      } catch (error) {
+          console.error('Error in update:', error);
+          res.status(500);
+          throw new Error('Failed to update availability status: ' + error.message);
+      }
+  }
 }

@@ -138,7 +138,7 @@ export const patientController = {
         try {
             const { query } = req.body;
             const results = await PatientData.find({
-                $or: [{ phone: query }, { email: query }]
+                $or: [{ phone: query }, { email: query }, { patientID: query }]
             })
             .populate('hospital_ID', 'hospital_Name hospital_Address') // Populate with hospital name and address
             .lean(); // Use .lean() for plain objects

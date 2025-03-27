@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { Container, Box, Typography, Paper, TextField, Button, Dialog, DialogTitle, DialogContent, DialogActions, Grid, Snackbar, Alert, CircularProgress, FormControl, InputLabel, Select, MenuItem } from '@mui/material';
-import { User as UserIcon, HeartPulse as HeartPulseIcon, FileText as FileTextIcon, Edit as EditIcon, Save as SaveIcon, PlusCircle as PlusCircleIcon } from 'lucide-react';
+import { User as UserIcon, HeartPulse as HeartPulseIcon, FileText as FileTextIcon, Edit as EditIcon, Save as SaveIcon, PlusCircle as PlusCircleIcon, LogOut as LogOutIcon } from 'lucide-react';
 import { useSelector } from 'react-redux';
 
 const MedicalRecord = () => {
   const {currentUser} = useSelector(state => state.user);
   const { patientId } = useParams(); 
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [notification, setNotification] = useState({ open: false, message: '', severity: 'success' });
@@ -66,6 +67,32 @@ const MedicalRecord = () => {
   });
   const [editingConsultationIndex, setEditingConsultationIndex] = useState(null);
   const [submitting, setSubmitting] = useState(false);
+
+  const handleGoToHomepage = async () => {
+    try {
+      // Update availability status to true
+      const response = await fetch('/recep-patient/update-availability', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ doctorId: currentUser._id })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to update availability status');
+      }
+
+      // Navigate to homepage
+      navigate('/');
+    } catch (err) {
+      setNotification({
+        open: true,
+        message: 'Error updating status: ' + (err.message || 'Unknown error'),
+        severity: 'error'
+      });
+    }
+  };
 
   // Fetch patient data
   useEffect(() => {
@@ -362,6 +389,7 @@ const MedicalRecord = () => {
         message: 'Consultation added successfully',
         severity: 'success'
       });
+      console.log(newConsultation)
     } catch (err) {
       setNotification({
         open: true,
@@ -1064,6 +1092,19 @@ const MedicalRecord = () => {
     </Box>
   )}
 </Box>
+  <Box sx={{ mt: 3, display: 'flex', justifyContent: 'center' }}>
+    <Button 
+      variant="contained" 
+      startIcon={<LogOutIcon />}
+      onClick={handleGoToHomepage}
+      sx={{ 
+        backgroundColor: '#00A272', 
+        '&:hover': { backgroundColor: '#008060' } 
+      }}
+    >
+      Go to Homepage
+    </Button>
+  </Box>
 
 {/* Render modals */}
 {renderNewRecordModal()}
