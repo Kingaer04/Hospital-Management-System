@@ -6,12 +6,14 @@ import { DateCalendar } from '@mui/x-date-pickers/DateCalendar';
 export default function DateCalendarValue() {
   return (
     <LocalizationProvider dateAdapter={AdapterDayjs}>
-      <div style={{ width: '20%', height: '20%' }}>
+      <div className="w-full h-full">
         <DateCalendar
           sx={{
+            width: '100%',
             '.MuiTypography-root': { color: '#A9A9A9' }, // Change text color for other text
             '.MuiPickersCalendarHeader-label': {
               color: '#00A272', // Change header text color
+              fontWeight: 'bold'
             },
             '.MuiSvgIcon-root': {
               color: '#00A272', // Change icon color
@@ -41,6 +43,7 @@ export default function DateCalendarValue() {
               alignItems: 'center',
               fontWeight: 'bold',
               color: '#A9A9A9', // Change weekday label color
+              textTransform: 'uppercase'
             }
           }}
           dayOfWeekFormatter={(day) => day.format('ddd').toUpperCase()}
