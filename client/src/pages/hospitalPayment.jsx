@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import HospitalCheckout from './checkout';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import emailService from '../../services/emailService';
 import { useParams } from 'react-router-dom';
@@ -66,6 +66,7 @@ const paystackService = {
 const HospitalPaymentIntegration = ({ patientData }) => {
   const {appointmentId} = useParams();
   const {currentUser} = useSelector((state) => state.user);
+  const navigate = useNavigate();
   const hospitalId = currentUser.hospital_ID;
   const [paymentStep, setPaymentStep] = useState('checkout');
   const [checkoutData, setCheckoutData] = useState(null);
@@ -233,7 +234,6 @@ const HospitalPaymentIntegration = ({ patientData }) => {
     setPaymentStep('checkout');
   };
 
-  // Function to handle successful payment
   // Updated handlePaymentSuccess function
   const handlePaymentSuccess = async () => {
     try {
@@ -513,7 +513,7 @@ const HospitalPaymentIntegration = ({ patientData }) => {
               </div>
               
               <button 
-                onClick={goBackToCheckout}
+                onClick={() => navigate('/')}
                 className="px-4 py-2 bg-emerald-600 text-white rounded-md hover:bg-emerald-700"
               >
                 Return to Dashboard
