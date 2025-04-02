@@ -1,11 +1,10 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import CalendarMonthOutlinedIcon from '@mui/icons-material/CalendarMonthOutlined';
 import Diversity1OutlinedIcon from '@mui/icons-material/Diversity1Outlined';
 import BadgeOutlinedIcon from '@mui/icons-material/BadgeOutlined';
 import LocalHospitalOutlinedIcon from '@mui/icons-material/LocalHospitalOutlined';
 import DateCalendarValue from '../components/calendarComponent.jsx';
 import { useSelector } from 'react-redux';
-import PatientTable from '../components/patientTable.jsx';
 import PatientModal from '../components/patientModal';
 
 export default function ReceptionistHome() {
@@ -18,7 +17,6 @@ export default function ReceptionistHome() {
   const [availableDoctors, setAvailableDoctors] = useState([]);
   const [recentCheckouts, setRecentCheckouts] = useState([]);
   const [windowWidth, setWindowWidth] = useState(window.innerWidth);
-  const [contentHeight, setContentHeight] = useState(0);
 
   // Handle window resize
   useEffect(() => {
@@ -60,14 +58,62 @@ export default function ReceptionistHome() {
         });
         const data = await response.json();
         console.log('recentCheckouts', data);
-        setRecentCheckouts(data);
+        
+        // Process the data to ensure we're working with simple strings, not objects
+        const processedData = data.map(checkout => {
+          // Ensure patient data is processed correctly
+          let patientName = 'Unknown';
+          let patientId = 'ID not available';
+          
+          // Handle patient data which could be an object or string
+          if (checkout.patientId) {
+            if (typeof checkout.patientId === 'object') {
+              // If patient is an object, extract name from first_name and last_name
+              patientName = `${checkout.patientId.first_name || ''} ${checkout.patientId.last_name || ''}`.trim() || 'Unknown';
+              patientId = checkout.patientId._id || 'ID not available';
+            } else {
+              // If patient is a string, use it as is
+              patientName = checkout.patient;
+            }
+          } else if (checkout.patientName) {
+            // If patientName already exists, use it
+            patientName = checkout.patientName;
+            patientId = checkout.patientId || 'ID not available';
+          }
+          
+          // Handle doctor data which could be an object or string
+          let doctorName = 'Not assigned';
+          if (checkout.doctorId) {
+            if (typeof checkout.doctorId === 'object') {
+              doctorName = checkout.doctorId.name || 'Not assigned';
+            } else {
+              doctorName = checkout.doctor;
+            }
+          } else if (checkout.doctorName) {
+            doctorName = checkout.doctorName;
+          }
+          
+          return {
+            ...checkout,
+            _id: checkout._id || `temp-id-${Math.random()}`,
+            patientName,
+            patientId,
+            doctorName,
+            checkoutDate: checkout.checkoutDate || new Date().toISOString()
+          };
+        });
+        
+        setRecentCheckouts(processedData);
       } catch (error) {
         console.error('Error fetching recent checkouts:', error);
       }
     };
-    fetchDoctors();
-    fetchRecentCheckouts();
-  }, [currentUser.hospital_ID]);
+    
+    if (currentUser && currentUser.hospital_ID) {
+      fetchDoctors();
+      fetchRecentCheckouts();
+    }
+  }, [currentUser]);
 
   const handleSearch = async (event) => {
     event.preventDefault();
@@ -102,11 +148,14 @@ export default function ReceptionistHome() {
     setSearchItem('');
   };
 
+  useEffect(() => {console.log(recentCheckouts.patientId)}, [recentCheckouts])
+
+
   return (
     <div className="p-4 md:p-5 w-full min-h-screen flex flex-col">
       <div className="mb-6">
         <h5 className='font-bold text-lg md:text-xl'>
-          Welcome, {currentUser.name.split(' ')[1]}!
+          Welcome, {currentUser?.name?.split(' ')?.[1] || 'User'}!
         </h5>
         <p className="text-gray-500 text-xs md:text-sm">
           Here's an insight of your activity
@@ -190,11 +239,12 @@ export default function ReceptionistHome() {
                   </thead>
                   <tbody className="divide-y divide-gray-200">
                     {recentCheckouts.map((checkout, index) => (
-                      <tr key={index} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                      <tr key={checkout._id || index} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
                         <td className="py-3 px-4 text-sm">
                           <div className="flex items-center">
                             <div className="h-8 w-8 rounded-full bg-green-100 flex items-center justify-center text-green-800 mr-3">
-                              {checkout.patientName?.substring(0, 2) || 'N/A'}
+                              {/* Safely access the first 2 characters of patient name */}
+                              {(checkout.patientName || '').substring(0, 2) || 'N/A'}
                             </div>
                             <div>
                               <p className="font-medium">{checkout.patientName || 'Unknown'}</p>
@@ -203,11 +253,13 @@ export default function ReceptionistHome() {
                           </div>
                         </td>
                         <td className="py-3 px-4 text-sm">
-                          {new Date(checkout.checkoutDate).toLocaleDateString('en-US', {
-                            year: 'numeric',
-                            month: 'short',
-                            day: 'numeric'
-                          })}
+                          {checkout.checkoutDate ? 
+                            new Date(checkout.checkoutDate).toLocaleDateString('en-US', {
+                              year: 'numeric',
+                              month: 'short',
+                              day: 'numeric'
+                            }) : 'N/A'
+                          }
                         </td>
                         <td className="py-3 px-4 text-sm">{checkout.doctorName || 'Not assigned'}</td>
                         <td className="py-3 px-4 text-sm">
@@ -258,13 +310,13 @@ export default function ReceptionistHome() {
                           />
                         ) : (
                           <div className="w-full h-full bg-green-500 flex items-center justify-center text-white">
-                            {doctor.name.split(' ').map(n => n[0]).join('')}
+                            {(doctor.name || '').split(' ').map(n => n[0] || '').join('') || 'DR'}
                           </div>
                         )}
                       </div>
                       <div>
-                        <p className="font-semibold text-sm">{doctor.name}</p>
-                        <p className="text-xs text-gray-500">{doctor.specialization}</p>
+                        <p className="font-semibold text-sm">{doctor.name || ''}</p>
+                        <p className="text-xs text-gray-500">{doctor.specialization || ''}</p>
                       </div>
                     </div>
                   ))}
