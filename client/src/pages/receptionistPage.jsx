@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import CalendarMonthOutlinedIcon from '@mui/icons-material/CalendarMonthOutlined';
 import Diversity1OutlinedIcon from '@mui/icons-material/Diversity1Outlined';
 import BadgeOutlinedIcon from '@mui/icons-material/BadgeOutlined';
@@ -18,6 +18,7 @@ export default function ReceptionistHome() {
   const [availableDoctors, setAvailableDoctors] = useState([]);
   const [recentCheckouts, setRecentCheckouts] = useState([]);
   const [windowWidth, setWindowWidth] = useState(window.innerWidth);
+  const [contentHeight, setContentHeight] = useState(0);
 
   // Handle window resize
   useEffect(() => {
@@ -29,39 +30,41 @@ export default function ReceptionistHome() {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  // Fetch available doctors
-  const fetchDoctors = async () => {
-    try {
-      const response = await fetch(`/recep-patient/doctorData/${currentUser.hospital_ID}`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-      const data = await response.json();
-      setAvailableDoctors(data);
-    } catch (error) {
-      console.error('Error fetching doctors:', error);
-    }
-  };
-
-  // Fetch recent checkouts
-  const fetchRecentCheckouts = async () => {
-    try {
-      const response = await fetch(`/recep-patient/recentCheckouts/${currentUser.hospital_ID}`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-      const data = await response.json();
-      setRecentCheckouts(data);
-    } catch (error) {
-      console.error('Error fetching recent checkouts:', error);
-    }
-  };
-
   useEffect(() => {
+    console.log('currentUser', currentUser);
+    // Fetch available doctors
+    const fetchDoctors = async () => {
+      try {
+        const response = await fetch(`/recep-patient/doctorData/${currentUser.hospital_ID}`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+        const data = await response.json();
+        console.log('availableDoctors', data);
+        setAvailableDoctors(data);
+      } catch (error) {
+        console.error('Error fetching doctors:', error);
+      }
+    };
+
+    // Fetch recent checkouts
+    const fetchRecentCheckouts = async () => {
+      try {
+        const response = await fetch(`/recep-patient/recentCheckouts/${currentUser.hospital_ID}`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+        const data = await response.json();
+        console.log('recentCheckouts', data);
+        setRecentCheckouts(data);
+      } catch (error) {
+        console.error('Error fetching recent checkouts:', error);
+      }
+    };
     fetchDoctors();
     fetchRecentCheckouts();
   }, [currentUser.hospital_ID]);
@@ -100,7 +103,7 @@ export default function ReceptionistHome() {
   };
 
   return (
-    <div className="p-4 md:p-5 w-full">
+    <div className="p-4 md:p-5 w-full min-h-screen flex flex-col">
       <div className="mb-6">
         <h5 className='font-bold text-lg md:text-xl'>
           Welcome, {currentUser.name.split(' ')[1]}!
@@ -110,8 +113,8 @@ export default function ReceptionistHome() {
         </p>
       </div>
       
-      <div className="flex flex-col md:flex-row w-full gap-5">
-        <div className={`w-full ${windowWidth > 972 ? 'md:w-[70%]' : 'md:w-full'}`}>
+      <div className="flex flex-col md:flex-row w-full gap-5 flex-grow">
+        <div className={`w-full ${windowWidth > 972 ? 'md:w-[70%]' : 'md:w-full'} flex flex-col`}>
           {/* Cards Section */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
             <div className='p-4 rounded-lg shadow-md bg-white'>
@@ -172,49 +175,108 @@ export default function ReceptionistHome() {
           </div>
 
           {/* Recent Checkouts Section */}
-          <div className='border border-gray-300 p-4 rounded-lg'>
+          <div className='border border-gray-300 p-4 rounded-lg flex-grow mb-6 h-96'>
             <p className='font-bold text-base mb-3'>Recent Patient Checkouts</p>
-            <PatientTable patients={recentCheckouts} />
+            {recentCheckouts.length > 0 ? (
+              <div className="overflow-y-auto h-[calc(100%-2rem)] pr-1">
+                <table className="min-w-full bg-white rounded-lg">
+                  <thead className="bg-gray-100 sticky top-0">
+                    <tr>
+                      <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b">Patient</th>
+                      <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b">Date</th>
+                      <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b">Doctor</th>
+                      <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-200">
+                    {recentCheckouts.map((checkout, index) => (
+                      <tr key={index} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                        <td className="py-3 px-4 text-sm">
+                          <div className="flex items-center">
+                            <div className="h-8 w-8 rounded-full bg-green-100 flex items-center justify-center text-green-800 mr-3">
+                              {checkout.patientName?.substring(0, 2) || 'N/A'}
+                            </div>
+                            <div>
+                              <p className="font-medium">{checkout.patientName || 'Unknown'}</p>
+                              <p className="text-xs text-gray-500">{checkout.patientId || 'ID not available'}</p>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="py-3 px-4 text-sm">
+                          {new Date(checkout.checkoutDate).toLocaleDateString('en-US', {
+                            year: 'numeric',
+                            month: 'short',
+                            day: 'numeric'
+                          })}
+                        </td>
+                        <td className="py-3 px-4 text-sm">{checkout.doctorName || 'Not assigned'}</td>
+                        <td className="py-3 px-4 text-sm">
+                          <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                            Completed
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <div className="flex items-center justify-center h-[calc(100%-2rem)] bg-gray-50 rounded-lg">
+                <div className="text-center">
+                  <p className="text-gray-500 font-medium">No recent checkouts found</p>
+                  <p className="text-gray-400 text-sm mt-1">When patients check out, they'll appear here</p>
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
         {/* Sidebar with Calendar and Doctors */}
         {windowWidth > 972 && (
-          <div className='w-full md:w-[30%] space-y-7'>
+          <div className='w-full md:w-[30%] space-y-6 flex flex-col'>
             <div className="border border-gray-300 rounded-lg p-4 flex justify-center items-center">
               <div className="w-full">
                 <DateCalendarValue />
               </div>
             </div>
 
-            <div className="border border-gray-300 rounded-lg p-4">
+            <div className="border border-gray-300 rounded-lg p-4 mb-6 h-60">
               <p className="font-bold text-base mb-4">Available Doctors</p>
-              <div className="space-y-3">
-                {availableDoctors.map((doctor) => (
-                  <div 
-                    key={doctor._id} 
-                    className="flex items-center space-x-3 bg-gray-100 p-2 rounded-lg"
-                  >
-                    <div className="w-10 h-10 rounded-full overflow-hidden">
-                      {doctor.image ? (
-                        <img 
-                          src={doctor.image} 
-                          alt={doctor.name} 
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        <div className="w-full h-full bg-green-500 flex items-center justify-center text-white">
-                          {doctor.name.split(' ').map(n => n[0]).join('')}
-                        </div>
-                      )}
+              {availableDoctors.length > 0 ? (
+                <div className="space-y-3 overflow-y-auto h-[calc(100%-2rem)] pr-1">
+                  {availableDoctors.map((doctor) => (
+                    <div 
+                      key={doctor._id} 
+                      className="flex items-center space-x-3 bg-gray-100 p-2 rounded-lg"
+                    >
+                      <div className="w-10 h-10 rounded-full overflow-hidden">
+                        {doctor.image ? (
+                          <img 
+                            src={doctor.image} 
+                            alt={doctor.name} 
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <div className="w-full h-full bg-green-500 flex items-center justify-center text-white">
+                            {doctor.name.split(' ').map(n => n[0]).join('')}
+                          </div>
+                        )}
+                      </div>
+                      <div>
+                        <p className="font-semibold text-sm">{doctor.name}</p>
+                        <p className="text-xs text-gray-500">{doctor.specialization}</p>
+                      </div>
                     </div>
-                    <div>
-                      <p className="font-semibold text-sm">{doctor.name}</p>
-                      <p className="text-xs text-gray-500">{doctor.specialization}</p>
-                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="flex items-center justify-center h-[calc(100%-2rem)] bg-gray-50 rounded-lg">
+                  <div className="text-center">
+                    <p className="text-gray-500 font-medium">No doctors available</p>
+                    <p className="text-gray-400 text-sm mt-1">Currently, there are no doctors available</p>
                   </div>
-                ))}
-              </div>
+                </div>
+              )}
             </div>
           </div>
         )}

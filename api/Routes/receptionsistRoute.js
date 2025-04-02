@@ -20,6 +20,7 @@ router.get('/fetchFingerprintData/:id', patientController.fetchFingerprintData);
 router.get('/lastPatientId/:hospitalId', patientController.getLastPatientId);
 router.get('/fetchHospital/:doctorId', doctorController.getHospital);
 router.post('/update-availability', staffController.updateAvailabilityStatus);
+router.get('/recentCheckouts/:hospital_ID', receptionistController.getRecentCheckouts);
 
 // Paystack route
 router.post('/hospitals/subaccount', createHospitalSubaccount);

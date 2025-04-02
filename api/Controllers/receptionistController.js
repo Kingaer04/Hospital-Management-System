@@ -63,5 +63,20 @@ export const receptionistController = {
             console.error('Error updating appointment checkOut:', error);
             res.status(500).json({ message: error.message });
         }
+    },
+
+    getRecentCheckouts: async (req, res) => {
+        try {
+            const { hospital_ID } = req.params;
+            const recentCheckout = await BookingAppointment.find({ hospital_ID, checkOut: { $exists: true , $ne: null} })
+                .populate('patientId', 'first_name last_name email phone avatar')
+                .populate('doctorId', 'name email phone')
+                .sort({ checkOut: -1 })
+                .limit(10);
+            res.status(200).json(recentCheckout); 
+        } catch (error) {
+            console.log('Error fetching recent checkouts:', error);
+            res.status(500).json({ message: error.message });
+        }
     }
 }

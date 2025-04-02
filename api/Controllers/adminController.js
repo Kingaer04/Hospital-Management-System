@@ -25,7 +25,7 @@ function getAdminParams(body) {
 
 // Function to verify hospital registration and licensing status
 const verifyHospitalStatus = (uid) => {
-    const workbook = xlsx.readFile('c:/Users/DanAnny/Documents/Final Year Project/Hospital Management System/api/nigeria-hospitals-and-clinics_hxl.xlsx');
+    const workbook = xlsx.readFile('c:/Users/DanAnny/Documents/Final Year Project/Hospital-Management-System/api/nigeria-hospitals-and-clinics_hxl.xlsx');
     const sheetName = workbook.SheetNames[0];
     const worksheet = workbook.Sheets[sheetName];
     const data = xlsx.utils.sheet_to_json(worksheet);
