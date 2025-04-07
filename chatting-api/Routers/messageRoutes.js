@@ -1,4 +1,3 @@
-// routes/messageRoutes.js
 import express from 'express';
 import { getConversation, getUserConversations, getHospitalMessages, createMessage, markMessagesAsRead } from '../Controllers/messageController.js';
 

@@ -1,0 +1,51 @@
+# Dependencies
+/node_modules
+/npm-debug.log
+/yarn-debug.log
+/yarn-error.log
+/.pnp
+.pnp.js
+
+# Environment variables
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# IDE specific files
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+
+# Build output
+/dist
+/build
+/out
+
+# Logs
+/logs
+*.log
+
+# Testing
+/coverage
+
+# Temp files
+*.tmp
+*.temp
+
+# Database
+*.sqlite
+*.sqlite3
+
+# Uploads directory
+/uploads
+
+# Cache
+.cache/
+.npm/
+
+# Optional: specific to your project
+config.json

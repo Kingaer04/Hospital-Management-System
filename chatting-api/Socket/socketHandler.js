@@ -30,8 +30,8 @@ export const initializeSocket = (io) => {
         
         // Join user to their hospital room
         const user = await HospitalAdminAccount.findById(userId);
-        if (user && user.hospitalId) {
-          socket.join(`hospital_${user.hospitalId}`);
+        if (user && user.hospital_ID) {
+          socket.join(`hospital_${user.hospital_ID}`);
         }
         
         // Send currently online users to newly connected client
@@ -55,7 +55,7 @@ export const initializeSocket = (io) => {
           connectedUsers.set(userId, userData);
           
           // Update in database
-          await User.findByIdAndUpdate(userId, { status });
+          await HospitalAdminAccount.findByIdAndUpdate(userId, { status });
           
           // Broadcast to all users
           io.emit('userStatus', { userId, status });
@@ -68,13 +68,13 @@ export const initializeSocket = (io) => {
     // Handle new message
     socket.on('sendMessage', async (messageData) => {
       try {
-        const { sender, receiver, hospitalId, text, mediaUrl, messageType } = messageData;
+        const { sender, receiver, hospital_ID, text, mediaUrl, messageType } = messageData;
         
         // Create new message in database
         const newMessage = new Message({
           sender,
           receiver, 
-          hospitalId,
+          hospital_ID,
           text: text || '',
           mediaUrl: mediaUrl || '',
           messageType: messageType || 'text'
@@ -97,8 +97,8 @@ export const initializeSocket = (io) => {
         socket.emit('messageSent', populatedMessage);
         
         // Broadcast to hospital room if it's a hospital-wide message
-        if (hospitalId && !receiver) {
-          io.to(`hospital_${hospitalId}`).emit('newMessage', populatedMessage);
+        if (hospital_ID && !receiver) {
+          io.to(`hospital_${hospital_ID}`).emit('newMessage', populatedMessage);
         }
       } catch (error) {
         console.error('Send message error:', error);
@@ -164,7 +164,7 @@ export const initializeSocket = (io) => {
       
       if (disconnectedUserId) {
         // Update user status in database
-        await User.findByIdAndUpdate(disconnectedUserId, {
+        await HospitalAdminAccount.findByIdAndUpdate(disconnectedUserId, {
           status: 'offline',
           lastSeen: new Date()
         });

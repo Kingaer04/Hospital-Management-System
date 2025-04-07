@@ -19,7 +19,7 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
-    origin: process.env.CLIENT_URL || "http://localhost:3000",
+    origin: process.env.CLIENT_URL || "http://localhost:5173",
     methods: ["GET", "POST"]
   }
 });
@@ -73,8 +73,8 @@ app.post('/api/upload', upload.single('file'), (req, res) => {
 initializeSocket(io);
 
 // Start server
-const PORT = process.env.PORT || 5000;
-mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/hospital-chat')
+const PORT = 8050;
+mongoose.connect(process.env.MONGO)
   .then(() => {
     console.log('Connected to MongoDB');
     server.listen(PORT, () => console.log(`Server running on port ${PORT}`));
