@@ -1,87 +1,73 @@
-// index.js (Main application entry point)
-import express from 'express';
-import http from 'http';
-import { Server } from 'socket.io';
-import mongoose from 'mongoose';
-import cors from 'cors';
-import dotenv from 'dotenv';
-import multer from 'multer';
-import path from 'path';
-import { fileURLToPath } from 'url';
-import messageRoutes from './routes/messageRoutes.js';
-import { initializeSocket } from './socket/socketHandler.js';
+import express from "express";
+import http from "http";
+import mongoose from "mongoose";
+import cors from "cors";
+import dotenv from "dotenv";
+import helmet from "helmet";
+import morgan from "morgan";
+import compression from "compression";
+import cookieParser from "cookie-parser";
 
-// Configuration
+// Import routes
+import chatRoutes from "./Routers/messageRoutes.js";
+// Import other routes...
+
+// Import Socket.io setup
+import { setupSocketIO } from "./Socket/socketHandler.js";
+
+// Configure environment variables
 dotenv.config();
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+
 const app = express();
 const server = http.createServer(app);
-const io = new Server(server, {
-  cors: {
-    origin: process.env.CLIENT_URL || "http://localhost:5173",
-    methods: ["GET", "POST"]
-  }
-});
+
+// Setup Socket.io
+const io = setupSocketIO(server);
 
 // Middleware
-app.use(express.json());
 app.use(cors());
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+app.use(cookieParser());
+app.use(helmet());
+app.use(compression());
 
-// File upload configuration
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, 'uploads/');
-  },
-  filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    const ext = path.extname(file.originalname);
-    cb(null, file.fieldname + '-' + uniqueSuffix + ext);
-  }
-});
+// Logging in development
+if (process.env.NODE_ENV === "development") {
+  app.use(morgan("dev"));
+}
 
-const fileFilter = (req, file, cb) => {
-  // Accept images and audio files
-  if (file.mimetype.startsWith('image/') || file.mimetype.startsWith('audio/')) {
-    cb(null, true);
-  } else {
-    cb(new Error('Unsupported file type'), false);
-  }
-};
-
-const upload = multer({ 
-  storage: storage,
-  fileFilter: fileFilter,
-  limits: { fileSize: 10 * 1024 * 1024 } // 10MB limit
-});
-
-// API Routes
-app.use('/api/messages', messageRoutes);
-
-// File upload endpoint
-app.post('/api/upload', upload.single('file'), (req, res) => {
-  if (!req.file) {
-    return res.status(400).json({ error: 'No file uploaded' });
-  }
-  
-  const fileUrl = `${req.protocol}://${req.get('host')}/uploads/${req.file.filename}`;
-  res.json({ url: fileUrl, filename: req.file.filename });
-});
-
-// Initialize socket.io
-initializeSocket(io);
-
-// Start server
-const PORT = 8050;
-mongoose.connect(process.env.MONGO)
-  .then(() => {
-    console.log('Connected to MongoDB');
-    server.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+// Database connection
+mongoose
+  .connect(process.env.MONGO, {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
   })
-  .catch(err => {
-    console.error('MongoDB connection error:', err);
-    process.exit(1);
-  });
+  .then(() => console.log("Database connected successfully"))
+  .catch((err) => console.error("Database connection error:", err));
 
-export default server;
+// Routes
+app.use("/api/chat", chatRoutes);
+// Use other routes...
+
+// Health check endpoint
+app.get("/", (req, res) => {
+  res.status(200).send("Hospital Management System API is running");
+});
+
+// Error handling middleware
+app.use((err, req, res, next) => {
+  console.error(err.stack);
+  res.status(500).json({
+    message: "Something went wrong",
+    error: process.env.NODE_ENV === "development" ? err.message : {},
+  });
+});
+
+// Start the server
+const PORT = process.env.PORT || 8000;
+server.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+});
+
+export { io };

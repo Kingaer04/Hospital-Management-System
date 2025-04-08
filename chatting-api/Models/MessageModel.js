@@ -1,40 +1,44 @@
-import mongoose from 'mongoose';
+import mongoose from "mongoose";
 
-const MessageSchema = new mongoose.Schema({
-  sender: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'HospitalAdminAccount',
-    required: true
+const messageSchema = new mongoose.Schema(
+  {
+    sender: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "StaffData",
+      required: true,
+    },
+    receiver: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "StaffData",
+      required: true,
+    },
+    hospital_ID: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "HospitalAdminAccount",
+      required: true,
+    },
+    content: {
+      type: String,
+      required: true,
+    },
+    read: {
+      type: Boolean,
+      default: false,
+    },
+    readAt: {
+      type: Date,
+      default: null,
+    },
   },
-  receiver: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'HospitalAdminAccount'
-  },
-  hospitalId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'HospitalAdminAccount'
-  },
-  text: {
-    type: String,
-    trim: true
-  },
-  mediaUrl: {
-    type: String,
-    trim: true
-  },
-  messageType: {
-    type: String,
-    enum: ['text', 'image', 'voice', 'document'],
-    default: 'text'
-  },
-  readAt: {
-    type: Date,
-    default: null
+  {
+    timestamps: true,
   }
-}, { timestamps: true });
+);
 
-// Compound index for faster fetching of conversations
-MessageSchema.index({ sender: 1, receiver: 1 });
-MessageSchema.index({ hospitalId: 1 });
+// Create indexes for better performance
+messageSchema.index({ sender: 1, receiver: 1 });
+messageSchema.index({ hospital_ID: 1 });
 
-export const Message = mongoose.model('Message', MessageSchema);
+const Message = mongoose.model("Message", messageSchema);
+
+export default Message;

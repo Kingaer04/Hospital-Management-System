@@ -1,183 +1,122 @@
-// socket/socketHandler.js
-import { HospitalAdminAccount } from '../../api/Models/AdminModel.js'
-import { Message } from '../Models/MessageModel.js';
+import { Server } from "socket.io";
+import StaffData from "../../api/Models/StaffModel.js";
 
-// Map to keep track of connected users
-const connectedUsers = new Map();
+// Map to store user socket connections
+const userSockets = new Map();
 
-export const initializeSocket = (io) => {
-  io.on('connection', (socket) => {
-    console.log('User connected:', socket.id);
-    
-    // User online status
-    socket.on('userOnline', async ({ userId }) => {
-      try {
-        // Store user connection
-        connectedUsers.set(userId, {
-          socketId: socket.id,
-          userId,
-          status: 'online'
-        });
-        
-        // Update user status in database
-        await HospitalAdminAccount.findByIdAndUpdate(userId, { status: 'online', lastSeen: new Date() });
-        
-        // Broadcast user online status to all connected clients
-        io.emit('userStatus', {
-          userId,
-          status: 'online'
-        });
-        
-        // Join user to their hospital room
-        const user = await HospitalAdminAccount.findById(userId);
-        if (user && user.hospital_ID) {
-          socket.join(`hospital_${user.hospital_ID}`);
-        }
-        
-        // Send currently online users to newly connected client
-        const onlineUsers = Array.from(connectedUsers.keys()).map(id => ({
-          userId: id,
-          status: connectedUsers.get(id).status
-        }));
-        
-        socket.emit('onlineUsers', onlineUsers);
-      } catch (error) {
-        console.error('User online error:', error);
-      }
-    });
-    
-    // Handle status change
-    socket.on('changeStatus', async ({ userId, status }) => {
-      try {
-        if (connectedUsers.has(userId)) {
-          const userData = connectedUsers.get(userId);
-          userData.status = status;
-          connectedUsers.set(userId, userData);
-          
-          // Update in database
-          await HospitalAdminAccount.findByIdAndUpdate(userId, { status });
-          
-          // Broadcast to all users
-          io.emit('userStatus', { userId, status });
-        }
-      } catch (error) {
-        console.error('Status change error:', error);
-      }
-    });
-    
-    // Handle new message
-    socket.on('sendMessage', async (messageData) => {
-      try {
-        const { sender, receiver, hospital_ID, text, mediaUrl, messageType } = messageData;
-        
-        // Create new message in database
-        const newMessage = new Message({
-          sender,
-          receiver, 
-          hospital_ID,
-          text: text || '',
-          mediaUrl: mediaUrl || '',
-          messageType: messageType || 'text'
-        });
-        
-        const savedMessage = await newMessage.save();
-        
-        // Populate sender and receiver info
-        const populatedMessage = await Message.findById(savedMessage._id)
-          .populate('sender', 'name avatar role status')
-          .populate('receiver', 'name avatar role status');
-          
-        // Send to specific receiver if online
-        if (receiver && connectedUsers.has(receiver)) {
-          const receiverSocket = connectedUsers.get(receiver).socketId;
-          io.to(receiverSocket).emit('newMessage', populatedMessage);
-        }
-        
-        // Send confirmation to sender
-        socket.emit('messageSent', populatedMessage);
-        
-        // Broadcast to hospital room if it's a hospital-wide message
-        if (hospital_ID && !receiver) {
-          io.to(`hospital_${hospital_ID}`).emit('newMessage', populatedMessage);
-        }
-      } catch (error) {
-        console.error('Send message error:', error);
-        socket.emit('error', { message: 'Failed to send message' });
-      }
-    });
-    
-    // Handle typing indicator
-    socket.on('typing', ({ senderId, receiverId, isTyping }) => {
-      if (receiverId && connectedUsers.has(receiverId)) {
-        const receiverSocket = connectedUsers.get(receiverId).socketId;
-        io.to(receiverSocket).emit('userTyping', {
-          userId: senderId,
-          isTyping
-        });
-      }
-    });
-    
-    // Handle read receipts
-    socket.on('markAsRead', async ({ messageIds, senderId, receiverId }) => {
-      try {
-        // Update messages in database
-        await Message.updateMany(
-          { _id: { $in: messageIds } },
-          { readAt: new Date() }
-        );
-        
-        // Notify sender that messages were read
-        if (senderId && connectedUsers.has(senderId)) {
-          const senderSocket = connectedUsers.get(senderId).socketId;
-          io.to(senderSocket).emit('messagesRead', {
-            messageIds,
-            readAt: new Date(),
-            readBy: receiverId
-          });
-        }
-      } catch (error) {
-        console.error('Mark as read error:', error);
-      }
-    });
-    
-    // Handle file upload notification
-    socket.on('fileUploaded', (data) => {
-      const { receiverId } = data;
-      if (receiverId && connectedUsers.has(receiverId)) {
-        const receiverSocket = connectedUsers.get(receiverId).socketId;
-        io.to(receiverSocket).emit('fileUploadNotification', data);
-      }
-    });
-    
-    // Handle disconnection
-    socket.on('disconnect', async () => {
-      console.log('User disconnected:', socket.id);
+export const setupSocketIO = (server) => {
+  const io = new Server(server, {
+    cors: {
+      origin: "*", // In production, specify exact origin
+      methods: ["GET", "POST"],
+    },
+  });
+
+  io.on("connection", async (socket) => {
+    // Instead of getting user from token, expect client to send user info
+    socket.on("register_user", async (userData) => {
+      const userId = userData._id;
+      const hospitalId = userData.hospital_ID;
       
-      // Find disconnected user
-      let disconnectedUserId = null;
-      for (const [userId, data] of connectedUsers.entries()) {
-        if (data.socketId === socket.id) {
-          disconnectedUserId = userId;
-          break;
-        }
+      // Store user info on socket object
+      socket.user = {
+        _id: userId,
+        hospital_ID: hospitalId
+      };
+      
+      console.log(`User connected: ${userId}`);
+      
+      // Store socket connection
+      userSockets.set(userId.toString(), socket.id);
+      
+      // Update user status to online
+      await StaffData.findByIdAndUpdate(userId, {
+        status: "Online",
+        lastSeen: new Date(),
+      });
+      
+      // Broadcast to hospital members that this user is online
+      socket.broadcast.emit("user_status_change", {
+        userId: userId.toString(),
+        status: "Online",
+        lastSeen: new Date(),
+      });
+      
+      // Join a room for the hospital
+      socket.join(`hospital_${hospitalId}`);
+    });
+
+    // Listen for new messages
+    socket.on("send_message", (data) => {
+      const receiverSocketId = userSockets.get(data.receiverId);
+      
+      // If receiver is online, emit to their socket
+      if (receiverSocketId) {
+        io.to(receiverSocketId).emit("receive_message", {
+          ...data,
+          createdAt: new Date(),
+        });
       }
       
-      if (disconnectedUserId) {
-        // Update user status in database
-        await HospitalAdminAccount.findByIdAndUpdate(disconnectedUserId, {
-          status: 'offline',
-          lastSeen: new Date()
+      // Also emit to sender for confirmation
+      socket.emit("message_sent", {
+        messageId: data.messageId,
+        status: "sent",
+        timestamp: new Date(),
+      });
+    });
+    
+    // Listen for typing events
+    socket.on("typing", (data) => {
+      const receiverSocketId = userSockets.get(data.receiverId);
+      if (receiverSocketId) {
+        io.to(receiverSocketId).emit("user_typing", {
+          senderId: socket.user?._id.toString(),
+          typing: data.typing,
+        });
+      }
+    });
+    
+    // Listen for read receipts
+    socket.on("mark_read", (data) => {
+      const senderSocketId = userSockets.get(data.senderId);
+      if (senderSocketId) {
+        io.to(senderSocketId).emit("messages_read", {
+          receiverId: socket.user?._id.toString(),
+          timestamp: new Date(),
+        });
+      }
+    });
+    
+    // Handle disconnect
+    socket.on("disconnect", async () => {
+      if (socket.user) {
+        const userId = socket.user._id;
+        console.log(`User disconnected: ${userId}`);
+        
+        // Remove from active connections
+        userSockets.delete(userId.toString());
+        
+        // Update user status to offline
+        await StaffData.findByIdAndUpdate(userId, {
+          status: "Offline",
+          lastSeen: new Date(),
         });
         
-        // Remove from connected users
-        connectedUsers.delete(disconnectedUserId);
-        
-        // Broadcast offline status
-        io.emit('userStatus', {
-          userId: disconnectedUserId,
-          status: 'offline'
+        // Broadcast to hospital members that this user is offline
+        socket.broadcast.emit("user_status_change", {
+          userId: userId.toString(),
+          status: "Offline",
+          lastSeen: new Date(),
         });
       }
     });
   });
+
+  return io;
+};
+
+// Export helper function to get user connections
+export const getUserSocket = (userId) => {
+  return userSockets.get(userId.toString());
 };

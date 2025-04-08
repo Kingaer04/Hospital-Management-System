@@ -79,7 +79,16 @@ const staffSchema = new mongoose.Schema({
     availability_Status: {
         type: Boolean,
         default: true
-    }
+    },
+    status: {
+        type: String,
+        enum: ['Online', 'Offline'],
+        default: 'Offline'
+    },
+    lastSeen: {
+        type: Date,
+        default: null
+    },
 }, {
     timestamps: true
 });
