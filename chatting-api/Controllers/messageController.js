@@ -1,17 +1,36 @@
 import Message from "../Models/MessageModel.js";
-import StaffData from "../../api/Models/StaffModel.js";
+import StaffData from "../Models/StaffModel.js";
+import jwt from "jsonwebtoken";
+import mongoose from "mongoose";
+
+export const verifyToken = (req, res, next) => {
+  const token = req.cookies.token;
+
+  if (!token) return res.status(401).json({ message: 'Unauthorized' });
+
+  jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
+      if (err) {
+          // If token is invalid or expired, call signOut
+          return signOut(req, res, next);
+      }
+
+      req.user = user;
+      next();
+  });
+}
 
 // Get all conversations for a user
 export const getConversations = async (req, res) => {
   try {
-    const userId = req.user._id;
-    const hospitalId = req.user.hospital_ID;
-
-    // Find all staff with the same hospital_ID
+    
+    const userId = req.user.id;
+    const hospitalId = req.user.hospitalId;
+    // console.log(userId, hospitalId)
     const staffMembers = await StaffData.find({
       hospital_ID: hospitalId,
-      _id: { $ne: userId },
-    }).select("_id name avatar role status lastSeen");
+      _id: { $ne: userId }, // Exclude the current user
+    }).select("name avatar role status lastSeen _id");
+    console.log('staffMembers: ', staffMembers)
 
     // For each staff member, get the last message (if any)
     const conversations = await Promise.all(
@@ -54,6 +73,8 @@ export const getConversations = async (req, res) => {
       if (!b.lastMessage) return -1;
       return new Date(b.lastMessage.createdAt) - new Date(a.lastMessage.createdAt);
     });
+
+    console.log('conversations: ', conversations)
 
     res.status(200).json(conversations);
   } catch (error) {

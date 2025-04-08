@@ -7,28 +7,46 @@ import helmet from "helmet";
 import morgan from "morgan";
 import compression from "compression";
 import cookieParser from "cookie-parser";
-
-// Import routes
+import session from "express-session" // for cookie session
 import chatRoutes from "./Routers/messageRoutes.js";
-// Import other routes...
-
-// Import Socket.io setup
 import { setupSocketIO } from "./Socket/socketHandler.js";
 
 // Configure environment variables
 dotenv.config();
 
 const app = express();
+
+// Database connection
+mongoose
+  .connect(process.env.MONGO)
+  .then(() => console.log("Database connected successfully"))
+  .catch((err) => console.error("Database connection error:", err));
+
+app.use(cookieParser("secret_passcode"))
+app.use(session({
+    secret: "secret_passcode",
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+        httpOnly: true,  // Ensure the cookie is httpOnly for security
+        secure: process.env.NODE_ENV === 'production',  // Use secure cookies in production
+        maxAge: 9000000  // Set the cookie's max age to 1000 seconds
+    }
+}));
 const server = http.createServer(app);
 
 // Setup Socket.io
 const io = setupSocketIO(server);
 
 // Middleware
-app.use(cors());
+app.use(cors(
+  {
+    origin: 'localhost:5173',
+    credentials: true, // Allow credentials (cookies) to be sent
+  }
+));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use(cookieParser());
 app.use(helmet());
 app.use(compression());
 
@@ -36,15 +54,6 @@ app.use(compression());
 if (process.env.NODE_ENV === "development") {
   app.use(morgan("dev"));
 }
-
-// Database connection
-mongoose
-  .connect(process.env.MONGO, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
-  })
-  .then(() => console.log("Database connected successfully"))
-  .catch((err) => console.error("Database connection error:", err));
 
 // Routes
 app.use("/api/chat", chatRoutes);

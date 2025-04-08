@@ -115,7 +115,9 @@ const ChatInterface = () => {
   const fetchConversations = async () => {
     try {
       setLoading(true);
-      const response = await fetch('http://localhost:8000/api/chat/conversations');
+      const response = await fetch('http://localhost:8000/api/chat/conversations', {
+        credentials: 'include'
+      });
       
       if (!response.ok) {
         throw new Error('Failed to fetch conversations');
