@@ -130,7 +130,6 @@ export const getMessages = async (req, res) => {
       messages,
       user: otherUser,
     });
-    console.log(messages)
   } catch (error) {
     console.error("Error getting messages:", error);
     res.status(500).json({ message: "Failed to get messages: ", error });

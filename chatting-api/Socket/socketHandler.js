@@ -1,5 +1,5 @@
 import { Server } from "socket.io";
-import StaffData from "../../api/Models/StaffModel.js";
+import StaffData from "../Models/StaffModel.js";
 
 // Map to store user socket connections
 const userSockets = new Map();
@@ -7,14 +7,22 @@ const userSockets = new Map();
 export const setupSocketIO = (server) => {
   const io = new Server(server, {
     cors: {
-      origin: "*", // In production, specify exact origin
+      origin: "http://localhost:5173", // Match your frontend origin exactly
       methods: ["GET", "POST"],
+      credentials: true // Allow credentials
     },
   });
 
   io.on("connection", async (socket) => {
-    // Instead of getting user from token, expect client to send user info
+    console.log("New socket connection:", socket.id);
+    
+    // Handle user registration
     socket.on("register_user", async (userData) => {
+      if (!userData || !userData._id) {
+        console.error("Invalid user data for socket registration");
+        return;
+      }
+      
       const userId = userData._id;
       const hospitalId = userData.hospital_ID;
       
@@ -24,7 +32,7 @@ export const setupSocketIO = (server) => {
         hospital_ID: hospitalId
       };
       
-      console.log(`User connected: ${userId}`);
+      console.log(`User registered: ${userId}`);
       
       // Store socket connection
       userSockets.set(userId.toString(), socket.id);
@@ -35,7 +43,7 @@ export const setupSocketIO = (server) => {
         lastSeen: new Date(),
       });
       
-      // Broadcast to hospital members that this user is online
+      // Broadcast to everyone that this user is online
       socket.broadcast.emit("user_status_change", {
         userId: userId.toString(),
         status: "Online",
@@ -43,11 +51,15 @@ export const setupSocketIO = (server) => {
       });
       
       // Join a room for the hospital
-      socket.join(`hospital_${hospitalId}`);
+      if (hospitalId) {
+        socket.join(`hospital_${hospitalId}`);
+      }
     });
 
     // Listen for new messages
     socket.on("send_message", (data) => {
+      console.log("Message received to deliver:", data);
+      
       const receiverSocketId = userSockets.get(data.receiverId);
       
       // If receiver is online, emit to their socket
@@ -56,6 +68,9 @@ export const setupSocketIO = (server) => {
           ...data,
           createdAt: new Date(),
         });
+        console.log(`Message delivered to socket: ${receiverSocketId}`);
+      } else {
+        console.log(`Receiver ${data.receiverId} is not online`);
       }
       
       // Also emit to sender for confirmation
@@ -86,15 +101,16 @@ export const setupSocketIO = (server) => {
           timestamp: new Date(),
         });
       }
-    });
-    
-    // Handle disconnect
-    socket.on("disconnect", async () => {
-      if (socket.user) {
-        const userId = socket.user._id;
-        console.log(`User disconnected: ${userId}`);
+        });
         
-        // Remove from active connections
+        // Handle disconnect event
+        socket.on("disconnect", async () => {
+      console.log(`Socket disconnected: ${socket.id}`);
+      
+      if (socket.user && socket.user._id) {
+        const userId = socket.user._id;
+        
+        // Remove from socket map
         userSockets.delete(userId.toString());
         
         // Update user status to offline
@@ -103,20 +119,15 @@ export const setupSocketIO = (server) => {
           lastSeen: new Date(),
         });
         
-        // Broadcast to hospital members that this user is offline
+        // Broadcast to everyone that this user is offline
         socket.broadcast.emit("user_status_change", {
           userId: userId.toString(),
           status: "Offline",
           lastSeen: new Date(),
         });
       }
-    });
-  });
-
-  return io;
-};
-
-// Export helper function to get user connections
-export const getUserSocket = (userId) => {
-  return userSockets.get(userId.toString());
-};
+        });
+      });
+      
+      return io;
+    };

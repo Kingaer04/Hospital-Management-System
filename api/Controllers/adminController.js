@@ -118,7 +118,7 @@ export const adminController = {
                 if (err) {
                     return res.status(500).json({ message: 'Internal Server Error', error: err.message });
                 }
-                const token = jwt.sign({ id: user._id, role: user.role }, process.env.JWT_SECRET); // Include role
+                const token = jwt.sign({ id: user._id, role: user.role }, process.env.JWT_SECRET);
                 const { hash: has, salt: sal, ...rest } = user._doc;
                 res.cookie('token', token, { httpOnly: true }).status(200).json(rest);
             });

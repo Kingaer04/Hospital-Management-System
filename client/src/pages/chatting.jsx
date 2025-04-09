@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
 import io from 'socket.io-client';
 import TimeAgo from 'react-timeago';
-import {useSelector} from 'react-redux'
+import { useSelector } from 'react-redux';
 
 const ChatInterface = () => {
-  const {currentUser} = useSelector((state) => state.user)
+  const { currentUser } = useSelector((state) => state.user);
   const [conversations, setConversations] = useState([]);
   const [selectedConversation, setSelectedConversation] = useState(null);
   const [messages, setMessages] = useState([]);
@@ -21,11 +21,22 @@ const ChatInterface = () => {
   // Connect to socket on component mount
   useEffect(() => {
     // Connect to socket server
-    socket.current = io('http://localhost:8000');
+    socket.current = io('http://localhost:8000', {
+      withCredentials: true,
+    });
     
     // Handle connect event
     socket.current.on('connect', () => {
       console.log('Connected to socket server');
+      
+      // Register user after successful connection
+      if (currentUser && currentUser._id) {
+        socket.current.emit('register_user', {
+          _id: currentUser._id,
+          hospital_ID: currentUser.hospitalId
+        });
+        console.log('User registered with socket:', currentUser._id);
+      }
     });
     
     // Handle error event
@@ -35,8 +46,12 @@ const ChatInterface = () => {
     
     // Listen for incoming messages
     socket.current.on('receive_message', (data) => {
+      console.log('Received message:', data);
+      
       if (selectedConversation && selectedConversation._id === data.senderId) {
+        // Add the message to the chat
         setMessages(prev => [...prev, data]);
+        
         // Send read receipt
         socket.current.emit('mark_read', {
           senderId: data.senderId
@@ -47,8 +62,15 @@ const ChatInterface = () => {
       updateConversationWithMessage(data);
     });
     
+    // Listen for message sent confirmation
+    socket.current.on('message_sent', (data) => {
+      console.log('Message sent confirmation:', data);
+    });
+    
     // Listen for user status changes
     socket.current.on('user_status_change', (data) => {
+      console.log('User status change:', data);
+      
       setOnlineUsers(prev => ({
         ...prev,
         [data.userId]: data.status === 'Online'
@@ -73,6 +95,8 @@ const ChatInterface = () => {
     
     // Listen for typing events
     socket.current.on('user_typing', (data) => {
+      console.log('User typing:', data);
+      
       if (selectedConversation && selectedConversation._id === data.senderId) {
         setTyping(prev => ({
           ...prev,
@@ -82,8 +106,10 @@ const ChatInterface = () => {
     });
     
     // Listen for read receipts
-    socket.current.on('messages_read', () => {
-      if (selectedConversation) {
+    socket.current.on('messages_read', (data) => {
+      console.log('Messages read:', data);
+      
+      if (selectedConversation && selectedConversation._id === data.receiverId) {
         // Mark all messages to this user as read
         setMessages(prev => 
           prev.map(msg => 
@@ -99,7 +125,7 @@ const ChatInterface = () => {
     return () => {
       socket.current.disconnect();
     };
-  }, [selectedConversation, currentUser._id]);
+  }, [currentUser, selectedConversation]);
   
   // Fetch conversations on mount
   useEffect(() => {
@@ -205,15 +231,54 @@ const ChatInterface = () => {
     if (!newMessage.trim() || !selectedConversation) return;
     
     try {
+      const messageData = {
+        receiverId: selectedConversation._id,
+        content: newMessage
+      };
+      
+      // First emit to socket for real-time delivery
+      const tempId = Date.now().toString();
+      
+      // Clear input early for better UX
+      setNewMessage('');
+      
+      // Add temporary message to the UI
+      const tempMessage = {
+        _id: tempId,
+        content: newMessage,
+        sender: {
+          _id: currentUser._id,
+          name: currentUser.name,
+          avatar: currentUser.avatar
+        },
+        receiver: selectedConversation._id,
+        createdAt: new Date(),
+        read: false,
+        isTemp: true
+      };
+      
+      setMessages(prev => [...prev, tempMessage]);
+      
+      // Emit via socket for real-time
+      socket.current.emit('send_message', {
+        messageId: tempId,
+        senderId: currentUser._id,
+        receiverId: selectedConversation._id,
+        content: newMessage,
+        sender: {
+          _id: currentUser._id,
+          name: currentUser.name,
+          avatar: currentUser.avatar
+        }
+      });
+      
+      // Then send HTTP request to persist in DB
       const response = await fetch('http://localhost:8000/api/chat/send', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({
-          receiverId: selectedConversation._id,
-          content: newMessage
-        }), 
+        body: JSON.stringify(messageData), 
         credentials: 'include' 
       });
       
@@ -223,32 +288,21 @@ const ChatInterface = () => {
       
       const sentMessage = await response.json();
       
-      // Add to messages list
-      setMessages(prev => [...prev, sentMessage]);
+      // Replace temporary message with actual message from server
+      setMessages(prev => 
+        prev.map(msg => msg._id === tempId ? sentMessage : msg)
+      );
       
       // Update conversation with new message
       updateConversationWithMessage(sentMessage);
-      
-      // Clear input
-      setNewMessage('');
-      
-      // Emit via socket
-      socket.current.emit('send_message', {
-        messageId: sentMessage._id,
-        senderId: currentUser._id,
-        receiverId: selectedConversation._id,
-        content: sentMessage.content,
-        sender: {
-          _id: currentUser._id,
-          name: currentUser.name,
-          avatar: currentUser.avatar
-        }
-      });
       
       // Stop typing indicator
       handleStopTyping();
     } catch (error) {
       console.error('Error sending message:', error);
+      
+      // Notify user of error
+      // Optionally revert the temp message or mark it as failed
     }
   };
   
@@ -256,8 +310,15 @@ const ChatInterface = () => {
   const updateConversationWithMessage = (message) => {
     setConversations(prev => {
       const newConversations = [...prev];
+      
+      // Find the correct conversation
+      const senderId = message.sender._id || message.sender;
+      const receiverId = message.receiver || message.receiverId;
+      
+      const targetId = senderId === currentUser._id ? receiverId : senderId;
+      
       const conversationIndex = newConversations.findIndex(
-        c => c.staff._id === (message.sender._id === currentUser._id ? message.receiver : message.sender._id)
+        c => c.staff._id === targetId
       );
       
       if (conversationIndex !== -1) {
@@ -266,8 +327,8 @@ const ChatInterface = () => {
         updatedConversation.lastMessage = message;
         
         // Update unread count if message is from another user
-        if (message.sender._id !== currentUser._id) {
-          if (!selectedConversation || selectedConversation._id !== message.sender._id) {
+        if (senderId !== currentUser._id) {
+          if (!selectedConversation || selectedConversation._id !== senderId) {
             updatedConversation.unreadCount = (updatedConversation.unreadCount || 0) + 1;
           }
         }
