@@ -30,7 +30,7 @@ export const getConversations = async (req, res) => {
       hospital_ID: hospitalId,
       _id: { $ne: userId }, // Exclude the current user
     }).select("name avatar role status lastSeen _id");
-    console.log('staffMembers: ', staffMembers)
+    // console.log('staffMembers: ', staffMembers)
 
     // For each staff member, get the last message (if any)
     const conversations = await Promise.all(
@@ -74,7 +74,7 @@ export const getConversations = async (req, res) => {
       return new Date(b.lastMessage.createdAt) - new Date(a.lastMessage.createdAt);
     });
 
-    console.log('conversations: ', conversations)
+    // console.log('conversations: ', conversations)
 
     res.status(200).json(conversations);
   } catch (error) {
@@ -87,7 +87,7 @@ export const getConversations = async (req, res) => {
 export const getMessages = async (req, res) => {
   try {
     const { userId } = req.params;
-    const currentUserId = req.user._id;
+    const currentUserId = req.user.id;
 
     // Validate that both users have the same hospital_ID
     const [currentUser, otherUser] = await Promise.all([
@@ -130,9 +130,10 @@ export const getMessages = async (req, res) => {
       messages,
       user: otherUser,
     });
+    console.log(messages)
   } catch (error) {
     console.error("Error getting messages:", error);
-    res.status(500).json({ message: "Failed to get messages" });
+    res.status(500).json({ message: "Failed to get messages: ", error });
   }
 };
 
@@ -140,8 +141,8 @@ export const getMessages = async (req, res) => {
 export const sendMessage = async (req, res) => {
   try {
     const { receiverId, content } = req.body;
-    const senderId = req.user._id;
-    const hospitalId = req.user.hospital_ID;
+    const senderId = req.user.id;
+    const hospitalId = req.user.hospitalId;
 
     if (!content || !receiverId) {
       return res.status(400).json({ message: "Receiver ID and content are required" });

@@ -144,7 +144,9 @@ const ChatInterface = () => {
   const fetchMessages = async (userId) => {
     try {
       setLoadingMessages(true);
-      const response = await fetch(`http://localhost:8000/api/chat/messages/${userId}`);
+      const response = await fetch(`http://localhost:8000/api/chat/messages/${userId}`, {
+        credentials: 'include'
+      });
       
       if (!response.ok) {
         throw new Error('Failed to fetch messages');
@@ -183,7 +185,8 @@ const ChatInterface = () => {
   const markMessagesAsRead = async (senderId) => {
     try {
       await fetch(`http://localhost:8000/api/chat/read/${senderId}`, {
-        method: 'PUT'
+        method: 'POST',
+        credentials: 'include'
       });
       
       // Emit read receipt over socket
@@ -210,7 +213,8 @@ const ChatInterface = () => {
         body: JSON.stringify({
           receiverId: selectedConversation._id,
           content: newMessage
-        })
+        }), 
+        credentials: 'include' 
       });
       
       if (!response.ok) {
@@ -526,7 +530,7 @@ const ChatInterface = () => {
                             {currentUser.avatar ? (
                               <img
                                 src={currentUser.avatar}
-                                alt={scurrentUer.name}
+                                alt={currentUser.name}
                                 className="w-full h-full object-cover"
                               />
                             ) : (

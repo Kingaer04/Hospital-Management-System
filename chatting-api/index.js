@@ -41,7 +41,7 @@ const io = setupSocketIO(server);
 // Middleware
 app.use(cors(
   {
-    origin: 'localhost:5173',
+    origin: 'http://localhost:5173',
     credentials: true, // Allow credentials (cookies) to be sent
   }
 ));
