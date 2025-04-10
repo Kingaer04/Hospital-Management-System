@@ -26,11 +26,13 @@ import MedicalRecord from './pages/medical-record.jsx'
 import HospitalCheckout from './pages/checkout.jsx'
 import HospitalPaymentIntegration from './pages/hospitalPayment.jsx'
 import ChatInterface from './pages/chatting.jsx'
+import useSocketConnection from './components/socketIo.jsx'
 // import CustomWebcam from './components/CustomWebcam.jsx' will check the driver of my camera
 
 
 export default function App() {
   const currentUser = useSelector((state) => state.user)
+  useSocketConnection();
 
   return (
     <div className=''>

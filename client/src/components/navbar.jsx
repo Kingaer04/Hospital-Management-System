@@ -71,7 +71,10 @@ export default function MainNavBar() {
   const { currentUser } = useSelector((state) => state.user);
   const [unRead, setUnRead] = React.useState([]);
   const [unreadCount, setUnreadCount] = React.useState(0);
+  const [unreadMessages, setUnreadMessages] = React.useState([]);
+  const [unreadMessagesCount, setUnreadMessagesCount] = React.useState(0);
   const [lastFetchTime, setLastFetchTime] = React.useState(0);
+  const [lastMessageFetchTime, setLastMessageFetchTime] = React.useState(0);
 
   const fetchUnreadMessages = useCallback(async () => {
     if (!currentUser?._id) return;
@@ -92,26 +95,60 @@ export default function MainNavBar() {
     }
   }, [currentUser?._id]);
 
-  // Fetch notifications immediately when the component mounts or user changes
+  const fetchUnreadChats = useCallback(async () => {
+    if (!currentUser?._id) return;
+    
+    try {
+      const res = await fetch(`http://localhost:8000/api/chat/unread`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include', // Include cookies for authentication
+      });
+      const data = await res.json();
+      
+      // Calculate total unread messages
+      const totalUnread = data.reduce((total, item) => total + item.count, 0);
+      
+      setUnreadMessages(data);
+      setUnreadMessagesCount(totalUnread);
+      setLastMessageFetchTime(Date.now());
+    } catch (error) {
+      console.log('Error fetching unread chats: ', error);
+    }
+  }, [currentUser?._id]);
+
+  // Fetch notifications and messages immediately when the component mounts or user changes
   useEffect(() => {
     if (currentUser?._id) {
       fetchUnreadMessages();
+      fetchUnreadChats();
     }
-  }, [currentUser?._id, fetchUnreadMessages]);
+  }, [currentUser?._id, fetchUnreadMessages, fetchUnreadChats]);
 
-  // Set up frequent polling (every 5 seconds)
+  // Set up frequent polling (every 10 seconds)
   useEffect(() => {
-    const intervalId = setInterval(fetchUnreadMessages, 10000);
-    return () => clearInterval(intervalId);
-  }, [fetchUnreadMessages]);
+    const notificationIntervalId = setInterval(fetchUnreadMessages, 10000);
+    const messageIntervalId = setInterval(fetchUnreadChats, 10000);
+    
+    return () => {
+      clearInterval(notificationIntervalId);
+      clearInterval(messageIntervalId);
+    };
+  }, [fetchUnreadMessages, fetchUnreadChats]);
 
   // Fetch when the window gains focus
   useEffect(() => {
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible') {
         // Only fetch if the last fetch was more than 2 seconds ago
-        if (Date.now() - lastFetchTime > 2000) {
+        const now = Date.now();
+        if (now - lastFetchTime > 2000) {
           fetchUnreadMessages();
+        }
+        if (now - lastMessageFetchTime > 2000) {
+          fetchUnreadChats();
         }
       }
     };
@@ -126,7 +163,29 @@ export default function MainNavBar() {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
       window.removeEventListener('focus', handleVisibilityChange);
     };
-  }, [fetchUnreadMessages, lastFetchTime]);
+  }, [fetchUnreadMessages, fetchUnreadChats, lastFetchTime, lastMessageFetchTime]);
+
+  // Handle socket.io message events
+  useEffect(() => {
+    // If you have a socket instance in your app context or redux store
+    // You can listen for 'receive_message' events and update counts
+    if (window.socket && currentUser?._id) {
+      const handleNewMessage = (data) => {
+        if (data.receiverId === currentUser._id) {
+          // Increment unread count immediately without full refetch
+          setUnreadMessagesCount(prev => prev + 1);
+          // Then refetch for accuracy after a small delay
+          setTimeout(fetchUnreadChats, 500);
+        }
+      };
+      
+      window.socket.on('receive_message', handleNewMessage);
+      
+      return () => {
+        window.socket.off('receive_message', handleNewMessage);
+      };
+    }
+  }, [currentUser?._id, fetchUnreadChats]);
 
   const handleSignOutClick = () => {
     setSignOutModalOpen(true);
@@ -203,15 +262,17 @@ export default function MainNavBar() {
       onClose={handleMobileMenuClose}
     >
       <MenuItem>
-        <IconButton size="large" aria-label="show 4 new mails" color="inherit">
-          <Badge badgeContent={4} color="error">
-            <MailIcon />
-          </Badge>
-        </IconButton>
-        <p>Messages</p>
+        <Link to="/message" style={{ textDecoration: 'none', color: 'inherit', display: 'flex', alignItems: 'center' }}>
+          <IconButton size="large" aria-label="show unread messages" color="inherit">
+            <Badge badgeContent={unreadMessagesCount} color="error">
+              <MailIcon />
+            </Badge>
+          </IconButton>
+          <p>Messages</p>
+        </Link>
       </MenuItem>
       <MenuItem>
-        <Link to="/notifications" style={{ textDecoration: 'none' }}>
+        <Link to="/notifications" style={{ textDecoration: 'none', color: 'inherit', display: 'flex', alignItems: 'center' }}>
           <IconButton
             size="large"
             aria-label="show new notifications"
@@ -221,8 +282,8 @@ export default function MainNavBar() {
               <NotificationsIcon />
             </Badge>
           </IconButton>  
+          <p>Notifications</p>
         </Link>
-        <p>Notifications</p>
       </MenuItem>
       <MenuItem onClick={handleProfileMenuOpen}>
         <IconButton
@@ -253,12 +314,19 @@ export default function MainNavBar() {
         </Search>
         <Box sx={{ flexGrow: 1 }} />
         <Box sx={{ display: { xs: 'none', md: 'flex' }, justifyContent: 'flex-start' }}>
-          <IconButton size="large" aria-label="show 4 new mails" color="inherit">
-            <Badge badgeContent={4} color="error">
-              <MailIcon />
-            </Badge>
-          </IconButton>
-          <Link to="/notifications" style={{ textDecoration: 'none' }}>
+          <Link to="/message" style={{ textDecoration: 'none', color: 'inherit' }}>
+            <IconButton 
+              size="large" 
+              aria-label="show unread messages" 
+              color="inherit"
+              onClick={fetchUnreadChats} // Refresh message counts when clicked
+            >
+              <Badge badgeContent={unreadMessagesCount} color="error">
+                <MailIcon />
+              </Badge>
+            </IconButton>
+          </Link>
+          <Link to="/notifications" style={{ textDecoration: 'none', color: 'inherit' }}>
             <IconButton
               size="large"
               aria-label="show new notifications"

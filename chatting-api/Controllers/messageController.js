@@ -209,13 +209,13 @@ export const markAsRead = async (req, res) => {
 // Get unread message counts
 export const getUnreadCounts = async (req, res) => {
   try {
-    const userId = req.user._id;
+    const userId = req.user.id;  // Updated to use req.user.id from token
 
     // Aggregate to count unread messages from each sender
     const unreadCounts = await Message.aggregate([
       {
         $match: {
-          receiver: mongoose.Types.ObjectId(userId),
+          receiver: new mongoose.Types.ObjectId(userId),
           read: false,
         },
       },
