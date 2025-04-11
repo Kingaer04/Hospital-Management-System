@@ -284,6 +284,7 @@ export const sendFile = async (req, res) => {
 // Send a voice message
 export const sendVoiceMessage = async (req, res) => {
   try {
+    console.log(req.body)
     const { receiverId, audioUrl, duration } = req.body;
     const senderId = req.user.id;
     const hospitalId = req.user.hospitalId;

@@ -2,9 +2,6 @@ import React, { useState, useEffect, useRef } from 'react';
 import io from 'socket.io-client';
 import TimeAgo from 'react-timeago';
 import { useSelector } from 'react-redux';
-import VoiceRecorder from '../components/voiceRecorder';
-import EmojiPicker from '../components/emojiPicker';
-import FileUploader from '../components/fileUploader';
 
 const ChatInterface = () => {
   const { currentUser } = useSelector((state) => state.user);
@@ -17,9 +14,16 @@ const ChatInterface = () => {
   const [onlineUsers, setOnlineUsers] = useState({});
   const [typing, setTyping] = useState({});
   const [typingTimeout, setTypingTimeout] = useState(null);
+  const [isRecording, setIsRecording] = useState(false);
+  const [recordingTime, setRecordingTime] = useState(0);
+  const [selectedFile, setSelectedFile] = useState(null);
   
   const messagesEndRef = useRef(null);
   const socket = useRef(null);
+  const mediaRecorderRef = useRef(null);
+  const audioChunksRef = useRef([]);
+  const recordingTimerRef = useRef(null);
+  const fileInputRef = useRef(null);
   
   // Connect to socket on component mount
   useEffect(() => {
@@ -38,7 +42,6 @@ const ChatInterface = () => {
           _id: currentUser._id,
           hospital_ID: currentUser.hospitalId
         });
-        console.log('User registered with socket:', currentUser._id);
       }
     });
     
@@ -49,8 +52,6 @@ const ChatInterface = () => {
     
     // Update the existing socket listener for receive_message
     socket.current.on('receive_message', (data) => {
-      console.log('Received message:', data);
-      
       if (selectedConversation && selectedConversation._id === data.senderId) {
         // Add the message to the chat
         setMessages(prev => [...prev, data]);
@@ -65,15 +66,8 @@ const ChatInterface = () => {
       updateConversationWithMessage(data);
     });
     
-    // Listen for message sent confirmation
-    socket.current.on('message_sent', (data) => {
-      console.log('Message sent confirmation:', data);
-    });
-    
     // Listen for user status changes
     socket.current.on('user_status_change', (data) => {
-      console.log('User status change:', data);
-      
       setOnlineUsers(prev => ({
         ...prev,
         [data.userId]: data.status === 'Online'
@@ -98,8 +92,6 @@ const ChatInterface = () => {
     
     // Listen for typing events
     socket.current.on('user_typing', (data) => {
-      console.log('User typing:', data);
-      
       if (selectedConversation && selectedConversation._id === data.senderId) {
         setTyping(prev => ({
           ...prev,
@@ -110,8 +102,6 @@ const ChatInterface = () => {
     
     // Listen for read receipts
     socket.current.on('messages_read', (data) => {
-      console.log('Messages read:', data);
-      
       if (selectedConversation && selectedConversation._id === data.receiverId) {
         // Mark all messages to this user as read
         setMessages(prev => 
@@ -127,6 +117,9 @@ const ChatInterface = () => {
     // Clean up on unmount
     return () => {
       socket.current.disconnect();
+      if (recordingTimerRef.current) {
+        clearInterval(recordingTimerRef.current);
+      }
     };
   }, [currentUser, selectedConversation]);
   
@@ -227,9 +220,9 @@ const ChatInterface = () => {
     }
   };
   
-  // Send message
+  // Send text message
   const sendMessage = async (e) => {
-    e.preventDefault();
+    if (e) e.preventDefault();
     
     if (!newMessage.trim() || !selectedConversation) return;
     
@@ -239,13 +232,11 @@ const ChatInterface = () => {
         content: newMessage
       };
       
-      // First emit to socket for real-time delivery
-      const tempId = Date.now().toString();
-      
       // Clear input early for better UX
       setNewMessage('');
       
       // Add temporary message to the UI
+      const tempId = Date.now().toString();
       const tempMessage = {
         _id: tempId,
         content: newMessage,
@@ -303,208 +294,209 @@ const ChatInterface = () => {
       handleStopTyping();
     } catch (error) {
       console.error('Error sending message:', error);
-      
-      // Notify user of error
-      // Optionally revert the temp message or mark it as failed
     }
   };
 
-  // Handle voice recording complete
-const handleVoiceMessage = async (audioBlob, recordingTime) => {
-  if (!selectedConversation) return;
+  // Start voice recording
+  const startRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mediaRecorder = new MediaRecorder(stream);
+      mediaRecorderRef.current = mediaRecorder;
+      audioChunksRef.current = [];
+      
+      mediaRecorder.ondataavailable = (e) => {
+        audioChunksRef.current.push(e.data);
+      };
+      
+      mediaRecorder.onstop = () => {
+        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+        sendVoiceMessage(audioBlob, recordingTime);
+        
+        // Stop all tracks to release the microphone
+        stream.getTracks().forEach(track => track.stop());
+      };
+      
+      mediaRecorder.start();
+      setIsRecording(true);
+      
+      // Start timer for recording duration
+      let seconds = 0;
+      recordingTimerRef.current = setInterval(() => {
+        seconds++;
+        setRecordingTime(seconds);
+      }, 1000);
+    } catch (error) {
+      console.error('Error starting voice recording:', error);
+      alert('Could not access microphone');
+    }
+  };
   
-  try {
-    // Create form data
-    const formData = new FormData();
-    formData.append('audio', audioBlob, 'voice_message.webm');
-    formData.append('receiverId', selectedConversation._id);
-    formData.append('duration', recordingTime);
-    
-    // Upload the audio file
-    const uploadResponse = await fetch('http://localhost:8000/api/upload/audio', {
-      method: 'POST',
-      body: formData,
-      credentials: 'include'
-    });
-    
-    if (!uploadResponse.ok) {
-      throw new Error('Failed to upload audio');
-    }
-    
-    const uploadResult = await uploadResponse.json();
-    
-    // Send voice message
-    const messageData = {
-      receiverId: selectedConversation._id,
-      audioUrl: uploadResult.audioUrl,
-      duration: recordingTime
-    };
-    
-    // Add temporary message
-    const tempId = Date.now().toString();
-    const tempMessage = {
-      _id: tempId,
-      messageType: 'voice',
-      audioUrl: URL.createObjectURL(audioBlob),
-      duration: recordingTime,
-      sender: {
-        _id: currentUser._id,
-        name: currentUser.name,
-        avatar: currentUser.avatar
-      },
-      receiver: selectedConversation._id,
-      createdAt: new Date(),
-      read: false,
-      isTemp: true
-    };
-    
-    setMessages(prev => [...prev, tempMessage]);
-    
-    // Send via socket
-    socket.current.emit('send_message', {
-      messageId: tempId,
-      senderId: currentUser._id,
-      receiverId: selectedConversation._id,
-      messageType: 'voice',
-      audioUrl: uploadResult.audioUrl,
-      duration: recordingTime,
-      sender: {
-        _id: currentUser._id,
-        name: currentUser.name,
-        avatar: currentUser.avatar
+  // Stop voice recording
+  const stopRecording = () => {
+    if (mediaRecorderRef.current && isRecording) {
+      mediaRecorderRef.current.stop();
+      setIsRecording(false);
+      
+      // Clear the timer
+      if (recordingTimerRef.current) {
+        clearInterval(recordingTimerRef.current);
       }
-    });
-    
-    // Send HTTP request
-    const response = await fetch('http://localhost:8000/api/chat/voice', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(messageData),
-      credentials: 'include'
-    });
-    
-    if (!response.ok) {
-      throw new Error('Failed to send voice message');
     }
-    
-    const sentMessage = await response.json();
-    
-    // Replace temporary message
-    setMessages(prev => 
-      prev.map(msg => msg._id === tempId ? sentMessage : msg)
-    );
-    
-    // Update conversation with new message
-    updateConversationWithMessage(sentMessage);
-    
-  } catch (error) {
-    console.error('Error sending voice message:', error);
-    // Notify user of error
-  }
-};
+  };
+  
+  // Toggle recording
+  const toggleRecording = () => {
+    if (isRecording) {
+      stopRecording();
+    } else {
+      startRecording();
+    }
+  };
 
-// Handle file upload
-const handleFileUpload = async (file) => {
-  if (!selectedConversation) return;
-  
-  try {
-    // Create form data
-    const formData = new FormData();
-    formData.append('file', file);
-    formData.append('receiverId', selectedConversation._id);
+  // Format recording time
+  const formatRecordingTime = (seconds) => {
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = seconds % 60;
+    return `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
+  };
+
+  // Send voice message
+  const sendVoiceMessage = async (audioBlob, duration) => {
+    if (!selectedConversation) return;
     
-    // Upload the file
-    const uploadResponse = await fetch('http://localhost:8000/api/upload/file', {
-      method: 'POST',
-      body: formData,
-      credentials: 'include'
-    });
-    
-    if (!uploadResponse.ok) {
-      throw new Error('Failed to upload file');
-    }
-    
-    const uploadResult = await uploadResponse.json();
-    
-    // Send file message
-    const messageData = {
-      receiverId: selectedConversation._id,
-      fileUrl: uploadResult.fileUrl,
-      fileName: file.name,
-      fileType: file.type,
-      fileSize: file.size
-    };
-    
-    // Add temporary message
-    const tempId = Date.now().toString();
-    const tempMessage = {
-      _id: tempId,
-      messageType: 'file',
-      fileUrl: URL.createObjectURL(file),
-      fileName: file.name,
-      fileType: file.type,
-      fileSize: file.size,
-      sender: {
-        _id: currentUser._id,
-        name: currentUser.name,
-        avatar: currentUser.avatar
-      },
-      receiver: selectedConversation._id,
-      createdAt: new Date(),
-      read: false,
-      isTemp: true
-    };
-    
-    setMessages(prev => [...prev, tempMessage]);
-    
-    // Send via socket
-    socket.current.emit('send_message', {
-      messageId: tempId,
-      senderId: currentUser._id,
-      receiverId: selectedConversation._id,
-      messageType: 'file',
-      fileUrl: uploadResult.fileUrl,
-      fileName: file.name,
-      fileType: file.type,
-      fileSize: file.size,
-      sender: {
-        _id: currentUser._id,
-        name: currentUser.name,
-        avatar: currentUser.avatar
+    try {
+      // Create form data
+      const formData = new FormData();
+      formData.append('audio', audioBlob, 'voice_message.webm');
+      formData.append('receiverId', selectedConversation._id);
+      formData.append('duration', duration);
+      
+      // Add temporary message
+      const tempId = Date.now().toString();
+      const tempMessage = {
+        _id: tempId,
+        messageType: 'voice',
+        audioUrl: URL.createObjectURL(audioBlob),
+        duration: duration,
+        sender: {
+          _id: currentUser._id,
+          name: currentUser.name,
+          avatar: currentUser.avatar
+        },
+        receiver: selectedConversation._id,
+        createdAt: new Date(),
+        read: false,
+        isTemp: true
+      };
+      
+      setMessages(prev => [...prev, tempMessage]);
+      
+      // Send HTTP request
+      const response = await fetch('http://localhost:8000/api/chat/send-voice', {
+        method: 'POST',
+        body: formData,
+        credentials: 'include'
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to send voice message');
       }
-    });
-    
-    // Send HTTP request
-    const response = await fetch('http://localhost:8000/api/chat/file', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(messageData),
-      credentials: 'include'
-    });
-    
-    if (!response.ok) {
-      throw new Error('Failed to send file message');
+      
+      const sentMessage = await response.json();
+      
+      // Replace temporary message
+      setMessages(prev => 
+        prev.map(msg => msg._id === tempId ? sentMessage : msg)
+      );
+      
+      // Update conversation with new message
+      updateConversationWithMessage(sentMessage);
+      
+    } catch (error) {
+      console.error('Error sending voice message:', error);
+      // Notify user of error
     }
+  };
+
+  // Trigger file input click
+  const triggerFileUpload = () => {
+    fileInputRef.current.click();
+  };
+
+  // Handle file selection
+  const handleFileChange = (e) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      setSelectedFile(file);
+      sendFile(file);
+    }
+  };
+
+  // Send file message
+  const sendFile = async (file) => {
+    if (!selectedConversation) return;
     
-    const sentMessage = await response.json();
-    
-    // Replace temporary message
-    setMessages(prev => 
-      prev.map(msg => msg._id === tempId ? sentMessage : msg)
-    );
-    
-    // Update conversation with new message
-    updateConversationWithMessage(sentMessage);
-    
-  } catch (error) {
-    console.error('Error sending file message:', error);
-    // Notify user of error
-  }
-};
+    try {
+      // Create form data
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('receiverId', selectedConversation._id);
+      
+      // Add temporary message
+      const tempId = Date.now().toString();
+      const tempMessage = {
+        _id: tempId,
+        messageType: 'file',
+        fileUrl: URL.createObjectURL(file),
+        fileName: file.name,
+        fileType: file.type,
+        fileSize: file.size,
+        sender: {
+          _id: currentUser._id,
+          name: currentUser.name,
+          avatar: currentUser.avatar
+        },
+        receiver: selectedConversation._id,
+        createdAt: new Date(),
+        read: false,
+        isTemp: true
+      };
+      
+      setMessages(prev => [...prev, tempMessage]);
+      
+      // Send HTTP request
+      const response = await fetch('http://localhost:8000/api/chat/send-file', {
+        method: 'POST',
+        body: formData,
+        credentials: 'include'
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to send file message');
+      }
+      
+      const sentMessage = await response.json();
+      
+      // Replace temporary message
+      setMessages(prev => 
+        prev.map(msg => msg._id === tempId ? sentMessage : msg)
+      );
+      
+      // Update conversation with new message
+      updateConversationWithMessage(sentMessage);
+      
+    } catch (error) {
+      console.error('Error sending file message:', error);
+      // Notify user of error
+    } finally {
+      // Reset file input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+      setSelectedFile(null);
+    }
+  };
   
   // Update conversation list with new message
   const updateConversationWithMessage = (message) => {
@@ -583,33 +575,40 @@ const handleFileUpload = async (file) => {
     return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   };
 
-  // Add this helper function
+  // Format file size
   const formatFileSize = (bytes) => {
     if (bytes < 1024) return bytes + ' bytes';
     else if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
     else return (bytes / 1048576).toFixed(1) + ' MB';
   };
+
+  // Add emoji to message
+  const addEmoji = (emoji) => {
+    setNewMessage(prev => prev + emoji);
+  };
   
   return (
     <div className="flex h-screen bg-gray-100">
       {/* Sidebar */}
-      <div className="p-4 border-b border-gray-300 bg-[#00A272] text-white">
-        <div className="relative">
-          <input
-            type="text"
-            placeholder="Search conversations..."
-            className="w-full px-4 py-2 pl-10 bg-white bg-opacity-20 rounded-full text-white placeholder-white placeholder-opacity-75 focus:outline-none focus:bg-white focus:text-gray-800 focus:placeholder-gray-400"
-          />
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 absolute left-3 top-2.5 text-white pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-          </svg>
+      <div className="w-80 border-r border-gray-300 flex flex-col bg-white">
+        <div className="p-4 border-b border-gray-300 bg-[#00A272] text-white">
+          <div className="relative">
+            <input
+              type="text"
+              placeholder="Search conversations..."
+              className="w-full px-4 py-2 pl-10 bg-white bg-opacity-20 rounded-full text-white placeholder-white placeholder-opacity-75 focus:outline-none focus:bg-white focus:text-gray-800 focus:placeholder-gray-400"
+            />
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 absolute left-3 top-2.5 text-white pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+          </div>
         </div>
         
         {/* Conversations list */}
         <div className="flex-1 overflow-y-auto">
           {loading ? (
-            <div className="flex items-center justify-center h-full">
-              <div className="loader">Loading...</div>
+            <div className="flex items-center justify-center h-24 p-4">
+              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-[#00A272]"></div>
             </div>
           ) : conversations.length === 0 ? (
             <div className="text-center p-4 text-gray-500">
@@ -621,7 +620,7 @@ const handleFileUpload = async (file) => {
                 key={conversation.staff._id}
                 className={`flex items-center p-3 border-b border-gray-200 cursor-pointer hover:bg-gray-50 ${
                   selectedConversation && selectedConversation._id === conversation.staff._id
-                    ? 'bg-blue-50'
+                    ? 'bg-[#00A272] bg-opacity-10'
                     : ''
                 }`}
                 onClick={() => selectConversation(conversation)}
@@ -657,12 +656,10 @@ const handleFileUpload = async (file) => {
                   </div>
                   <div className="flex justify-between items-center">
                     <p className="text-sm text-gray-500 truncate max-w-[180px]">
-                      {conversation.lastMessage
-                        ? conversation.lastMessage.content
-                        : `${conversation.staff.role} • Start chatting`}
+                      {conversation.lastMessage?.content || `${conversation.staff.role} • Start chatting`}
                     </p>
                     {conversation.unreadCount > 0 && (
-                      <span className="bg-blue-600 text-white text-xs rounded-full px-2 py-1 min-w-[20px] text-center">
+                      <span className="bg-[#00A272] text-white text-xs rounded-full px-2 py-1 min-w-[20px] text-center">
                         {conversation.unreadCount}
                       </span>
                     )}
@@ -725,8 +722,8 @@ const handleFileUpload = async (file) => {
             {/* Messages */}
             <div className="flex-1 overflow-y-auto p-4 bg-gray-50">
               {loadingMessages ? (
-                <div className="flex items-center justify-center h-full">
-                  <div className="loader">Loading messages...</div>
+                <div className="flex items-center justify-center h-24 p-4">
+                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-[#00A272]"></div>
                 </div>
               ) : messages.length === 0 ? (
                 <div className="flex flex-col items-center justify-center h-full text-gray-500">
@@ -767,32 +764,87 @@ const handleFileUpload = async (file) => {
                           </div>
                         )}
                         <div className="max-w-[70%]">
+                          {message.messageType === 'voice' ? (
+                            <div 
+                              className={`p-3 rounded-lg ${
+                                isMine 
+                                  ? 'bg-[#00A272] text-white rounded-br-none' 
+                                  : 'bg-white text-gray-800 rounded-bl-none border border-gray-200'
+                              }`}
+                            >
+                              <div className="flex items-center">
+                                <button className="mr-2 text-current">
+                                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                  </svg>
+                                </button>
+                                <div className="flex-1">
+                                  <div className="h-1.5 bg-gray-300 rounded-full">
+                                    <div className="h-1.5 bg-blue-500 rounded-full w-1/3"></div>
+                                  </div>
+                                </div>
+                                <span className="ml-2 text-xs">
+                                  {formatRecordingTime(message.duration)}
+                                </span>
+                              </div>
+                            </div>
+                          ) : message.messageType === 'file' ? (
+                            <div 
+                              className={`p-3 rounded-lg ${
+                                isMine 
+                                  ? 'bg-[#00A272] text-white rounded-br-none' 
+                                  : 'bg-white text-gray-800 rounded-bl-none border border-gray-200'
+                              }`}
+                            >
+                              <div className="flex items-center">
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                </svg>
+                                <div>
+                                  <div className="font-medium">{message.fileName}</div>
+                                  <div className="text-xs">{formatFileSize(message.fileSize)}</div>
+                                </div>
+                                <a 
+                                  href={message.fileUrl} 
+                                  download={message.fileName}
+                                  className={`ml-2 text-xs ${isMine ? 'text-white' : 'text-blue-500'}`}
+                                >
+                                  Download
+                                </a>
+                              </div>
+                            </div>
+                          ) : (
+                            <div 
+                              className={`p-3 rounded-lg ${
+                                isMine 
+                                  ? 'bg-[#00A272] text-white rounded-br-none' 
+                                  : 'bg-white text-gray-800 rounded-bl-none border border-gray-200'
+                              }`}
+                            >
+                              <p>{message.content}</p>
+                            </div>
+                          )}
                           <div 
-                            className={`p-3 rounded-lg ${
-                              isMine 
-                                ? 'bg-blue-600 text-white rounded-br-none' 
-                                : 'bg-white text-gray-800 rounded-bl-none border border-gray-200'
-                            }`}
-                          >
-                            {message.content}
-                          </div>
-                          <div 
-                            className={`flex items-center text-xs mt-1 ${
+                            className={`mt-1 text-xs text-gray-500 flex items-center ${
                               isMine ? 'justify-end' : 'justify-start'
                             }`}
                           >
-                            <span className="text-gray-500">
-                              {formatMessageTime(message.createdAt)}
-                            </span>
+                            {formatMessageTime(message.createdAt)}
                             {isMine && (
                               <span className="ml-1">
                                 {message.read ? (
-                                  <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                  <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 text-blue-500" viewBox="0 0 20 20" fill="currentColor">
+                                    <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
+                                    <path fillRule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clipRule="evenodd" />
+                                  </svg>
+                                ) : message.isTemp ? (
+                                  <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
                                   </svg>
                                 ) : (
-                                  <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                  <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                                   </svg>
                                 )}
                               </span>
@@ -820,7 +872,7 @@ const handleFileUpload = async (file) => {
                   
                   {/* Typing indicator */}
                   {typing[selectedConversation._id] && (
-                    <div className="flex items-center">
+                    <div className="flex justify-start">
                       <div className="w-8 h-8 rounded-full bg-gray-300 flex-shrink-0 flex items-center justify-center overflow-hidden mr-2">
                         {selectedConversation.avatar ? (
                           <img
@@ -834,11 +886,11 @@ const handleFileUpload = async (file) => {
                           </span>
                         )}
                       </div>
-                      <div className="bg-white p-3 rounded-lg rounded-bl-none border border-gray-200 inline-block">
+                      <div className="bg-white p-3 rounded-lg rounded-bl-none border border-gray-200">
                         <div className="flex space-x-1">
-                          <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
-                          <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '200ms' }}></div>
-                          <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '400ms' }}></div>
+                          <div className="w-2 h-2 bg-gray-500 rounded-full animate-bounce"></div>
+                          <div className="w-2 h-2 bg-gray-500 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                          <div className="w-2 h-2 bg-gray-500 rounded-full animate-bounce" style={{ animationDelay: '0.4s' }}></div>
                         </div>
                       </div>
                     </div>
@@ -849,38 +901,97 @@ const handleFileUpload = async (file) => {
               )}
             </div>
             
-            {/* Update the message input area */}
-          <div className="p-3 bg-white border-t border-gray-300">
-            <form onSubmit={sendMessage} className="flex flex-col">
-              {/* Message input with emoji picker */}
-              <div className="flex items-center mb-2">
-                <input
-                  type="text"
-                  value={newMessage}
-                  onChange={(e) => setNewMessage(e.target.value)}
-                  onKeyDown={() => handleTyping()}
-                  placeholder="Type a message..."
-                  className="flex-1 border border-gray-300 rounded-full px-4 py-2 focus:outline-none focus:border-[#00A272]"
-                />
-                <EmojiPicker onEmojiSelect={(emoji) => setNewMessage(prev => prev + emoji)} />
-                <button
-                  type="submit"
-                  disabled={!newMessage.trim()}
-                  className="ml-2 bg-[#00A272] text-white rounded-full p-2 focus:outline-none hover:bg-green-700 disabled:opacity-50"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
-                  </svg>
-                </button>
-              </div>
-              
-              {/* Voice and file attachments */}
-              <div className="flex space-x-2">
-                <VoiceRecorder onRecordingComplete={handleVoiceMessage} />
-                <FileUploader onFileSelect={handleFileUpload} />
-              </div>
-            </form>
-          </div>
+            {/* Message input */}
+            <div className="p-3 border-t border-gray-300 bg-white">
+              {isRecording ? (
+                <div className="flex items-center justify-between bg-red-50 border border-red-200 rounded-lg p-3">
+                  <div className="flex items-center">
+                    <div className="w-3 h-3 bg-red-500 rounded-full animate-pulse mr-2"></div>
+                    <span className="font-medium text-red-500">Recording: {formatRecordingTime(recordingTime)}</span>
+                  </div>
+                  <div className="flex space-x-2">
+                    <button
+                      onClick={stopRecording}
+                      className="px-4 py-1 bg-red-500 text-white rounded-lg hover:bg-red-600 focus:outline-none"
+                    >
+                      Stop
+                    </button>
+                    <button
+                      onClick={() => {
+                        stopRecording();
+                        setIsRecording(false);
+                        if (recordingTimerRef.current) {
+                          clearInterval(recordingTimerRef.current);
+                        }
+                      }}
+                      className="px-4 py-1 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 focus:outline-none"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <form onSubmit={sendMessage} className="flex items-center space-x-2">
+                  <button
+                    type="button"
+                    onClick={triggerFileUpload}
+                    className="text-gray-500 hover:text-gray-700 focus:outline-none"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+                    </svg>
+                  </button>
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    className="hidden"
+                    onChange={handleFileChange}
+                  />
+                  <div className="relative flex-1">
+                    <input
+                      type="text"
+                      value={newMessage}
+                      onChange={(e) => {
+                        setNewMessage(e.target.value);
+                        handleTyping();
+                      }}
+                      placeholder="Type a message..."
+                      className="w-full px-4 py-2 pl-4 pr-10 border border-gray-300 rounded-full focus:outline-none focus:border-[#00A272] focus:ring-1 focus:ring-[#00A272]"
+                    />
+                    <button
+                      type="button"
+                      className="absolute right-3 top-2 text-gray-500 hover:text-gray-700 focus:outline-none"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                    </button>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={toggleRecording}
+                    className="text-gray-500 hover:text-gray-700 focus:outline-none"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+                    </svg>
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={!newMessage.trim() && !selectedFile && !isRecording}
+                    className={`p-2 rounded-full focus:outline-none ${
+                      newMessage.trim() || selectedFile || isRecording
+                        ? 'bg-[#00A272] text-white'
+                        : 'bg-gray-200 text-gray-400'
+                    }`}
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                    </svg>
+                  </button>
+                </form>
+              )}
+            </div>
           </>
         ) : (
           <div className="flex flex-col items-center justify-center h-full bg-gray-50 text-gray-500">
@@ -889,8 +1000,10 @@ const handleFileUpload = async (file) => {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
               </svg>
             </div>
-            <h3 className="text-xl font-medium mb-2">Your messages</h3>
-            <p className="text-sm mb-6">Select a conversation to start chatting</p>
+            <h2 className="text-xl font-medium mb-2">Welcome to HealthChat</h2>
+            <p className="text-center max-w-md px-4">
+              Select a conversation from the sidebar to start messaging or continue an existing chat.
+            </p>
           </div>
         )}
       </div>
