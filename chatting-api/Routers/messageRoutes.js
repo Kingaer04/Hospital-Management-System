@@ -1,5 +1,5 @@
 import express from "express";
-import { getConversations, getMessages, sendMessage, markAsRead, getUnreadCounts, verifyToken } from "../Controllers/messageController.js";
+import { getConversations, getMessages, sendMessage, markAsRead, getUnreadCounts, sendFile, sendVoiceMessage, verifyToken } from "../Controllers/messageController.js";
 
 const router = express.Router();
 
@@ -18,5 +18,8 @@ router.post("/read/:senderId", verifyToken, markAsRead);
 
 // Get unread message counts
 router.get("/unread", verifyToken, getUnreadCounts);
+
+router.post('/send-file', verifyToken, sendFile);
+router.post('/send-voice', verifyToken, sendVoiceMessage);
 
 export default router;

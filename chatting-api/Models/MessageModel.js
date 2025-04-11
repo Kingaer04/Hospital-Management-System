@@ -21,6 +21,19 @@ const messageSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
+    messageType: {
+      type: String,
+      enum: ["text", "file", "voice", "emoji"],
+      default: "text",
+    },
+    // For file messages
+    fileUrl: String,
+    fileName: String,
+    fileType: String,
+    fileSize: Number,
+    // For voice messages
+    audioUrl: String,
+    duration: Number,
     read: {
       type: Boolean,
       default: false,

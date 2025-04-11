@@ -91,6 +91,42 @@ export const setupSocketIO = (server) => {
         });
       }
     });
+
+    // Handle file transfers
+    socket.on("send_file", (data) => {
+      const receiverSocketId = userSockets.get(data.receiverId);
+      if (receiverSocketId) {
+        io.to(receiverSocketId).emit("receive_file", {
+          ...data,
+          createdAt: new Date(),
+        });
+        console.log(`File delivered to socket: ${receiverSocketId}`);
+      }
+      
+      socket.emit("file_sent", {
+        fileId: data.fileId,
+        status: "sent",
+        timestamp: new Date(),
+      });
+    });
+
+    // Handle voice recordings
+    socket.on("send_voice", (data) => {
+      const receiverSocketId = userSockets.get(data.receiverId);
+      if (receiverSocketId) {
+        io.to(receiverSocketId).emit("receive_voice", {
+          ...data,
+          createdAt: new Date(),
+        });
+        console.log(`Voice message delivered to socket: ${receiverSocketId}`);
+      }
+      
+      socket.emit("voice_sent", {
+        voiceId: data.voiceId,
+        status: "sent",
+        timestamp: new Date(),
+      });
+    });
     
     // Listen for read receipts
     socket.on("mark_read", (data) => {

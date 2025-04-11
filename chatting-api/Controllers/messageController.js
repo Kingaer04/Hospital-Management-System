@@ -233,3 +233,95 @@ export const getUnreadCounts = async (req, res) => {
     res.status(500).json({ message: "Failed to get unread counts" });
   }
 };
+
+// Send a file message
+export const sendFile = async (req, res) => {
+  try {
+    const { receiverId, fileUrl, fileName, fileType, fileSize } = req.body;
+    const senderId = req.user.id;
+    const hospitalId = req.user.hospitalId;
+
+    if (!fileUrl || !receiverId) {
+      return res.status(400).json({ message: "Receiver ID and file are required" });
+    }
+
+    // Ensure receiver is from the same hospital
+    const receiver = await StaffData.findOne({
+      _id: receiverId,
+      hospital_ID: hospitalId,
+    });
+
+    if (!receiver) {
+      return res.status(404).json({
+        message: "Receiver not found or not from the same hospital",
+      });
+    }
+
+    const newMessage = new Message({
+      sender: senderId,
+      receiver: receiverId,
+      messageType: "file",
+      fileUrl,
+      fileName,
+      fileType,
+      fileSize,
+      hospital_ID: hospitalId,
+    });
+
+    await newMessage.save();
+    const populatedMessage = await Message.findById(newMessage._id).populate(
+      "sender",
+      "name avatar"
+    );
+
+    res.status(201).json(populatedMessage);
+  } catch (error) {
+    console.error("Error sending file:", error);
+    res.status(500).json({ message: "Failed to send file" });
+  }
+};
+
+// Send a voice message
+export const sendVoiceMessage = async (req, res) => {
+  try {
+    const { receiverId, audioUrl, duration } = req.body;
+    const senderId = req.user.id;
+    const hospitalId = req.user.hospitalId;
+
+    if (!audioUrl || !receiverId) {
+      return res.status(400).json({ message: "Receiver ID and audio are required" });
+    }
+
+    // Ensure receiver is from the same hospital
+    const receiver = await StaffData.findOne({
+      _id: receiverId,
+      hospital_ID: hospitalId,
+    });
+
+    if (!receiver) {
+      return res.status(404).json({
+        message: "Receiver not found or not from the same hospital",
+      });
+    }
+
+    const newMessage = new Message({
+      sender: senderId,
+      receiver: receiverId,
+      messageType: "voice",
+      audioUrl,
+      duration,
+      hospital_ID: hospitalId,
+    });
+
+    await newMessage.save();
+    const populatedMessage = await Message.findById(newMessage._id).populate(
+      "sender",
+      "name avatar"
+    );
+
+    res.status(201).json(populatedMessage);
+  } catch (error) {
+    console.error("Error sending voice message:", error);
+    res.status(500).json({ message: "Failed to send voice message" });
+  }
+};
