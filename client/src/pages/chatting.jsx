@@ -296,41 +296,6 @@ const ChatInterface = () => {
       console.error('Error sending message:', error);
     }
   };
-
-  // Start voice recording
-  const startRecording = async () => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const mediaRecorder = new MediaRecorder(stream);
-      mediaRecorderRef.current = mediaRecorder;
-      audioChunksRef.current = [];
-      
-      mediaRecorder.ondataavailable = (e) => {
-        audioChunksRef.current.push(e.data);
-      };
-      
-      mediaRecorder.onstop = () => {
-        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
-        sendVoiceMessage(audioBlob, recordingTime);
-        
-        // Stop all tracks to release the microphone
-        stream.getTracks().forEach(track => track.stop());
-      };
-      
-      mediaRecorder.start();
-      setIsRecording(true);
-      
-      // Start timer for recording duration
-      let seconds = 0;
-      recordingTimerRef.current = setInterval(() => {
-        seconds++;
-        setRecordingTime(seconds);
-      }, 1000);
-    } catch (error) {
-      console.error('Error starting voice recording:', error);
-      alert('Could not access microphone');
-    }
-  };
   
   // Stop voice recording
   const stopRecording = () => {
@@ -361,63 +326,203 @@ const ChatInterface = () => {
     return `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
   };
 
-  // Send voice message
-  const sendVoiceMessage = async (audioBlob, duration) => {
-    if (!selectedConversation) return;
+  // Fix for sendVoiceMessage function
+// Fixed sendVoiceMessage function
+const sendVoiceMessage = async (audioBlob, duration) => {
+  if (!selectedConversation) return;
+  
+  try {
+    // Create form data
+    const formData = new FormData();
+    formData.append('audio', audioBlob, 'voice_message.webm');
+    formData.append('receiverId', selectedConversation._id);
+    formData.append('duration', duration.toString());
     
-    try {
-      // Create form data
-      const formData = new FormData();
-      formData.append('audio', audioBlob, 'voice_message.webm');
-      formData.append('receiverId', selectedConversation._id);
-      formData.append('duration', duration);
-      
-      // Add temporary message
-      const tempId = Date.now().toString();
-      const tempMessage = {
-        _id: tempId,
-        messageType: 'voice',
-        audioUrl: URL.createObjectURL(audioBlob),
-        duration: duration,
-        sender: {
-          _id: currentUser._id,
-          name: currentUser.name,
-          avatar: currentUser.avatar
-        },
-        receiver: selectedConversation._id,
-        createdAt: new Date(),
-        read: false,
-        isTemp: true
-      };
-      
-      setMessages(prev => [...prev, tempMessage]);
-      
-      // Send HTTP request
-      const response = await fetch('http://localhost:8000/api/chat/send-voice', {
-        method: 'POST',
-        body: formData,
-        credentials: 'include'
-      });
-      
-      if (!response.ok) {
-        throw new Error('Failed to send voice message');
+    // Debug - log FormData entries
+    console.log("Voice FormData entries:");
+    for (let pair of formData.entries()) {
+      console.log(pair[0] + ': ' + (pair[1] instanceof Blob ? 
+        `Blob (${pair[1].size} bytes)` : pair[1]));
+    }
+    
+    // Add temporary message
+    const tempId = Date.now().toString();
+    const tempAudioUrl = URL.createObjectURL(audioBlob);
+    const tempMessage = {
+      _id: tempId,
+      messageType: 'voice',
+      audioUrl: tempAudioUrl,
+      duration: duration,
+      sender: {
+        _id: currentUser._id,
+        name: currentUser.name,
+        avatar: currentUser.avatar
+      },
+      receiver: selectedConversation._id,
+      createdAt: new Date(),
+      read: false,
+      isTemp: true
+    };
+    
+    setMessages(prev => [...prev, tempMessage]);
+    
+    // Send HTTP request
+    const response = await fetch('http://localhost:8000/api/chat/send-voice', {
+      method: 'POST',
+      body: formData, // Do NOT set Content-Type header, browser will set it with boundary
+      credentials: 'include'
+    });
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('Server error:', response.status, errorText);
+      throw new Error(`Failed to send voice message: ${response.status}`);
+    }
+    
+    const sentMessage = await response.json();
+    
+    // Replace temporary message
+    setMessages(prev => 
+      prev.map(msg => msg._id === tempId ? sentMessage : msg)
+    );
+    
+    // Update conversation with new message
+    updateConversationWithMessage(sentMessage);
+    
+  } catch (error) {
+    console.error('Error sending voice message:', error);
+    alert('Failed to send voice message. Please try again.');
+  }
+};
+
+// Fixed sendFile function
+const sendFile = async (file) => {
+  if (!selectedConversation) return;
+  
+  try {
+    // Create form data
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('receiverId', selectedConversation._id);
+    
+    // Debug - log FormData entries
+    console.log("File FormData entries:");
+    for (let pair of formData.entries()) {
+      console.log(pair[0] + ': ' + (pair[1] instanceof File ? 
+        `${pair[1].name} (${pair[1].size} bytes)` : pair[1]));
+    }
+    
+    // Add temporary message
+    const tempId = Date.now().toString();
+    const tempFileUrl = URL.createObjectURL(file);
+    const tempMessage = {
+      _id: tempId,
+      messageType: 'file',
+      fileUrl: tempFileUrl,
+      fileName: file.name,
+      fileType: file.type,
+      fileSize: file.size,
+      sender: {
+        _id: currentUser._id,
+        name: currentUser.name,
+        avatar: currentUser.avatar
+      },
+      receiver: selectedConversation._id,
+      createdAt: new Date(),
+      read: false,
+      isTemp: true
+    };
+    
+    setMessages(prev => [...prev, tempMessage]);
+    
+    // Send HTTP request
+    const response = await fetch('http://localhost:8000/api/chat/send-file', {
+      method: 'POST',
+      body: formData, // Do NOT set Content-Type header, browser will set it with boundary
+      credentials: 'include'
+    });
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('Server error:', response.status, errorText);
+      throw new Error(`Failed to send file: ${response.status}`);
+    }
+    
+    const sentMessage = await response.json();
+    
+    // Replace temporary message
+    setMessages(prev => 
+      prev.map(msg => msg._id === tempId ? sentMessage : msg)
+    );
+    
+    // Update conversation with new message
+    updateConversationWithMessage(sentMessage);
+    
+  } catch (error) {
+    console.error('Error sending file message:', error);
+    alert('Failed to send file. Please try again.');
+  } finally {
+    // Reset file input
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+    setSelectedFile(null);
+  }
+};
+
+// Improved startRecording function to ensure proper audio blob creation
+const startRecording = async () => {
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    
+    // Use a widely supported audio format
+    const options = { mimeType: 'audio/webm' };
+    const mediaRecorder = new MediaRecorder(stream, options);
+    mediaRecorderRef.current = mediaRecorder;
+    audioChunksRef.current = [];
+    
+    mediaRecorder.ondataavailable = (e) => {
+      if (e.data && e.data.size > 0) {
+        audioChunksRef.current.push(e.data);
+      }
+    };
+    
+    mediaRecorder.onstop = () => {
+      if (audioChunksRef.current.length === 0) {
+        console.error('No audio data recorded');
+        alert('No audio was recorded. Please try again.');
+        return;
       }
       
-      const sentMessage = await response.json();
+      const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+      console.log('Audio blob created:', audioBlob.size, 'bytes');
       
-      // Replace temporary message
-      setMessages(prev => 
-        prev.map(msg => msg._id === tempId ? sentMessage : msg)
-      );
+      if (audioBlob.size > 0) {
+        sendVoiceMessage(audioBlob, recordingTime);
+      } else {
+        console.error('Empty audio blob created');
+        alert('Recording failed. Please try again.');
+      }
       
-      // Update conversation with new message
-      updateConversationWithMessage(sentMessage);
-      
-    } catch (error) {
-      console.error('Error sending voice message:', error);
-      // Notify user of error
-    }
-  };
+      // Stop all tracks to release the microphone
+      stream.getTracks().forEach(track => track.stop());
+    };
+    
+    // Request data at regular intervals (e.g., every 200ms)
+    mediaRecorder.start(200);
+    setIsRecording(true);
+    
+    // Start timer for recording duration
+    let seconds = 0;
+    recordingTimerRef.current = setInterval(() => {
+      seconds++;
+      setRecordingTime(seconds);
+    }, 1000);
+  } catch (error) {
+    console.error('Error starting voice recording:', error);
+    alert('Could not access microphone: ' + error.message);
+  }
+};
 
   // Trigger file input click
   const triggerFileUpload = () => {
@@ -430,71 +535,6 @@ const ChatInterface = () => {
       const file = e.target.files[0];
       setSelectedFile(file);
       sendFile(file);
-    }
-  };
-
-  // Send file message
-  const sendFile = async (file) => {
-    if (!selectedConversation) return;
-    
-    try {
-      // Create form data
-      const formData = new FormData();
-      formData.append('file', file);
-      formData.append('receiverId', selectedConversation._id);
-      
-      // Add temporary message
-      const tempId = Date.now().toString();
-      const tempMessage = {
-        _id: tempId,
-        messageType: 'file',
-        fileUrl: URL.createObjectURL(file),
-        fileName: file.name,
-        fileType: file.type,
-        fileSize: file.size,
-        sender: {
-          _id: currentUser._id,
-          name: currentUser.name,
-          avatar: currentUser.avatar
-        },
-        receiver: selectedConversation._id,
-        createdAt: new Date(),
-        read: false,
-        isTemp: true
-      };
-      
-      setMessages(prev => [...prev, tempMessage]);
-      
-      // Send HTTP request
-      const response = await fetch('http://localhost:8000/api/chat/send-file', {
-        method: 'POST',
-        body: formData,
-        credentials: 'include'
-      });
-      
-      if (!response.ok) {
-        throw new Error('Failed to send file message');
-      }
-      
-      const sentMessage = await response.json();
-      
-      // Replace temporary message
-      setMessages(prev => 
-        prev.map(msg => msg._id === tempId ? sentMessage : msg)
-      );
-      
-      // Update conversation with new message
-      updateConversationWithMessage(sentMessage);
-      
-    } catch (error) {
-      console.error('Error sending file message:', error);
-      // Notify user of error
-    } finally {
-      // Reset file input
-      if (fileInputRef.current) {
-        fileInputRef.current.value = '';
-      }
-      setSelectedFile(null);
     }
   };
   

@@ -2,6 +2,38 @@ import Message from "../Models/MessageModel.js";
 import StaffData from "../Models/StaffModel.js";
 import jwt from "jsonwebtoken";
 import mongoose from "mongoose";
+// Send a file message
+import multer from 'multer';
+import path from 'path';
+import fs from 'fs';
+import { fileURLToPath } from 'url';
+import { dirname } from 'path';
+
+// Get the directory name of the current module
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
+// Configure storage
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    const uploadDir = path.join(__dirname, '../uploads');
+    // Create directory if it doesn't exist
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir, { recursive: true });
+    }
+    cb(null, uploadDir);
+  },
+  filename: function (req, file, cb) {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
+  }
+});
+
+const upload = multer({ storage: storage });
+
+// Middleware for file uploads
+export const uploadFile = upload.single('file');
+export const uploadAudio = upload.single('audio');
 
 export const verifyToken = (req, res, next) => {
   const token = req.cookies.token;
@@ -237,11 +269,14 @@ export const getUnreadCounts = async (req, res) => {
 // Send a file message
 export const sendFile = async (req, res) => {
   try {
-    const { receiverId, fileUrl, fileName, fileType, fileSize } = req.body;
+    console.log("File request received:", req.file);
+    console.log("Request body:", req.body);
+    
+    const receiverId = req.body.receiverId;
     const senderId = req.user.id;
     const hospitalId = req.user.hospitalId;
 
-    if (!fileUrl || !receiverId) {
+    if (!req.file || !receiverId) {
       return res.status(400).json({ message: "Receiver ID and file are required" });
     }
 
@@ -257,14 +292,17 @@ export const sendFile = async (req, res) => {
       });
     }
 
+    // Create file URL (relative to server)
+    const fileUrl = `/uploads/${req.file.filename}`;
+
     const newMessage = new Message({
       sender: senderId,
       receiver: receiverId,
       messageType: "file",
       fileUrl,
-      fileName,
-      fileType,
-      fileSize,
+      fileName: req.file.originalname,
+      fileType: req.file.mimetype,
+      fileSize: req.file.size,
       hospital_ID: hospitalId,
     });
 
@@ -284,12 +322,15 @@ export const sendFile = async (req, res) => {
 // Send a voice message
 export const sendVoiceMessage = async (req, res) => {
   try {
-    console.log(req.body)
-    const { receiverId, audioUrl, duration } = req.body;
+    console.log("Voice request received:", req.file);
+    console.log("Request body:", req.body);
+    
+    const receiverId = req.body.receiverId;
+    const duration = req.body.duration || 0;
     const senderId = req.user.id;
     const hospitalId = req.user.hospitalId;
 
-    if (!audioUrl || !receiverId) {
+    if (!req.file || !receiverId) {
       return res.status(400).json({ message: "Receiver ID and audio are required" });
     }
 
@@ -305,12 +346,15 @@ export const sendVoiceMessage = async (req, res) => {
       });
     }
 
+    // Create audio URL (relative to server)
+    const audioUrl = `/uploads/${req.file.filename}`;
+
     const newMessage = new Message({
       sender: senderId,
       receiver: receiverId,
       messageType: "voice",
       audioUrl,
-      duration,
+      duration: parseInt(duration, 10),
       hospital_ID: hospitalId,
     });
 
