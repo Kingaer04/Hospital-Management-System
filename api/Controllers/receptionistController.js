@@ -1,5 +1,7 @@
 import StaffData from '../Models/StaffModel.js'
 import BookingAppointment from '../Models/BoookingAppointmentModel.js';
+import PatientData from '../Models/PatientModel.js';
+import { get } from 'http';
 
 export const receptionistController = {
     getDoctors: async (req, res) => {
@@ -51,9 +53,6 @@ export const receptionistController = {
             // Update the status
             appointment.checkOut = new Date();
             
-            // // Add timestamp for the status change (optional)
-            // appointment.checkOutUpdatedAt = new Date();
-            
             // Save the changes
             await appointment.save();
             
@@ -78,5 +77,60 @@ export const receptionistController = {
             console.log('Error fetching recent checkouts:', error);
             res.status(500).json({ message: error.message });
         }
-    }
+    },
+
+    getTotalStaff: async (req, res) => {
+        try {
+            const { hospital_ID } = req.params;
+            const totalStaff = await StaffData.countDocuments({ hospital_ID });
+            res.status(200).json({ totalStaff });
+        } catch (error) {
+            console.log('Error fetching total staff:', error);
+            res.status(500).json({ message: error.message });
+        }
+    },
+
+    getTotalPatients: async (req, res) => {
+        try {
+            const { hospital_ID } = req.params;
+            const totalPatients = await PatientData.countDocuments({ hospital_ID });
+            res.status(200).json({ totalPatients });
+        } catch (error) {
+            console.log('Error fetching total patients:', error);
+            res.status(500).json({ message: error.message });
+        }
+    },
+
+    getTotalAppointments: async (req, res) => {
+        try {
+            const { hospital_ID } = req.params;
+            const totalAppointments = await BookingAppointment.countDocuments({ hospital_ID });
+            res.status(200).json({ totalAppointments });
+        } catch (error) {
+            console.log('Error fetching total appointments:', error);
+            res.status(500).json({ message: error.message });
+        }
+    },
+
+    getTotalPendingAppointments: async (req, res) => {
+        try {
+            const { hospital_ID } = req.params;
+            const totalPendingAppointments = await BookingAppointment.countDocuments({ hospital_ID, status: 'pending' });
+            res.status(200).json({ totalPendingAppointments });
+        } catch (error) {
+            console.log('Error fetching total pending appointments:', error);
+            res.status(500).json({ message: error.message });
+        }
+    },
+
+    getTotalCompletedAppointments: async (req, res) => {
+        try {
+            const { hospital_ID } = req.params;
+            const totalCompletedAppointments = await BookingAppointment.countDocuments({ hospital_ID, status: 'completed' });
+            res.status(200).json({ totalCompletedAppointments });
+        } catch (error) {
+            console.log('Error fetching total completed appointments:', error);
+            res.status(500).json({ message: error.message });
+        }
+    },
 }

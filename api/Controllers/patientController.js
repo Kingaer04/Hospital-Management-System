@@ -49,18 +49,25 @@ export const patientController = {
         });
     },
 
-    getLastPatientId: async (req, res) =>  {
+    getLastPatientId: async (req, res) => {
         try {
-            console.log(req.params.hospitalId)
+            console.log(req.params.hospitalId);
+            
+            // Get the last patient ID from any hospital (global search)
             const lastPatient = await PatientData.findOne(
-                { hospital_ID: req.params.hospitalId },
+                {}, 
                 { patientID: 1 }
             ).sort({ createdAt: -1 });
-
+    
+            // Alternative if you're using numeric IDs
+            // const lastPatient = await PatientData.findOne({})
+            //    .sort({ patientID: -1 })
+            //    .select('patientID');
+    
             const lastPatientId = lastPatient ? lastPatient.patientID : null;
-            res.json({ lastPatientId })
+            res.json({ lastPatientId });
         } catch (error) {
-            res.status(500).json({ error: 'Failed to retrieve last patient ID' })
+            res.status(500).json({ error: 'Failed to retrieve last patient ID' });
         }
     },
 

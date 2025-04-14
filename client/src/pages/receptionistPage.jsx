@@ -17,6 +17,10 @@ export default function ReceptionistHome() {
   const [availableDoctors, setAvailableDoctors] = useState([]);
   const [recentCheckouts, setRecentCheckouts] = useState([]);
   const [windowWidth, setWindowWidth] = useState(window.innerWidth);
+  const [totalPatient, setTotalPatient] = useState(0);
+  const [totalStaff, setTotalStaff] = useState(0);
+  const [totalAppointments, setTotalAppointments] = useState(0);
+  const [totalPendingAppointments, setTotalPendingAppointments] = useState(0);
 
   // Handle window resize
   useEffect(() => {
@@ -99,7 +103,7 @@ export default function ReceptionistHome() {
             patientName,
             patientId,
             doctorName,
-            checkoutDate: checkout.checkoutDate || new Date().toISOString()
+            checkoutDate: checkout.checkOut
           };
         });
         
@@ -148,8 +152,82 @@ export default function ReceptionistHome() {
     setSearchItem('');
   };
 
-  useEffect(() => {console.log(recentCheckouts.patientId)}, [recentCheckouts])
+  useEffect(() => {
+    const fetchTotalPatients = async () => {
+      try {
+        const response = await fetch(`/recep-patient/totalPatients/${currentUser.hospital_ID}`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+        const data = await response.json();
+        // Make sure we're setting a number, not an object
+        setTotalPatient(data.totalPatients || 0);
+      } catch (error) {
+        console.error('Error fetching total patients:', error);
+        setTotalPatient(0);
+      }
+    }
 
+    const fetchTotalStaff = async () => {
+      try {
+        const response = await fetch(`/recep-patient/totalStaff/${currentUser.hospital_ID}`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+        const data = await response.json();
+        // Make sure we're setting a number, not an object
+        setTotalStaff(data.totalStaff || 0);
+      } catch (error) {
+        console.error('Error fetching total staff:', error);
+        setTotalStaff(0);
+      }
+    }
+
+    const fetchTotalAppointments = async () => {
+      try {
+        const response = await fetch(`/recep-patient/totalAppointments/${currentUser.hospital_ID}`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+        const data = await response.json();
+        // Make sure we're setting a number, not an object
+        setTotalAppointments(data.totalAppointments || 0);
+      } catch (error) {
+        console.error('Error fetching total appointments:', error);
+        setTotalAppointments(0);
+      }
+    }
+
+    const fetchTotalPendingAppointments = async () => {
+      try {
+        const response = await fetch(`/recep-patient/totalPendingAppointments/${currentUser.hospital_ID}`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+        const data = await response.json();
+        // Make sure we're setting a number, not an object
+        setTotalPendingAppointments(data.totalPendingAppointments || 0);
+      } catch (error) {
+        console.error('Error fetching total pending appointments:', error);
+        setTotalPendingAppointments(0);
+      }
+    }
+
+    if (currentUser && currentUser.hospital_ID) {
+      fetchTotalPatients();
+      fetchTotalStaff();
+      fetchTotalAppointments();
+      fetchTotalPendingAppointments();
+    }
+  }, [currentUser])
 
   return (
     <div className="p-4 md:p-5 w-full min-h-screen flex flex-col">
@@ -169,28 +247,28 @@ export default function ReceptionistHome() {
             <div className='p-4 rounded-lg shadow-md bg-white'>
               <p className="text-sm text-gray-500">Total Patient</p>
               <div className='mt-4 flex justify-between items-center'>
-                <p className="font-bold">18</p>
+                <p className="font-bold">{typeof totalPatient === 'number' ? totalPatient : 0}</p>
                 <Diversity1OutlinedIcon sx={{ fill: "#00A272" }} />
               </div>
             </div>
             <div className='p-4 rounded-lg shadow-md bg-white'>
               <p className="text-sm text-gray-500">Total Staff</p>
               <div className='mt-4 flex justify-between items-center'>
-                <p className="font-bold">18</p>
+                <p className="font-bold">{typeof totalStaff === 'number' ? totalStaff : 0}</p>
                 <BadgeOutlinedIcon sx={{ fill: "#00A272" }} />
               </div>
             </div>
             <div className='p-4 rounded-lg shadow-md bg-white'>
               <p className="text-sm text-gray-500">Appointments</p>
               <div className='mt-4 flex justify-between items-center'>
-                <p className="font-bold">18</p>
+                <p className="font-bold">{typeof totalAppointments === 'number' ? totalAppointments : 0}</p>
                 <CalendarMonthOutlinedIcon sx={{ fill: "#00A272" }} />
               </div>
             </div>
             <div className='p-4 rounded-lg shadow-md bg-white'>
               <p className="text-sm text-gray-500">Pending Bills</p>
               <div className='mt-4 flex justify-between items-center'>
-                <p className="font-bold">12</p>
+                <p className="font-bold">{typeof totalPendingAppointments === 'number' ? totalPendingAppointments : 0}</p>
                 <LocalHospitalOutlinedIcon sx={{ fill: "#00A272" }} />
               </div>
             </div>

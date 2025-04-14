@@ -21,6 +21,12 @@ router.get('/lastPatientId/:hospitalId', patientController.getLastPatientId);
 router.get('/fetchHospital/:doctorId', doctorController.getHospital);
 router.post('/update-availability', staffController.updateAvailabilityStatus);
 router.get('/recentCheckouts/:hospital_ID', receptionistController.getRecentCheckouts);
+router.get('/totalStaff/:hospital_ID', receptionistController.getTotalStaff);
+router.get('/totalPatients/:hospital_ID', receptionistController.getTotalPatients);
+router.get('/totalAppointments/:hospital_ID', receptionistController.getTotalAppointments);
+router.get('/totalPendingAppointments/:hospital_ID', receptionistController.getTotalPendingAppointments);
+router.get('/totalCompletedAppointments/:hospital_ID', receptionistController.getTotalCompletedAppointments);
+router.get('/pendingAppointments/:hospital_ID', receptionistController.getTotalPendingAppointments);
 
 // Paystack route
 router.post('/hospitals/subaccount', createHospitalSubaccount);
