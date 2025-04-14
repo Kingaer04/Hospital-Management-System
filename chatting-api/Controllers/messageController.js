@@ -13,7 +13,9 @@ import { dirname } from 'path';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-// Configure storage
+// Update your multer configuration in the ChatController.js
+
+// Configure storage with better mime type handling
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
     const uploadDir = path.join(__dirname, '../uploads');
@@ -25,11 +27,50 @@ const storage = multer.diskStorage({
   },
   filename: function (req, file, cb) {
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
+    let extension = path.extname(file.originalname);
+    
+    // If it's an audio file with no extension, add appropriate extension
+    if (file.fieldname === 'audio' && !extension) {
+      if (file.mimetype === 'audio/webm') {
+        extension = '.webm';
+      } else if (file.mimetype === 'audio/mp3' || file.mimetype === 'audio/mpeg') {
+        extension = '.mp3';
+      } else if (file.mimetype === 'audio/wav') {
+        extension = '.wav';
+      } else {
+        extension = '.audio'; // fallback
+      }
+    }
+    
+    cb(null, file.fieldname + '-' + uniqueSuffix + extension);
   }
 });
 
-const upload = multer({ storage: storage });
+// Add better file filtering
+const fileFilter = (req, file, cb) => {
+  // Accept audio files for audio field
+  if (file.fieldname === 'audio') {
+    if (file.mimetype.startsWith('audio/') || file.mimetype === 'application/octet-stream') {
+      return cb(null, true);
+    }
+    return cb(new Error('Only audio files are allowed for voice messages'), false);
+  }
+  
+  // Accept all files for the file field
+  if (file.fieldname === 'file') {
+    return cb(null, true);
+  }
+  
+  cb(new Error('Unexpected field'), false);
+};
+
+const upload = multer({ 
+  storage: storage,
+  fileFilter: fileFilter,
+  limits: {
+    fileSize: 15 * 1024 * 1024 // 15MB limit
+  }
+});
 
 // Middleware for file uploads
 export const uploadFile = upload.single('file');

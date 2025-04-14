@@ -10,11 +10,19 @@ import cookieParser from "cookie-parser";
 import session from "express-session" // for cookie session
 import chatRoutes from "./Routers/messageRoutes.js";
 import { setupSocketIO } from "./Socket/socketHandler.js";
+import path from 'path';
+import { fileURLToPath } from 'url';
+import { dirname } from 'path';
 
 // Configure environment variables
 dotenv.config();
 
 const app = express();
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Database connection
 mongoose
