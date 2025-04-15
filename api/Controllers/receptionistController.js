@@ -133,4 +133,170 @@ export const receptionistController = {
             res.status(500).json({ message: error.message });
         }
     },
+    // Add these methods to your receptionistController.js
+getMonthlyPatients: async (req, res) => {
+    try {
+        const { hospital_ID } = req.params;
+        
+        // Get the current year
+        const currentYear = new Date().getFullYear();
+        
+        // Aggregate the monthly data for the current year
+        const monthlyData = await PatientData.aggregate([
+            {
+                $match: { 
+                    hospital_ID,
+                    createdAt: {
+                        $gte: new Date(`${currentYear}-01-01`),
+                        $lte: new Date(`${currentYear}-12-31`)
+                    }
+                }
+            },
+            {
+                $group: {
+                    _id: { 
+                        month: { $month: "$createdAt" },
+                        registered: { $cond: [{ $eq: ["$is_registered", true] }, "registered", "unregistered"] }
+                    },
+                    count: { $sum: 1 }
+                }
+            },
+            { $sort: { "_id.month": 1 } }
+        ]);
+        
+        // Transform into the format expected by frontend
+        const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        
+        const formattedData = months.map((month, index) => {
+            const registeredCount = monthlyData.find(item => 
+                item._id.month === index + 1 && item._id.registered === "registered"
+            )?.count || 0;
+            
+            const unregisteredCount = monthlyData.find(item => 
+                item._id.month === index + 1 && item._id.registered === "unregistered"
+            )?.count || 0;
+            
+            return {
+                month,
+                registeredPatients: registeredCount,
+                unregisteredPatients: unregisteredCount
+            };
+        });
+        
+        res.status(200).json(formattedData);
+    } catch (error) {
+        console.log('Error fetching monthly patients:', error);
+        res.status(500).json({ message: error.message });
+    }
+},
+
+getMonthlyRevenue: async (req, res) => {
+    try {
+        const { hospital_ID } = req.params;
+        
+        // Get the current year
+        const currentYear = new Date().getFullYear();
+        
+        // Aggregate the monthly revenue for the current year
+        const monthlyData = await BookingAppointment.aggregate([
+            {
+                $match: { 
+                    hospital_ID,
+                    status: 'completed',
+                    paymentStatus: 'paid',
+                    createdAt: {
+                        $gte: new Date(`${currentYear}-01-01`),
+                        $lte: new Date(`${currentYear}-12-31`)
+                    }
+                }
+            },
+            {
+                $group: {
+                    _id: { month: { $month: "$createdAt" } },
+                    amount: { $sum: "$appointmentFee" }
+                }
+            },
+            { $sort: { "_id.month": 1 } }
+        ]);
+        
+        // Transform into the format expected by frontend
+        const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        
+        const formattedData = months.map((month, index) => {
+            const monthData = monthlyData.find(item => item._id.month === index + 1);
+            return {
+                month,
+                amount: monthData ? monthData.amount : 0
+            };
+        });
+        
+        res.status(200).json(formattedData);
+    } catch (error) {
+        console.log('Error fetching monthly revenue:', error);
+        res.status(500).json({ message: error.message });
+    }
+},
+
+getDoctorsWithMostAppointments: async (req, res) => {
+    try {
+        const { hospital_ID } = req.params;
+        
+        // Define the colors for different doctors (for pie chart visualization)
+        const colors = [
+            '#00A272', '#34C89A', '#7BE3C3', '#B6F2E4', '#D8F9F1',
+            '#4C9E81', '#2B6F5A', '#9AD6C2', '#5FB898', '#85CCAE'
+        ];
+        
+        // Aggregate doctors by appointment count
+        const doctorData = await BookingAppointment.aggregate([
+            {
+                $match: { hospital_ID }
+            },
+            {
+                $group: {
+                    _id: "$doctorId",
+                    value: { $sum: 1 }
+                }
+            },
+            {
+                $sort: { value: -1 }
+            },
+            {
+                $limit: 5 // Limit to top 5 doctors
+            },
+            {
+                $lookup: {
+                    from: "staffs", // assuming your staff collection name
+                    localField: "_id",
+                    foreignField: "_id",
+                    as: "doctorInfo"
+                }
+            },
+            {
+                $unwind: {
+                    path: "$doctorInfo",
+                    preserveNullAndEmptyArrays: true
+                }
+            },
+            {
+                $project: {
+                    value: 1,
+                    name: { $ifNull: ["$doctorInfo.name", "Unknown Doctor"] }
+                }
+            }
+        ]);
+        
+        // Transform into the format expected by frontend
+        const formattedData = doctorData.map((item, index) => ({
+            name: item.name,
+            value: item.value,
+            color: colors[index % colors.length] // Cycle through colors
+        }));
+        
+        res.status(200).json(formattedData);
+    } catch (error) {
+        console.log('Error fetching doctors with most appointments:', error);
+        res.status(500).json({ message: error.message });
+    }
+}
 }

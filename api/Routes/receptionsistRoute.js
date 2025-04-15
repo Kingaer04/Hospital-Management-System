@@ -27,6 +27,9 @@ router.get('/totalAppointments/:hospital_ID', receptionistController.getTotalApp
 router.get('/totalPendingAppointments/:hospital_ID', receptionistController.getTotalPendingAppointments);
 router.get('/totalCompletedAppointments/:hospital_ID', receptionistController.getTotalCompletedAppointments);
 router.get('/pendingAppointments/:hospital_ID', receptionistController.getTotalPendingAppointments);
+router.get('/monthly-patients/:hospital_ID', receptionistController.getMonthlyPatients);
+router.get('/monthly-revenue/:hospital_ID', receptionistController.getMonthlyRevenue);
+router.get('/doctors-appointments/:hospital_ID', receptionistController.getDoctorsWithMostAppointments);
 
 // Paystack route
 router.post('/hospitals/subaccount', createHospitalSubaccount);
