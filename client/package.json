@@ -42,6 +42,7 @@
     "react-router-dom": "^6.26.2",
     "react-timeago": "^8.0.0",
     "react-webcam": "^7.2.0",
+    "rechart": "^0.0.1",
     "recharts": "^2.15.0",
     "redux-persist": "^6.0.0",
     "socket.io-client": "^4.8.1",

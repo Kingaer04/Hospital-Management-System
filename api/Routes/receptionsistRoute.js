@@ -44,5 +44,19 @@ router.post('/send-email', sendEmailToPatient);
 // Checkout route
 router.post('/appointments/update-checkOut/:appointmentId', receptionistController.updateAppointmentCheckOut);
 
+// Existing routes
+router.get('/doctors/:hospital_ID', receptionistController.getDoctors);
+router.get('/:hospital_ID/recent-checkouts', receptionistController.getRecentCheckouts);
+
+// Chart data routes
+router.get('/receptionist/:hospital_ID/monthly-patients', receptionistController.getMonthlyPatients);
+router.get('/receptionist/:hospital_ID/monthly-revenue', receptionistController.getMonthlyRevenue);
+router.get('/topDoctors/:hospital_ID', receptionistController.getTopDoctors);
+
+// New routes to match frontend API calls
+router.get('/api/receptionist/:hospital_ID/doctors', receptionistController.getDoctorsForHospital);
+router.get('/receptionist/:hospital_ID/patients-by-year', receptionistController.getPatientsByYear);
+router.get('/receptionist/:hospital_ID/revenue-by-year', receptionistController.getRevenueByYear);
+
 
 export default router;
